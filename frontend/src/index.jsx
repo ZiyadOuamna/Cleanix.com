@@ -3,11 +3,21 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+//cette import est necessaire pour travailler sur le concept de SPA (Single Page Application) . dit par ziyad 
+import { BrowserRouter } from 'react-router-dom';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    {/*
+     Le composant BrowserRouter entoure l'application entière pour permettre la gestion de la navigation côté client.
+     Cela permet de créer une application monopage (SPA) où les différentes vues sont rendues sans recharger la page entière.
+     dit par ziyad
+     */}
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+     
   </React.StrictMode>
 );
 
