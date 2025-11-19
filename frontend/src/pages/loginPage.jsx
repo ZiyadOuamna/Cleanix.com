@@ -1,104 +1,215 @@
 import React, { useState } from 'react';
-import { loginUser } from '../services/authService'; // Sera utilisé pour parler à Laravel
 import { useNavigate } from 'react-router-dom';
 
-export default function LoginPage() {
-    const navigate = useNavigate();
-    
-    // Seulement email et mot de passe pour la connexion
-    const [credentials, setCredentials] = useState({
-        email: '',
-        password: '',
-    });
-    const [message, setMessage] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+const Login = () => {
+  const [credentials, setCredentials] = useState({ email: '', password: '' });
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [userType, setUserType] = useState(''); // État vide par défaut pour forcer la sélection
+  const navigate = useNavigate();
 
-    // Fonction pour mettre à jour l'état
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setCredentials(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
+  const handleChange = (e) => {
+    setCredentials({ ...credentials, [e.target.name]: e.target.value });
+  };
 
-    // Fonction qui envoie les données de connexion
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-        setMessage('');
-        setIsLoading(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!userType) {
+      setMessage('Erreur : Veuillez sélectionner votre rôle (Client ou Freelancer).');
+      return;
+    }
+    setIsLoading(true);
+    setMessage('');
 
-        try {
-            // NOTE: Dans le code réel, on va appeler loginUser(credentials);
-            console.log("Tentative de connexion (API):", credentials); 
-            
-            // Simuler une connexion réussie
-            // Ici, tu devras enregistrer le token de Laravel dans le Context
-            setMessage("✅ Connexion réussie! Redirection vers le tableau de bord...");
-            setTimeout(() => navigate('/dashboard'), 2000); // Rediriger après 2s
-            
-        } catch (error) {
-            // Afficher l'erreur de Laravel (identifiants incorrects, etc.)
-            console.error("Erreur de connexion:", error.response?.data);
-            setMessage(`❌ Erreur: Identifiants incorrects ou problème API.`);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    // Simulation d'une connexion (remplacez par votre logique API)
+    setTimeout(() => {
+      if (credentials.email && credentials.password) {
+        setMessage('Connexion réussie !');
+        // Rediriger vers le dashboard ou une autre page (peut-être différencier selon userType)
+        navigate('/dashboard');
+      } else {
+        setMessage('Erreur : Vérifiez vos informations.');
+      }
+      setIsLoading(false);
+    }, 2000);
+  };
 
-    return (
-        <div className="flex justify-center items-center min-h-screen bg-gray-100">
-            <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-2xl">
-                <h2 className="text-3xl font-bold text-center text-blue-600 mb-8">Connexion à Cleanix</h2>
-                
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    
-                    {/* Email */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Email</label>
-                        <input
-                            type="email"
-                            name="email"
-                            value={credentials.email}
-                            onChange={handleChange}
-                            required
-                            className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="votre.email@exemple.com"
-                        />
-                    </div>
-                    
-                    {/* Mot de passe */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Mot de passe</label>
-                        <input
-                            type="password"
-                            name="password"
-                            value={credentials.password}
-                            onChange={handleChange}
-                            required
-                            className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                        />
-                    </div>
+  // Contenu dynamique pour la section gauche selon le userType
+  const getMarketingContent = () => {
+    if (userType === 'client') {
+      return {
+        title: 'Bienvenue de retour, cher Client !',
+        description: 'Reconnectez-vous pour profiter de nos services de nettoyage premium. Réservez un nettoyage rapide, suivez vos commandes et bénéficiez d\'offres exclusives pour une maison toujours impeccable.',
+        benefits: [
+          { icon: '🕒', title: 'Réservations Instantanées', desc: 'Commandez en un clic et recevez un service professionnel.' },
+          { icon: '💸', title: 'Tarifs Avantageux', desc: 'Profitez de réductions pour vos commandes régulières.' },
+          { icon: '🔒', title: 'Sécurité Garantie', desc: 'Vos données et paiements sont protégés.' },
+        ],
+        testimonial: '"Cleanix rend ma vie plus facile ! Je réserve en ligne et tout est parfait." - Ahmed, Client à Casablanca',
+        ctaButton: 'S\'inscrire', // Changé pour encourager l'inscription
+        ctaAction: () => navigate('/register'), // Redirige vers l'inscription
+      };
+    } else if (userType === 'freelancer') {
+      return {
+        title: 'Bienvenue, Freelancer Ambitionneux !',
+        description: 'Connectez-vous pour accepter des missions, gérer vos revenus et développer votre activité. Plus de clients, plus de profits – rejoignez notre réseau et faites croître votre business de nettoyage.',
+        benefits: [
+          { icon: '🕒', title: 'Missions Flexibles', desc: 'Choisissez vos horaires et gagnez selon vos disponibilités.' },
+          { icon: '💸', title: 'Revenus Boostés', desc: 'Augmentez vos profits avec des commissions attractives.' },
+          { icon: '🔒', title: 'Plateforme Fiable', desc: 'Gérez vos missions et paiements en toute sécurité.' },
+        ],
+        testimonial: '"Grâce à Cleanix, j\'ai doublé mes revenus en quelques mois !" - Karim, Freelancer à Rabat',
+        ctaButton: 'S\'inscrire', // Changé pour encourager l'inscription
+        ctaAction: () => navigate('/register'), // Redirige vers l'inscription
+      };
+    }
+    return null; // Si pas sélectionné, rien n'est affiché
+  };
 
-                    <div className="flex justify-end">
-                        <a href="/reset-password" className="text-sm font-medium text-blue-600 hover:text-blue-500">Mot de passe oublié ?</a>
-                    </div>
+  const content = getMarketingContent();
 
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150"
-                    >
-                        {isLoading ? 'Connexion en cours...' : 'Se Connecter'}
-                    </button>
-                </form>
-                
-                {message && <p className="mt-4 text-center text-sm text-green-600">{message}</p>}
-                
-                <p className="mt-6 text-center text-sm">
-                    Nouveau sur Cleanix ? <a onClick={() => navigate('/register')} className="font-medium text-blue-600 hover:text-blue-500 cursor-pointer">Inscrivez-vous ici</a>
-                </p>
+  return (
+    <div className="bg-gray-100 flex min-h-screen">
+      {/* Right: Login Form with White Background */}
+      <div className="lg:w-1/2 w-full flex justify-center items-center p-8 bg-white text-gray-900 relative overflow-hidden">
+        {/* Floating Elements */}
+        <div className="absolute top-20 right-20 text-4xl opacity-10 animate-pulse">🔐</div>
+        <div className="absolute bottom-20 left-20 text-4xl opacity-10 animate-bounce">✨</div>
+        
+        <div className="relative z-10 w-full max-w-md">
+          <h1 className="text-3xl font-bold text-center text-gray-900 mb-8">Connexion à Cleanix</h1>
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email Input */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={credentials.email}
+                onChange={handleChange}
+                required
+                className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-900 placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500 transition"
+                placeholder="votre.email@exemple.com"
+              />
             </div>
+            
+            {/* Password Input */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">Mot de passe</label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={credentials.password}
+                onChange={handleChange}
+                required
+                className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-900 placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500 transition"
+              />
+            </div>
+
+            {/* Remember Me Checkbox */}
+            <div className="flex items-center">
+              <input type="checkbox" id="remember" name="remember" className="text-blue-600" />
+              <label htmlFor="remember" className="text-gray-700 ml-2">Se souvenir de moi</label>
+            </div>
+
+            {/* Forgot Password Link */}
+            <div className="text-blue-600">
+              <a href="./forgot-password" className="hover:underline">Mot de passe oublié ?</a>
+            </div>
+
+            {/* Login Button - Désactivé si userType pas sélectionné */}
+            <button
+              type="submit"
+              disabled={isLoading || !userType}
+              className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white transition duration-150 ${
+                userType ? 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500' : 'bg-gray-400 cursor-not-allowed'
+              }`}
+            >
+              {isLoading ? 'Connexion en cours...' : 'Se Connecter'}
+            </button>
+          </form>
+          
+          {message && <p className={`mt-4 text-center text-sm ${message.includes('Erreur') ? 'text-red-600' : 'text-green-600'}`}>{message}</p>}
+          
+          {/* Sign up Link - Ajouté pour les nouveaux utilisateurs */}
+          <p className="mt-6 text-center text-sm">
+            Nouveau sur Cleanix ? <a onClick={() => navigate('/register')} className="font-medium text-blue-600 hover:text-blue-700 cursor-pointer">Inscrivez-vous ici</a>
+          </p>
         </div>
-    );
-}
+      </div>
+      
+      {/* Left: Dynamic Marketing Section */}
+      <div className="w-1/2 h-screen hidden lg:flex flex-col justify-center items-center bg-gradient-to-br from-gray-700 via-slate-800 to-gray-900 text-white p-12 relative overflow-hidden">
+        {/* Subtle Animated Background */}
+        <div className="absolute inset-0 bg-black bg-opacity-20 animate-pulse" style={{ animationDuration: '4s' }}></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-transparent to-blue-600 opacity-10"></div>
+        
+        {/* Floating Icons */}
+        <div className="absolute top-10 left-10 text-5xl opacity-15 animate-bounce" style={{ animationDuration: '3s' }}>🧹</div>
+        <div className="absolute bottom-10 right-10 text-5xl opacity-15 animate-bounce" style={{ animationDelay: '1s', animationDuration: '3s' }}>✨</div>
+        <div className="absolute top-1/2 left-1/4 text-4xl opacity-20 animate-spin" style={{ animationDuration: '10s' }}>🏠</div>
+        
+        {/* Central Selection - Obligatoire et au milieu */}
+        {!userType ? (
+          <div className="relative z-10 text-center max-w-md">
+            <h2 className="text-3xl font-bold mb-6 text-white">Choisissez votre rôle</h2>
+            <p className="text-lg mb-8 text-gray-300">Sélectionnez si vous êtes un Client ou un Freelancer pour continuer.</p>
+            <div className="flex flex-col space-y-4">
+              <button
+                onClick={() => setUserType('client')}
+                className="bg-blue-600 text-white px-8 py-4 rounded-full font-semibold text-xl hover:bg-blue-700 transition-all duration-500 transform hover:scale-105 shadow-md"
+              >
+                Je suis un Client
+              </button>
+              <button
+                onClick={() => setUserType('freelancer')}
+                className="bg-green-600 text-white px-8 py-4 rounded-full font-semibold text-xl hover:bg-green-700 transition-all duration-500 transform hover:scale-105 shadow-md"
+              >
+                Je suis un Freelancer
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Dynamic Hero Content - Affiché seulement après sélection */
+          <div className="relative z-10 text-center max-w-md">
+            <h1 className="text-4xl font-extrabold mb-6 text-white animate-fade-in" style={{ animationDuration: '2s' }}>{content.title}</h1>
+            <p className="text-lg mb-8 leading-relaxed text-gray-300">
+              {content.description}
+            </p>
+            
+            {/* Benefits List */}
+            <div className="space-y-4 mb-8">
+              {content.benefits.map((benefit, index) => (
+                <div key={index} className="flex items-center justify-center space-x-4 bg-white bg-opacity-10 p-4 rounded-lg hover:bg-opacity-20 transition-all duration-500 transform hover:scale-105 shadow-sm">
+                  <span className="text-2xl">{benefit.icon}</span>
+                  <div>
+                    <h3 className="text-base font-semibold text-white">{benefit.title}</h3>
+                    <p className="text-sm text-gray-400">{benefit.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Testimonial */}
+            <div className="bg-white bg-opacity-10 p-6 rounded-lg mb-8 shadow-sm">
+              <p className="italic text-base text-white">{content.testimonial}</p>
+            </div>
+            
+            {/* Call to Action Button - Maintenant "S'inscrire" pour rediriger vers l'inscription */}
+            <button 
+              onClick={content.ctaAction} 
+              className="bg-blue-600 text-white px-8 py-3 rounded-full font-semibold text-lg hover:bg-blue-700 transition-all duration-500 transform hover:scale-105 shadow-md"
+            >
+              {content.ctaButton}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Login;

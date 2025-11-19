@@ -57,3 +57,34 @@ export const checkAuth = async () => {
         return null; // Pas connecté
     }
 };
+
+/**
+ * Envoie une demande de lien de réinitialisation de mot de passe (Route /api/forgot-password)
+ * @param {object} data - { email: '...' }
+ * @returns {Promise<object>} La réponse du serveur
+ */
+export const forgotPassword = async (data) => {
+    try {
+        // Laravel attend généralement une route POST sur /forgot-password avec le champ 'email'
+        const response = await apiClient.post('/forgot-password', data);
+        return response.data;
+    } catch (error) {
+        // Renvoie l'erreur pour que la page puisse l'afficher (ex: "Email introuvable")
+        throw error;
+    }
+};
+
+/**
+ * Envoie le nouveau mot de passe avec le token (Route /api/reset-password)
+ * @param {object} data - { email, token, password, password_confirmation }
+ * @returns {Promise<object>} La réponse du serveur
+ */
+export const resetPassword = async (data) => {
+    try {
+        // Laravel attend généralement une route POST sur /reset-password avec ces 4 champs
+        const response = await apiClient.post('/reset-password', data);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
