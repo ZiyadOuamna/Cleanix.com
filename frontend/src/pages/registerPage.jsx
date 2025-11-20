@@ -10,7 +10,7 @@ const MAROC_VILLES = [
 export default function RegisterPage() {
   const navigate = useNavigate();
   
-  // Tous les champs que tu as définis
+  // Tous les champs que tu as définis, plus les deux nouveaux pour les checkboxes
   const [formData, setFormData] = useState({
     cin: '',
     name: '',
@@ -21,16 +21,18 @@ export default function RegisterPage() {
     email: '',
     password: '',
     password_confirmation: '',
+    acceptTerms: false, // Nouveau champ pour accepter les termes
+    acceptNotifications: false, // Nouveau champ pour accepter les notifications
   });
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fonction générale pour mettre à jour l'état
+  // Fonction générale pour mettre à jour l'état, adaptée pour gérer les checkboxes
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
@@ -38,6 +40,13 @@ export default function RegisterPage() {
     event.preventDefault();
     setMessage('');
     setIsLoading(true);
+
+    // Validation supplémentaire : vérifier si les termes sont acceptés
+    if (!formData.acceptTerms) {
+      setMessage('❌ Vous devez accepter les Conditions d’Utilisation et la Politique de Confidentialité pour continuer.');
+      setIsLoading(false);
+      return;
+    }
 
     try {
       // NOTE: Dans le code réel, on va appeler registerUser(formData);
@@ -302,6 +311,35 @@ export default function RegisterPage() {
                   placeholder="Confirmer le mot de passe"
                 />
               </div>
+            </div>
+
+            {/* Nouveaux champs: Checkboxes pour accepter les termes et notifications */}
+            <div className="space-y-2 pt-4">
+              <label className="flex items-start space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="acceptTerms"
+                  checked={formData.acceptTerms}
+                  onChange={handleChange}
+                  required
+                  className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500 mt-1"
+                />
+                <span className="text-sm text-gray-700 leading-relaxed">
+                  J’accepte les <a href="#" className="text-blue-600 hover:underline">Conditions d’Utilisation</a> et la <a href="#" className="text-blue-600 hover:underline">Politique de Confidentialité</a>.
+                </span>
+              </label>
+              <label className="flex items-start space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="acceptNotifications"
+                  checked={formData.acceptNotifications}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500 mt-1"
+                />
+                <span className="text-sm text-gray-700 leading-relaxed">
+                  J’accepte de recevoir des notifications et emails liés à mon compte.
+                </span>
+              </label>
             </div>
             
             <button
