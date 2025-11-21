@@ -127,7 +127,7 @@ const Login = () => {
 
             {/* Forgot Password Link */}
             <div className="text-blue-600">
-              <a href="./forgot-password" className="hover:underline">Mot de passe oublié ?</a>
+              <a href="./forgotPasswordPage.jsx" className="hover:underline">Mot de passe oublié ?</a>
             </div>
 
             {/* Login Button */}
