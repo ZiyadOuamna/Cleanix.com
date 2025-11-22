@@ -8,8 +8,10 @@ import ForgotPasswordPage from './pages/forgotPasswordPage';
 //import ResetPasswordPage from './pages/ResetPasswordPage';
 //les import des pages après la connexion de la page de superviseur 
 import DashboardSuperviseur from './pages/superviseur/superviseur';
+
+
 //les imports des pages de la partie : réclamations , rembourssement et settings
-import ReclamationsPage from './pages/superviseur/gestionReclamations';
+import Reclamations from './pages/superviseur/gestionReclamations';
 import RembourssementsPage from './pages/superviseur/gestionRembourssements';
 import SettingsPage from './pages/superviseur/settings-Superviseur';
 
@@ -34,12 +36,12 @@ function App() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       {/*<Route path="/reset-password/:token" element={<ResetPasswordPage />} />*/}
       
-      <Route>
+      <Route path="/dev-superviseur-page" element={<DashboardSuperviseur />}>
+
         {/* les routes des partie : réclamations , rembourssement et settings */}
-        <Route path="/dev-dashboard-superviseur"  element={<DashboardSuperviseur />}/>
-        <Route path="/gestion-reclamations"    element={<div>la page de reclamation</div>}/>
-        <Route path="/gestion-rembourssements" element={<div>la page de rembourssement</div>}/>
-        <Route path="/settings-superviseur"    element={<div>settings</div>}/>
+        <Route path="gestion-reclamations"    element={<Reclamations />}/>
+        <Route path="gestion-rembourssements" element={<RembourssementsPage />}/>
+        <Route path="settings-superviseur"    element={<SettingsPage />}/>
 
         {/* les routes de la partie gestion des utilisateurs */}
 

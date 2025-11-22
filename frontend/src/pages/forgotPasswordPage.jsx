@@ -3,12 +3,12 @@ import { forgotPassword } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, Loader2 } from 'lucide-react'; // Icônes Lucide pour un design moderne
 
-// Définir les couleurs comme des variables pour faciliter la gestion
+// Définir les couleurs comme des variables pour faciliter la gestion (version sombre)
 const COLORS = {
-    primary: '#2d2c86',    // Indigo foncé pour les boutons et titres
-    secondary: '#3ec0f0',  // Bleu clair pour les accents
-    textSecondary: '#918a84', // Gris chaud pour le texte secondaire
-    background: '#f0fafe',  // Blanc cassé pour le fond général
+    primary: '#6366f1',    // Indigo plus clair pour le contraste sur fond sombre
+    secondary: '#0ea5e9',  // Bleu plus sombre
+    textSecondary: '#9ca3af', // Gris clair pour le texte secondaire
+    background: '#144dd1ff',  // Ardoise sombre pour le fond général
 };
 
 export default function ForgotPasswordPage() {
@@ -39,7 +39,7 @@ export default function ForgotPasswordPage() {
 
     return (
         <div 
-            style={{ background: `linear-gradient(135deg, ${COLORS.background} 0%, #e0f2fe 100%)` }} 
+            style={{ background: `linear-gradient(135deg, ${COLORS.background} 0%, #1e293b 100%)` }} 
             className="min-h-screen flex flex-col items-center justify-start py-8 relative overflow-hidden"
         >
             {/* --- HEADER AVEC VAGUE STYLISÉE --- */}
@@ -72,22 +72,22 @@ export default function ForgotPasswordPage() {
             </div>
 
             {/* --- CONTENU PRINCIPAL (FORMULAIRE) --- */}
-            <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-2xl mt-8 relative z-10 border border-gray-100">
+            <div className="w-full max-w-md bg-gray-800 p-8 rounded-2xl shadow-2xl mt-8 relative z-10 border border-gray-700">
                 <div className="text-center mb-8">
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500 flex items-center justify-center">
                         <Mail size={32} className="text-white" />
                     </div>
-                    <h3 className="text-2xl font-bold" style={{ color: COLORS.primary }}>
+                    <h3 className="text-2xl font-bold text-white">
                         Réinitialiser le mot de passe
                     </h3>
-                    <p className="mt-2 text-sm" style={{ color: COLORS.textSecondary }}>
+                    <p className="mt-2 text-sm text-gray-400">
                         Entrez l'adresse email associée à votre compte.
                     </p>
                 </div>
                 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label htmlFor="email" className="block text-sm font-medium mb-2" style={{ color: COLORS.textSecondary }}>
+                        <label htmlFor="email" className="block text-sm font-medium mb-2 text-gray-300">
                             Adresse Email
                         </label>
                         <div className="relative">
@@ -98,11 +98,9 @@ export default function ForgotPasswordPage() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                className="w-full pl-10 pr-4 py-3 border rounded-lg shadow-sm focus:ring-2 focus:border-transparent outline-none transition-all duration-200"
+                                className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:border-transparent outline-none transition-all duration-200 text-white placeholder-gray-400"
                                 style={{ 
-                                    borderColor: COLORS.textSecondary, 
-                                    '--tw-ring-color': COLORS.secondary, 
-                                    color: COLORS.primary 
+                                    '--tw-ring-color': COLORS.secondary
                                 }}
                                 placeholder="exemple@email.com"
                             />
@@ -128,12 +126,12 @@ export default function ForgotPasswordPage() {
                 
                 {/* --- MESSAGES DE SUCCÈS / ERREUR (Toast-like) --- */}
                 {message && (
-                    <div className="mt-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm text-center animate-fade-in">
+                    <div className="mt-6 p-4 bg-green-900 border border-green-700 text-green-300 rounded-lg text-sm text-center animate-fade-in">
                         {message}
                     </div>
                 )}
                 {error && (
-                    <div className="mt-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm text-center animate-fade-in">
+                    <div className="mt-6 p-4 bg-red-900 border border-red-700 text-red-300 rounded-lg text-sm text-center animate-fade-in">
                         {error}
                     </div>
                 )}
@@ -142,8 +140,7 @@ export default function ForgotPasswordPage() {
                 <div className="mt-6 text-center">
                     <button 
                         onClick={() => navigate('/login')} 
-                        className="text-sm hover:underline transition-colors duration-200"
-                        style={{ color: COLORS.secondary }}
+                        className="text-sm hover:underline transition-colors duration-200 text-blue-400"
                     >
                         Retour à la connexion
                     </button>
