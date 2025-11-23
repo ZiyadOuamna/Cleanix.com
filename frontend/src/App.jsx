@@ -43,9 +43,10 @@ function App() {
         <Route path="gestion-rembourssements" element={<RembourssementsPage />}/>
         <Route path="settings-superviseur"    element={<SettingsPage />}/>
 
+        {/* les routes de la partie dashboard */}
+        <Route path="dashboard-clients"     element={<DashboardClients/>} />
         {/* les routes de la partie gestion des utilisateurs */}
 
-        {/* les routes de la partie dashboard */}
         
       </Route>
 

@@ -1,5 +1,4 @@
-// src/context/SuperviseurContext.jsx
-import React, { createContext, useState } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 
 export const SuperviseurContext = createContext(null);
 
@@ -24,9 +23,22 @@ export function SuperviseurProvider({ children }) {
 
   // other shared state you used
   const [isMenuOpen, setIsMenuOpen] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // password/settings local state can be kept in layout or in Settings page
+  // --- MODIFICATION ICI : GESTION DU DARK MODE PERSISTANT ---
+  
+  // 1. Initialisation : On regarde si une valeur existe déjà dans le navigateur
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const savedMode = localStorage.getItem('isDarkMode');
+    return savedMode === 'true'; // Retourne true si stocké, sinon false
+  });
+
+  // 2. Sauvegarde : À chaque changement de isDarkMode, on met à jour le localStorage
+  useEffect(() => {
+    localStorage.setItem('isDarkMode', isDarkMode);
+  }, [isDarkMode]);
+
+  // -----------------------------------------------------------
+
   // expose helper functions for status/urgency coloring
   const getStatusColor = (statut) => {
     switch (statut) {
@@ -36,6 +48,7 @@ export function SuperviseurProvider({ children }) {
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
+  
   const getUrgencyColor = (urg) => {
     if (urg === 'High') return 'text-red-600 font-bold';
     if (urg === 'Medium') return 'text-orange-500';
@@ -43,7 +56,19 @@ export function SuperviseurProvider({ children }) {
   };
 
   return (
-    <SuperviseurContext.Provider value={{reclamations,setReclamations,notifications,markAsRead,markAllAsRead,isMenuOpen,setIsMenuOpen,isDarkMode,setIsDarkMode,getStatusColor,getUrgencyColor,isDarkMode,setIsDarkMode}}>
+    <SuperviseurContext.Provider value={{
+      reclamations,
+      setReclamations,
+      notifications,
+      markAsRead,
+      markAllAsRead,
+      isMenuOpen,
+      setIsMenuOpen,
+      isDarkMode,      // Passé une seule fois
+      setIsDarkMode,   // Passé une seule fois
+      getStatusColor,
+      getUrgencyColor
+    }}>
       {children}
     </SuperviseurContext.Provider>
   );
