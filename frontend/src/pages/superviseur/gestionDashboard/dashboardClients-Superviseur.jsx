@@ -2,19 +2,18 @@ import React, { useContext, useState, useEffect } from 'react';
 import { SuperviseurContext } from '../superviseurContext';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
-  PieChart, Pie, Cell, BarChart, Bar, ResponsiveContainer, AreaChart, Area 
+  PieChart, Pie, Cell, BarChart, Bar, ResponsiveContainer
 } from 'recharts';
+import { User, MapPin, Calendar, CreditCard, ArrowLeft, Search, TrendingUp, CalendarDays } from 'lucide-react';
 
-// --- COMPOSANTS UI UTILITAIRES ---
-
-// 1. Tooltip Personnalisé pour un design plus propre
+// --- 1. TOOLTIP PERSONNALISÉ ---
 const CustomTooltip = ({ active, payload, label, unit, isDarkMode }) => {
   if (active && payload && payload.length) {
     return (
-      <div className={`p-3 rounded-lg shadow-lg border ${isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-100 text-gray-800'}`}>
-        <p className="text-sm font-bold mb-1">{label}</p>
-        <p className="text-sm" style={{ color: payload[0].color }}>
-          {payload[0].name}: <span className="font-semibold">{payload[0].value} {unit}</span>
+      <div className={`px-3 py-2 rounded-lg shadow-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-100 text-gray-800'}`}>
+        <p className="text-[10px] uppercase font-bold opacity-60 mb-1">{label}</p>
+        <p className="text-sm font-bold" style={{ color: payload[0].color }}>
+          {payload[0].value.toLocaleString()} {unit}
         </p>
       </div>
     );
@@ -22,98 +21,58 @@ const CustomTooltip = ({ active, payload, label, unit, isDarkMode }) => {
   return null;
 };
 
-// 2. Composant Carte avec Filtres (Le cœur du design)
-const ChartCard = ({ title, data, type = "line", color = "#8884d8", unit = "", isDarkMode }) => {
-  const [period, setPeriod] = useState('monthly'); // 'daily', 'monthly', 'yearly'
+// --- 2. COMPOSANT CARTE CLASSIQUE ---
+const FilterableChartCard = ({ title, data, type = "line", color = "#3b82f6", unit = "", isDarkMode }) => {
+  const [period, setPeriod] = useState('monthly');
 
-  // Sélectionner les données selon la période choisie
-  const currentData = data ? data[period] : { total: 0, chartData: [] };
-  
-  // Labels pour les axes selon la période
-  const getXLabel = () => {
-    if (period === 'daily') return 'Heure';
-    if (period === 'monthly') return 'Jour';
-    return 'Mois';
-  };
+  if (!data) return null;
+  const currentData = data[period] || { total: 0, chartData: [] };
 
   return (
-    <div className={`p-6 rounded-2xl shadow-lg transition-all duration-300 hover:shadow-xl ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}`}>
-      
-      {/* En-tête de la carte avec Titre et Filtres */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+    <div className={`p-5 rounded-2xl shadow-lg flex flex-col justify-between transition-all duration-300 hover:shadow-xl ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}`}>
+      <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-700'}`}>{title}</h3>
+          <h3 className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{title}</h3>
           <p className={`text-2xl font-bold mt-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            {currentData.total.toLocaleString()} <span className="text-sm font-normal text-gray-500">{unit}</span>
+            {currentData.total.toLocaleString()} <span className="text-xs font-normal text-gray-500">{unit}</span>
           </p>
         </div>
-        
-        {/* Boutons de filtres (Pill shape) */}
-        <div className={`flex p-1 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-          {['daily', 'monthly', 'yearly'].map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                period === p 
-                  ? (isDarkMode ? 'bg-gray-600 text-white shadow' : 'bg-white text-blue-600 shadow') 
-                  : (isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-800')
-              }`}
-            >
-              {p === 'daily' ? 'Jour' : p === 'monthly' ? 'Mois' : 'Année'}
-            </button>
-          ))}
+        <div className="flex items-center gap-1">
+          <button className={`p-1.5 rounded-md ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
+            <CalendarDays size={14} />
+          </button>
+          <div className={`flex p-0.5 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+            {['daily', 'monthly', 'yearly'].map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`px-2 py-1 text-[9px] font-bold rounded-md transition-all uppercase ${
+                  period === p 
+                    ? (isDarkMode ? 'bg-gray-600 text-white shadow-sm' : 'bg-white text-blue-600 shadow-sm') 
+                    : (isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600')
+                }`}
+              >
+                {p === 'daily' ? 'J' : p === 'monthly' ? 'M' : 'A'}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-
-      {/* Zone du Graphique */}
-      <div className="h-[250px] w-full">
+      <div className="h-[160px] w-full mt-auto">
         <ResponsiveContainer width="100%" height="100%">
           {type === 'line' ? (
-            <AreaChart data={currentData.chartData}>
-              <defs>
-                <linearGradient id={`color${title}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={color} stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor={color} stopOpacity={0}/>
-                </linearGradient>
-              </defs>
+            <LineChart data={currentData.chartData}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? "#374151" : "#f3f4f6"} />
-              <XAxis 
-                dataKey="name" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: isDarkMode ? '#9ca3af' : '#9ca3af', fontSize: 12 }} 
-                dy={10}
-              />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: isDarkMode ? '#9ca3af' : '#9ca3af', fontSize: 12 }} 
-              />
-              <Tooltip content={<CustomTooltip unit={unit} isDarkMode={isDarkMode} />} />
-              <Area 
-                type="monotone" 
-                dataKey="value" 
-                stroke={color} 
-                strokeWidth={3}
-                fillOpacity={1} 
-                fill={`url(#color${title})`} 
-                name={title} // Nom significatif pour le tooltip
-              />
-            </AreaChart>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: isDarkMode ? '#9ca3af' : '#9ca3af', fontSize: 10 }} dy={10} />
+              <Tooltip content={<CustomTooltip unit={unit} isDarkMode={isDarkMode} />} cursor={{ stroke: isDarkMode ? '#4b5563' : '#e5e7eb', strokeWidth: 1 }} />
+              <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+            </LineChart>
           ) : (
             <BarChart data={currentData.chartData}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? "#374151" : "#f3f4f6"} />
-              <XAxis 
-                dataKey="name" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: isDarkMode ? '#9ca3af' : '#9ca3af', fontSize: 12 }} 
-                dy={10}
-              />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: isDarkMode ? '#9ca3af' : '#9ca3af', fontSize: 12 }} />
-              <Tooltip content={<CustomTooltip unit={unit} isDarkMode={isDarkMode} />} />
-              <Bar dataKey="value" fill={color} radius={[4, 4, 0, 0]} name={title} />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: isDarkMode ? '#9ca3af' : '#9ca3af', fontSize: 10 }} dy={10} />
+              <Tooltip content={<CustomTooltip unit={unit} isDarkMode={isDarkMode} />} cursor={{ fill: isDarkMode ? '#374151' : '#f3f4f6' }} />
+              <Bar dataKey="value" fill={color} radius={[3, 3, 0, 0]} />
             </BarChart>
           )}
         </ResponsiveContainer>
@@ -122,226 +81,220 @@ const ChartCard = ({ title, data, type = "line", color = "#8884d8", unit = "", i
   );
 };
 
-// --- COMPOSANT PRINCIPAL ---
+// --- 3. COMPOSANT PAIEMENT (Format Vertical Compact) ---
+const PaymentDistributionCard = ({ data, isDarkMode }) => {
+  if (!data || !Array.isArray(data) || data.length === 0) return null;
 
+  const sortedData = [...data].sort((a, b) => b.value - a.value);
+  const mostUsed = sortedData[0];
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
+
+  return (
+    <div className={`p-5 rounded-2xl shadow-lg flex flex-col justify-between h-full ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}`}>
+      <div className="mb-2">
+        <h3 className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Répartition Paiements</h3>
+      </div>
+      
+      {/* Camembert */}
+      <div className="h-[120px] w-full relative">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie data={data} cx="50%" cy="50%" innerRadius={40} outerRadius={55} paddingAngle={5} dataKey="value">
+              {data.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+            </Pie>
+            <Tooltip content={<CustomTooltip unit="%" isDarkMode={isDarkMode} />} />
+          </PieChart>
+        </ResponsiveContainer>
+        {/* Centre du Donut */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+           <span className={`text-xs font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Total</span>
+        </div>
+      </div>
+
+      {/* Stats Compactes */}
+      <div className="mt-2 space-y-2">
+         <div className="flex justify-between items-center text-xs">
+            <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Top Méthode:</span>
+            <span className="font-bold text-blue-500">{mostUsed.name} ({mostUsed.value}%)</span>
+         </div>
+         <div className="flex justify-between items-center text-xs">
+            <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Diversité:</span>
+            <span className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{data.length} Types</span>
+         </div>
+         {/* Légende rapide */}
+         <div className="flex flex-wrap gap-2 mt-1 justify-center">
+            {data.slice(0, 3).map((entry, index) => (
+              <div key={index} className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[index] }}></div>
+                <span className={`text-[10px] ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{entry.name}</span>
+              </div>
+            ))}
+         </div>
+      </div>
+    </div>
+  );
+};
+
+// --- 4. DETAILS CLIENT ---
+const ClientAnalytics = ({ client, onBack, isDarkMode }) => {
+  const generateMock = (max) => ({
+    daily: { total: Math.floor(max/30), chartData: Array.from({length:7}, (_,i)=>({name:`J-${i}`, value: Math.floor(Math.random()*(max/30))})) },
+    monthly: { total: max, chartData: Array.from({length:12}, (_,i)=>({name:`M-${i}`, value: Math.floor(Math.random()*(max/12))})) },
+    yearly: { total: max*12, chartData: Array.from({length:5}, (_,i)=>({name:`202${i}`, value: Math.floor(Math.random()*max)})) },
+  });
+  const clientStats = { spending: generateMock(client.walletBalance), orders: generateMock(15) };
+
+  return (
+    <div className="animate-fade-in-up">
+      <button onClick={onBack} className="mb-6 flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium transition-colors">
+        <ArrowLeft size={20} /> Retour à la liste
+      </button>
+      <div className={`p-6 mb-8 rounded-2xl shadow-lg border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-blue-100'}`}>
+        <div className="flex flex-col md:flex-row items-center gap-6">
+          <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-xl text-white font-bold shadow-md">
+            {client.name.charAt(0)}{client.surname.charAt(0)}
+          </div>
+          <div className="flex-1">
+            <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{client.name} {client.surname}</h2>
+            <div className={`flex gap-4 mt-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              <span className="flex items-center gap-1"><MapPin size={14}/> {client.city}</span>
+              <span className="flex items-center gap-1"><CreditCard size={14}/> {client.email}</span>
+            </div>
+          </div>
+          <div className="px-5 py-2 bg-blue-50 text-blue-700 rounded-xl font-bold text-lg border border-blue-100">Solde: {client.walletBalance} DH</div>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <FilterableChartCard title="Dépenses" data={clientStats.spending} type="line" color="#10b981" unit="DH" isDarkMode={isDarkMode} />
+        <FilterableChartCard title="Fréquence" data={clientStats.orders} type="bar" color="#f59e0b" unit="Cmds" isDarkMode={isDarkMode} />
+      </div>
+      <div className={`rounded-2xl shadow-lg overflow-hidden ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}`}>
+        <div className="p-6 border-b border-gray-200/10"><h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Historique</h3></div>
+        <div className="p-6">
+           <ul className="space-y-3">
+             {client.orderHistory.map(order => (
+               <li key={order.id} className={`p-3 rounded-lg flex justify-between items-center ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
+                  <div><span className="font-bold block text-sm">Cmd #{order.id}</span><span className="text-xs opacity-70">{order.freelancer}</span></div>
+                  <span className={`px-2 py-1 rounded text-xs font-bold ${order.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{order.status}</span>
+               </li>
+             ))}
+           </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- 5. LISTE CLIENTS ---
+const ClientList = ({ clients, onSelect, isDarkMode }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const filteredClients = clients.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.surname.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  return (
+    <div className={`rounded-2xl shadow-lg overflow-hidden transition-all ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}`}>
+      <div className="p-6 border-b border-gray-200/10 flex justify-between items-center gap-4">
+        <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Base Clients ({clients.length})</h3>
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+          <input type="text" placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+            className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none transition-all ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-800'}`} />
+        </div>
+      </div>
+      <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+        <table className="w-full text-left border-collapse">
+          <thead className="sticky top-0 z-10"><tr className={`text-xs uppercase tracking-wider ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-50 text-gray-500'}`}><th className="p-4">Client</th><th className="p-4">Ville</th><th className="p-4">Solde</th><th className="p-4 text-right">Action</th></tr></thead>
+          <tbody className="divide-y divide-gray-200/10 text-sm">
+            {filteredClients.map(client => (
+              <tr key={client.id} className={`group transition-colors ${isDarkMode ? 'hover:bg-gray-700/50' : 'hover:bg-blue-50'}`}>
+                <td className="p-4"><div className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{client.name} {client.surname}</div><div className="text-xs opacity-60">{client.email}</div></td>
+                <td className="p-4">{client.city}</td>
+                <td className={`p-4 font-bold ${client.walletBalance > 50 ? 'text-green-500' : 'text-yellow-500'}`}>{client.walletBalance} DH</td>
+                <td className="p-4 text-right"><button onClick={() => onSelect(client)} className="text-blue-500 hover:text-blue-700 font-medium text-xs border border-blue-200 hover:bg-blue-100 px-3 py-1.5 rounded-full transition-all">Analyser</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// --- 6. DASHBOARD PRINCIPAL ---
 function DashboardClient() {
   const { isDarkMode } = useContext(SuperviseurContext);
   const [selectedClient, setSelectedClient] = useState(null);
-  const [clients, setClients] = useState([]);
-  
-  // Structure de données améliorée pour supporter les filtres
   const [metrics, setMetrics] = useState(null);
+  const [clients, setClients] = useState([]);
 
-  // Fonction utilitaire pour générer des données fake (pour la démo)
-  const generateChartData = (period, baseValue, variance) => {
-    let data = [];
-    let count = period === 'daily' ? 8 : period === 'monthly' ? 12 : 5; // 8 points pour jour, 12 pour mois
-    
-    for (let i = 0; i < count; i++) {
-      let label = period === 'daily' ? `${8 + i * 2}h` : period === 'monthly' ? `J-${i+1}` : `202${i}`;
-      if (period === 'yearly') label = ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aout', 'Sep', 'Oct', 'Nov', 'Dec'][i];
-      
-      data.push({
-        name: label,
-        value: Math.floor(baseValue + Math.random() * variance)
-      });
-    }
-    return data;
-  };
+  const generateFullMetric = (dailyTotal, monthlyTotal, yearlyTotal) => ({
+    daily: { total: dailyTotal, chartData: Array.from({length: 12}, (_, i) => ({ name: `${8+i}h`, value: Math.floor(dailyTotal/10 + Math.random() * (dailyTotal/5)) })) },
+    monthly: { total: monthlyTotal, chartData: Array.from({length: 30}, (_, i) => ({ name: `J${i+1}`, value: Math.floor(monthlyTotal/25 + Math.random() * (monthlyTotal/10)) })) },
+    yearly: { total: yearlyTotal, chartData: ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aout', 'Sep', 'Oct', 'Nov', 'Dec'].map(m => ({ name: m, value: Math.floor(yearlyTotal/10 + Math.random() * (yearlyTotal/5)) })) }
+  });
 
   useEffect(() => {
-    // Simulation du chargement des données complètes
-    const loadMockData = () => {
-      setMetrics({
-        ordersPlaced: {
-          daily: { total: 12, chartData: generateChartData('daily', 2, 3) },
-          monthly: { total: 340, chartData: generateChartData('monthly', 20, 15) },
-          yearly: { total: 4200, chartData: generateChartData('yearly', 300, 100) },
-        },
-        ordersCanceled: {
-          daily: { total: 1, chartData: generateChartData('daily', 0, 1) },
-          monthly: { total: 25, chartData: generateChartData('monthly', 1, 3) },
-          yearly: { total: 150, chartData: generateChartData('yearly', 10, 5) },
-        },
-        revenue: {
-          daily: { total: 1200, chartData: generateChartData('daily', 100, 200) },
-          monthly: { total: 35000, chartData: generateChartData('monthly', 2000, 1500) },
-          yearly: { total: 450000, chartData: generateChartData('yearly', 30000, 10000) },
-        },
-        connections: {
-          daily: { total: 150, chartData: generateChartData('daily', 10, 30) },
-          monthly: { total: 4500, chartData: generateChartData('monthly', 100, 50) },
-          yearly: { total: 54000, chartData: generateChartData('yearly', 4000, 1000) },
-        },
-        paymentMethods: {
-          chartData: [
-            { name: 'Carte Bancaire', value: 65 }, 
-            { name: 'PayPal', value: 25 }, 
-            { name: 'Virement', value: 10 }
-          ] 
-        }
-      });
-
-      // Mock Clients
-      setClients([
-        { id: 1, name: 'Jean', surname: 'Dupont', email: 'jean@test.com', city: 'Paris', stars: 5, walletBalance: 120 },
-        { id: 2, name: 'Sara', surname: 'Connor', email: 'sara@test.com', city: 'Lyon', stars: 4, walletBalance: 45 },
-        // ... autres clients
-      ]);
-    };
-
-    loadMockData();
+    setMetrics({
+      ordersPlaced: generateFullMetric(45, 1250, 14500),
+      ordersCanceled: generateFullMetric(2, 85, 950),
+      ordersPaid: generateFullMetric(40, 1100, 13200),
+      revenue: generateFullMetric(12500, 450000, 5200000),
+      connections: generateFullMetric(150, 4500, 54000),
+      paymentMethods: [
+        { name: 'Carte Bancaire', value: 65 }, { name: 'PayPal', value: 20 }, 
+        { name: 'Espèces', value: 10 }, { name: 'Virement', value: 5 }
+      ]
+    });
+    setClients([
+      { id: 1, name: 'Ziyad', surname: 'Ouamna', email: 'ziyad@cleanix.com', registrationDate: '2025-01-10', city: 'Casablanca', stars: 5, walletBalance: 250, orderHistory: [{id: 101, freelancer: 'Ahmed', status: 'Completed'}] },
+      { id: 2, name: 'Sara', surname: 'Benali', email: 'sara@gmail.com', registrationDate: '2025-02-15', city: 'Marrakech', stars: 4.5, walletBalance: 45, orderHistory: [{id: 102, freelancer: 'Karim', status: 'In Progress'}] },
+    ]);
   }, []);
 
   const refreshData = () => window.location.reload();
 
-  if (!metrics) return <div className="p-10 text-center">Chargement du dashboard...</div>;
+  if (!metrics) return <div className="p-10 text-center animate-pulse">Chargement Cleanix...</div>;
 
   return (
     <div className={`p-6 min-h-screen font-sans transition-colors duration-300 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-[#f0fafe] text-gray-800'}`}>
       
-      {/* Header avec un design plus moderne */}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold mb-1 tracking-tight">Dashboard Clients</h1>
-          <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
-            Bienvenue, voici l'aperçu de vos performances.
-          </p>
+          <h1 className="text-2xl font-extrabold mb-1 tracking-tight">Dashboard Clients</h1>
+          <p className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Aperçu des performances en temps réel.</p>
         </div>
-        <button 
-          onClick={refreshData} 
-          className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl shadow-lg hover:shadow-blue-500/30 transition-all transform hover:-translate-y-0.5 font-medium text-sm"
-        >
-          Actualiser les données
+        <button onClick={refreshData} className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-all text-xs font-bold flex items-center gap-2">
+          <TrendingUp size={14}/> Actualiser
         </button>
       </div>
 
-      {/* Grille des Graphiques Intelligents */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8 mb-10">
-        
-        {/* 1. Commandes Passées (AreaChart pour effet moderne) */}
-        <ChartCard 
-          title="Commandes Passées" 
-          data={metrics.ordersPlaced} 
-          type="line" 
-          color="#3b82f6" 
-          unit="Cmds"
-          isDarkMode={isDarkMode}
-        />
-
-        {/* 2. Chiffre d'Affaires (AreaChart orange) */}
-        <ChartCard 
-          title="Chiffre d'Affaires" 
-          data={metrics.revenue} 
-          type="line" 
-          color="#f59e0b" 
-          unit="€"
-          isDarkMode={isDarkMode}
-        />
-
-        {/* 3. Connexions (BarChart violet) */}
-        <ChartCard 
-          title="Connexions Actives" 
-          data={metrics.connections} 
-          type="bar" 
-          color="#8b5cf6" 
-          unit="Users"
-          isDarkMode={isDarkMode}
-        />
-
-        {/* 4. Commandes Annulées (LineChart rouge) */}
-        <ChartCard 
-          title="Annulations" 
-          data={metrics.ordersCanceled} 
-          type="line" 
-          color="#ef4444" 
-          unit="Cmds"
-          isDarkMode={isDarkMode}
-        />
-
-        {/* 5. Répartition Paiements (PieChart - Design Spécial) */}
-        <div className={`p-6 rounded-2xl shadow-lg transition-all ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}`}>
-          <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-gray-100' : 'text-gray-700'}`}>Modes de Paiement</h3>
-          <div className="h-[250px] w-full flex items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie 
-                  data={metrics.paymentMethods.chartData} 
-                  innerRadius={60} 
-                  outerRadius={80} 
-                  paddingAngle={5} 
-                  dataKey="value"
-                >
-                  {metrics.paymentMethods.chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={['#3b82f6', '#10b981', '#f59e0b'][index % 3]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend verticalAlign="bottom" height={36}/>
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
+      {/* LIGNE 1 : INDICATEURS COMMANDES (3 Colonnes) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <FilterableChartCard title="Commandes Passées" data={metrics.ordersPlaced} type="line" color="#3b82f6" unit="Cmds" isDarkMode={isDarkMode} />
+        <FilterableChartCard title="Commandes Payées" data={metrics.ordersPaid} type="line" color="#10b981" unit="Cmds" isDarkMode={isDarkMode} />
+        <FilterableChartCard title="Commandes Annulées" data={metrics.ordersCanceled} type="bar" color="#ef4444" unit="Cmds" isDarkMode={isDarkMode} />
       </div>
 
-      {/* Liste des Clients (Tableau Design) */}
-      <div className={`rounded-2xl shadow-lg overflow-hidden transition-all ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}`}>
-        <div className="p-6 border-b border-gray-200/10">
-          <h3 className="text-lg font-bold">Base de données Clients</h3>
+      {/* LIGNE 2 : FINANCES & TRAFIC (3 Colonnes : Revenu | Connexion | Paiement) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <FilterableChartCard title="Chiffre d'Affaires" data={metrics.revenue} type="line" color="#f59e0b" unit="DH" isDarkMode={isDarkMode} />
+        <FilterableChartCard title="Connexions Utilisateurs" data={metrics.connections} type="line" color="#8b5cf6" unit="Visites" isDarkMode={isDarkMode} />
+        <PaymentDistributionCard data={metrics.paymentMethods} isDarkMode={isDarkMode} />
+      </div>
+
+      {/* SECTION CLIENTS */}
+      <div className="animate-fade-in border-t border-gray-200/20 pt-8">
+        <div className="flex items-center gap-2 mb-6">
+           <User className="text-blue-500"/> 
+           <h2 className="text-lg font-bold">Gestion des Clients</h2>
         </div>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className={`text-sm uppercase tracking-wider ${isDarkMode ? 'bg-gray-700/50 text-gray-300' : 'bg-gray-50 text-gray-500'}`}>
-                <th className="p-4 font-semibold">ID</th>
-                <th className="p-4 font-semibold">Client</th>
-                <th className="p-4 font-semibold">Ville</th>
-                <th className="p-4 font-semibold">Solde</th>
-                <th className="p-4 font-semibold">Note</th>
-                <th className="p-4 font-semibold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200/10 text-sm">
-              {clients.map(client => (
-                <tr key={client.id} className={`transition-colors ${isDarkMode ? 'hover:bg-gray-700/50' : 'hover:bg-blue-50'}`}>
-                  <td className="p-4 font-medium opacity-70">#{client.id}</td>
-                  <td className="p-4">
-                    <div className="font-bold">{client.name} {client.surname}</div>
-                    <div className="text-xs opacity-60">{client.email}</div>
-                  </td>
-                  <td className="p-4">{client.city}</td>
-                  <td className={`p-4 font-bold ${client.walletBalance > 50 ? 'text-green-500' : 'text-yellow-500'}`}>
-                    {client.walletBalance} €
-                  </td>
-                  <td className="p-4">
-                    <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-800 text-xs font-bold">
-                      {client.stars} ★
-                    </span>
-                  </td>
-                  <td className="p-4 text-right">
-                    <button 
-                      onClick={() => setSelectedClient(selectedClient === client.id ? null : client.id)}
-                      className="text-blue-500 hover:text-blue-600 font-medium text-xs border border-blue-500 hover:bg-blue-50 px-3 py-1.5 rounded-full transition-all"
-                    >
-                      {selectedClient === client.id ? 'Fermer' : 'Détails'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        
-        {/* Détails Client (Expandable) */}
-        {selectedClient && (
-            <div className={`p-6 border-t ${isDarkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-100 bg-gray-50'}`}>
-                {/* Contenu des détails ici (comme dans ton code précédent) */}
-                <p>Détails étendus pour le client #{selectedClient}...</p>
-            </div>
+        {selectedClient ? (
+          <ClientAnalytics client={selectedClient} onBack={() => setSelectedClient(null)} isDarkMode={isDarkMode} />
+        ) : (
+          <ClientList clients={clients} onSelect={(client) => setSelectedClient(client)} isDarkMode={isDarkMode} />
         )}
       </div>
+
     </div>
   );
 }
