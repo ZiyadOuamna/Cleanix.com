@@ -212,13 +212,13 @@ function InnerLayout() {
             {ICONS.menu}
           </button>
           <div className="flex items-center gap-4">
-            <button onClick={() => toggleDarkMode()} className="p-2 rounded-full bg-gray-100 hover:bg-gray-200">
+            <button onClick={() => toggleDarkMode()} className="p-1 rounded-full border-2 hover:bg-gray-500">
               {isDarkMode ? <span className="text-xl">☀️</span> : <span className="text-xl">🌙</span>}
             </button>
 
 
             <div className="relative" ref={notificationRef}>
-              <button onClick={() => setShowNotifications(s => !s)} className="relative p-2 rounded-full bg-gray-100 ${isDarkMode}">
+              <button onClick={() => setShowNotifications(s => !s)} className="relative p-2 rounded-full border-2 ${isDarkMode} hover:bg-gray-500">
                 {ICONS.notifications}
                 {unreadCount > 0 && <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center">{unreadCount}</span>}
               </button>
