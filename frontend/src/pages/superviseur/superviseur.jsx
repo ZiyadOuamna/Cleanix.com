@@ -173,7 +173,7 @@ function InnerLayout() {
             </li>
 
             <li>
-              <button onClick={() => { navigate('remboursement'); setIsSidebarVisible(false); }} className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all text-gray-500 hover:bg-gray-50`}>
+              <button onClick={() => { navigate('gestion-rembourssements'); setIsSidebarVisible(false); }} className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all text-gray-500 hover:bg-gray-50`}>
                 {ICONS.remboursement}<span>Remboursement</span>
               </button>
             </li>
