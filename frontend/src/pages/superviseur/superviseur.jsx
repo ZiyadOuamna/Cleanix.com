@@ -104,7 +104,7 @@ function InnerLayout() {
                   </li>
                   <li>
                     <button 
-                      onClick={() => { navigate('dashboard-freelancer'); setActivePage('dashboard-freelancer'); setIsSidebarVisible(false); }}
+                      onClick={() => { navigate('dashboard-freelancers'); setActivePage('dashboard-freelancer'); setIsSidebarVisible(false); }}
                       className={`w-full flex items-center gap-4 px-4 py-2 rounded-xl transition-all ${activePage === 'dashboard-freelancer' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-500 hover:bg-gray-50'}`}
                     >
                       {ICONS.freelancers}
