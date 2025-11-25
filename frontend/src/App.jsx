@@ -46,7 +46,9 @@ function App() {
         {/* les routes de la partie dashboard */}
         <Route path="dashboard-clients"     element={<DashboardClients/>} />
         <Route path="dashboard-freelancers"     element={<DashboardFreelancers/>} />
+        
         {/* les routes de la partie gestion des utilisateurs */}
+        <Route path="gestion-clients"       element={<GestionClientsPage />} />
 
         
       </Route>
