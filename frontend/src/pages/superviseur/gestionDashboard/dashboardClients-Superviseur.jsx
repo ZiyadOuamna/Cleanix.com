@@ -189,7 +189,15 @@ const PaymentDistributionCard = ({ data, isDarkMode }) => {
 };
 
 // --- 3. COMPOSANT : ANALYSE DÉTAILLÉE CLIENT ---
+// --- 3. COMPOSANT : ANALYSE DÉTAILLÉE CLIENT ---
 const ClientAnalytics = ({ client, onBack, isDarkMode }) => {
+  // États pour la recherche et le filtrage
+  const [searchComments, setSearchComments] = useState('');
+  const [searchOrders, setSearchOrders] = useState('');
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('');
+  const [freelancerFilter, setFreelancerFilter] = useState('all');
+
   // Pour le client, on génère aussi des données complètes multi-périodes
   const metrics = {
       commandes: generateMultiPeriodData(10),
@@ -204,7 +212,8 @@ const ClientAnalytics = ({ client, onBack, isDarkMode }) => {
       { name: 'Espèces', value: 30 },
       { name: 'Wallet', value: 10 },
   ];
-//les commentaires 
+
+  // Les commentaires 
   const comments = [
       { id: 1, author: "Karim (Freelancer)", date: "12 Nov 2024", text: "Client très ponctuel et respectueux. Je recommande.", rating: 5 },
       { id: 2, author: "Sara (Support)", date: "05 Oct 2024", text: "A signalé un problème technique, résolu rapidement.", rating: 4 },
@@ -212,14 +221,50 @@ const ClientAnalytics = ({ client, onBack, isDarkMode }) => {
       { id: 4, author: "Laila (Client)", date: "15 Aug 2024", text: "Service impeccable, je reviendrai.", rating: 4 },
       { id: 5, author: "Youssef (Support)", date: "01 Jul 2024", text: "Client satisfait, aucune réclamation.", rating: 5 },
   ];
-// 
-const ordersHistory = [
-  { id: 1, client: "Karim", idFreelancer : 23, date: "12 Nov 2024", service: "Huiles de nigelle", amount: 120.50, status: "en cours" },
-  { id: 2, client: "Sara",  idFreelancer : 25,date: "05 Oct 2024", service: "Savon naturel", amount: 45.00, status: "Terminer" },
-  { id: 3, client: "Ahmed", idFreelancer : 23, date: "20 Sep 2024", service: "Huile de coco", amount: 80.75, status: "Terminer" },
-  { id: 4, client: "Laila", idFreelancer : 3, date: "15 Aug 2024", service: "Pâte d’amande", amount: 60.00, status: "Terminer" },
-  { id: 5, client: "Youssef",idFreelancer : 33, date: "01 Jul 2024", service: "Huiles essentielles", amount: 150.25, status: "Terminer" },
-];
+
+  // Historique des commandes
+  const ordersHistory = [
+    { id: 1, client: "Karim", idFreelancer: 23, date: "12 Nov 2024", service: "Huiles de nigelle", amount: 120.50, status: "en cours" },
+    { id: 2, client: "Sara", idFreelancer: 25, date: "05 Oct 2024", service: "Savon naturel", amount: 45.00, status: "Terminer" },
+    { id: 3, client: "Ahmed", idFreelancer: 23, date: "20 Sep 2024", service: "Huile de coco", amount: 80.75, status: "Terminer" },
+    { id: 4, client: "Laila", idFreelancer: 3, date: "15 Aug 2024", service: "Pâte d'amande", amount: 60.00, status: "Terminer" },
+    { id: 5, client: "Youssef", idFreelancer: 33, date: "01 Jul 2024", service: "Huiles essentielles", amount: 150.25, status: "Terminer" },
+  ];
+
+  // Filtrer les commentaires
+  const filteredComments = comments.filter(comment => {
+    const searchTerm = searchComments.toLowerCase();
+    return (
+      comment.author.toLowerCase().includes(searchTerm) ||
+      comment.text.toLowerCase().includes(searchTerm) ||
+      comment.date.includes(searchTerm) ||
+      comment.rating.toString().includes(searchTerm)
+    );
+  });
+
+  // Filtrer les commandes
+  const filteredOrders = ordersHistory.filter(order => {
+    const searchTerm = searchOrders.toLowerCase();
+    const matchesSearch = 
+      order.client.toLowerCase().includes(searchTerm) ||
+      order.service.toLowerCase().includes(searchTerm) ||
+      order.amount.toString().includes(searchTerm) ||
+      order.id.toString().includes(searchTerm) ||
+      order.idFreelancer.toString().includes(searchTerm);
+
+    const matchesStatus = orderStatusFilter === 'all' || 
+      (orderStatusFilter === 'Terminer' && order.status === 'Terminer') ||
+      (orderStatusFilter === 'en cours' && order.status === 'en cours');
+
+    const matchesDate = !dateFilter || order.date.includes(dateFilter);
+    const matchesFreelancer = freelancerFilter === 'all' || order.idFreelancer.toString() === freelancerFilter;
+
+    return matchesSearch && matchesStatus && matchesDate && matchesFreelancer;
+  });
+
+  // Liste unique des freelancers pour le filtre
+  const uniqueFreelancers = [...new Set(ordersHistory.map(order => order.idFreelancer))];
+
   return (
     <div className="animate-fade-in-up space-y-8">
       {/* Header Retour */}
@@ -291,58 +336,189 @@ const ordersHistory = [
          <PaymentDistributionCard data={paymentData} isDarkMode={isDarkMode} />
       </div>
 
-      {/* 3. COMMENTAIRES & HISTORIQUE */}
+      {/* 3. COMMENTAIRES & HISTORIQUE AVEC RECHERCHE */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Commentaires (5 items) */}
+          {/* Commentaires avec recherche */}
           <div className={`rounded-2xl shadow-lg overflow-hidden border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-             <div className="p-6 border-b border-gray-200/10"><h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Commentaires ({comments.length})</h3></div>
-             <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
-                {comments.map((com) => (
-                    <div key={com.id} className={`p-3 rounded-xl border ${isDarkMode ? 'bg-gray-700/30 border-gray-700' : 'bg-gray-50 border-gray-100'}`}>
-                        <div className="flex justify-between items-start mb-2">
-                            <span className="text-xs font-bold text-indigo-500">{com.author}</span>
-                            <span className="text-[10px] text-gray-400">{com.date}</span>
-                        </div>
-                        <p className={`text-sm italic mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>"{com.text}"</p>
-                        <div className="flex text-yellow-400 text-xs">
-                            {[...Array(5)].map((_, i) => <Star key={i} size={10} fill={i < com.rating ? "currentColor" : "none"} />)}
-                        </div>
+            <div className="p-6 border-b border-gray-200/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                  Commentaires
+                </h3>
+                <span className="text-sm text-gray-500">
+                  {filteredComments.length} sur {comments.length}
+                </span>
+              </div>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                <input 
+                  type="text" 
+                  placeholder="Rechercher dans les commentaires..." 
+                  value={searchComments}
+                  onChange={(e) => setSearchComments(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 outline-none transition ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                  }`}
+                />
+              </div>
+            </div>
+            <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+              {filteredComments.length > 0 ? (
+                filteredComments.map((com) => (
+                  <div key={com.id} className={`p-3 rounded-xl border ${isDarkMode ? 'bg-gray-700/30 border-gray-700' : 'bg-gray-50 border-gray-100'}`}>
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-xs font-bold text-indigo-500">{com.author}</span>
+                      <span className="text-[10px] text-gray-400">{com.date}</span>
                     </div>
-                ))}
-             </div>
+                    <p className={`text-sm italic mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>"{com.text}"</p>
+                    <div className="flex text-yellow-400 text-xs">
+                      {[...Array(5)].map((_, i) => <Star key={i} size={10} fill={i < com.rating ? "currentColor" : "none"} />)}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <Search size={32} className="mx-auto text-gray-400 mb-2" />
+                  <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Aucun commentaire trouvé
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
           
-         {/* Zone Historique */}
-        <div className={`p-6 rounded-2xl shadow-lg overflow-hidden border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-  <p className={`text-sm font-medium mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-    Historique détaillé des commandes
-  </p>
-  <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
-    {ordersHistory.map((order) => (
-      <div
-        key={order.id}
-        className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700/30 border-gray-700' : 'bg-gray-50 border-gray-100'} space-y-2`}
-      >
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-bold text-indigo-500">{order.client}</span>
-          <span className="text-xs text-gray-400">{order.date}</span>
-        </div>
-        <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-          Produit : <span className="font-semibold">{order.product}</span> — Montant : <span className="font-semibold">${order.amount.toFixed(2)}</span>
-        </p>
-        <p className={`text-sm italic ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-          Statut : <span className={order.status === "Livrée" ? 'text-green-500' : order.status === "Annulée" ? 'text-red-500' : 'text-yellow-500'}>{order.status}</span>
-        </p>
-      </div>
-    ))}
-  </div>
-</div>
+          {/* Historique des commandes avec recherche avancée */}
+          <div className={`rounded-2xl shadow-lg overflow-hidden border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+            <div className="p-6 border-b border-gray-200/10">
+              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
+                <div>
+                  <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                    Historique des Commandes
+                  </h3>
+                  <span className="text-sm text-gray-500">
+                    {filteredOrders.length} commande(s) sur {ordersHistory.length}
+                  </span>
+                </div>
+                
+                {/* Barre de recherche principale */}
+                <div className="relative w-full lg:w-64">
+                  <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                  <input 
+                    type="text" 
+                    placeholder="Rechercher commandes..." 
+                    value={searchOrders}
+                    onChange={(e) => setSearchOrders(e.target.value)}
+                    className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 outline-none transition ${
+                      isDarkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                        : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                    }`}
+                  />
+                </div>
+              </div>
 
+              {/* Filtres avancés */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Filtre par statut */}
+                <select
+                  value={orderStatusFilter}
+                  onChange={(e) => setOrderStatusFilter(e.target.value)}
+                  className={`px-3 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 outline-none transition text-sm ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-300 text-gray-800'
+                  }`}
+                >
+                  <option value="all">Tous les statuts</option>
+                  <option value="Terminer">Terminé</option>
+                  <option value="en cours">En cours</option>
+                </select>
+
+                {/* Filtre par date */}
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                  <input 
+                    type="text" 
+                    placeholder="Filtrer par date..." 
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                    className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 outline-none transition ${
+                      isDarkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                    }`}
+                  />
+                </div>
+
+                {/* Filtre par freelancer */}
+                <select
+                  value={freelancerFilter}
+                  onChange={(e) => setFreelancerFilter(e.target.value)}
+                  className={`px-3 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 outline-none transition text-sm ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-300 text-gray-800'
+                  }`}
+                >
+                  <option value="all">Tous freelancers</option>
+                  {uniqueFreelancers.map(id => (
+                    <option key={id} value={id}>Freelancer #{id}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+              {filteredOrders.length > 0 ? (
+                filteredOrders.map((order) => (
+                  <div
+                    key={order.id}
+                    className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700/30 border-gray-700' : 'bg-gray-50 border-gray-100'} space-y-2`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-indigo-500">CMD-{order.id}</span>
+                        <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">
+                          Freelancer #{order.idFreelancer}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-400">{order.date}</span>
+                    </div>
+                    
+                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      <strong>Service:</strong> {order.service}
+                    </p>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                        {order.amount.toFixed(2)} DH
+                      </span>
+                      <span className={`px-2 py-1 rounded text-xs font-bold ${
+                        order.status === "Terminer" 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {order.status}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <Search size={32} className="mx-auto text-gray-400 mb-2" />
+                  <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Aucune commande trouvée avec ces critères
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
       </div>
     </div>
   );
 };
-
 // --- 4. LISTE CLIENTS (Vue par Défaut) ---
 const ClientList = ({ clients, onSelect, isDarkMode }) => {
   const [searchTerm, setSearchTerm] = useState("");

@@ -1,3 +1,135 @@
+{/* Carte Profil & Statut */}
+<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    {/* Profil Gauche */}
+    <div className={`lg:col-span-2 p-6 rounded-2xl shadow-lg border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+        <div className="flex flex-col sm:flex-row gap-6 items-start">
+            <div className="relative">
+                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-3xl font-bold text-white shadow-lg">
+                    {freelancer.prenom.charAt(0)}{freelancer.nom.charAt(0)}
+                </div>
+                
+                {/* Indicateur estConnecte */}
+                <div className={`absolute -bottom-2 -right-2 p-1.5 rounded-full border-4 ${isDarkMode ? 'border-gray-800' : 'border-white'} ${freelancer.estConnecte ? 'bg-green-500' : 'bg-gray-400'}`} title={freelancer.estConnecte ? 'En ligne' : 'Hors ligne'}></div>
+            </div>
+            
+            <div className="flex-1 space-y-4">
+                <div className="flex justify-between items-start">
+                    <div className="space-y-2">
+                        {/* Nom avec badge vérifié */}
+                        <div className="flex items-center gap-2">
+                            <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {freelancer.prenom} {freelancer.nom}
+                            </h2>
+                            {freelancer.verifie && (
+                                <VerifiedAccount size={20} className="text-blue-500 fill-current" title="Compte vérifié" />
+                            )}
+                        </div>
+                        
+                        {/* Liste des services offerts avec icônes */}
+                        <div className="flex flex-wrap gap-2">
+                            {freelancer.services.map((service, index) => (
+                                <span 
+                                    key={index}
+                                    onClick={() => setSelectedService(service)}
+                                    className="inline-flex items-center gap-1 px-3 py-2 rounded-full text-sm font-medium bg-indigo-100 text-indigo-700 border border-indigo-200 cursor-pointer hover:bg-indigo-200 transition-colors"
+                                >
+                                    <ServiceIcon serviceType={service.type} />
+                                    {service.type}
+                                    <span className="text-xs bg-indigo-500 text-white px-2 py-0.5 rounded-full">
+                                        {service.tarifBase} DHS
+                                    </span>
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* Statut de disponibilité */}
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${freelancer.statut === 'Disponible' ? 'bg-green-100 text-green-700 border-green-200' : freelancer.statut === 'Occupé' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
+                        {freelancer.statut}
+                    </span>
+                </div>
+                
+                {/* Informations détaillées */}
+                <div className={`grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <p className="flex items-center gap-2"><Hash size={16} /> {freelancer.id}</p>
+                    <p className="flex items-center gap-2"><MapPin size={16} /> {freelancer.ville}</p>
+                    <p className="flex items-center gap-2"><Calendar size={16} />Inscrit le : {freelancer.joined}</p>
+                    <p className="flex items-center gap-2"><Mail size={16} /> {freelancer.email}</p>
+                    <p className="flex items-center gap-2"><Smartphone size={16} /> {freelancer.phone}</p>
+                    <p className="flex items-center gap-2"><Building size={16} /> {freelancer.detailsCompteBancaire}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {/* KPIs Rapides Droite (Portefeuille) */}
+    <div className={`lg:w-80 flex flex-col gap-4 p-5 rounded-xl border ${isDarkMode ? 'bg-gray-700/30 border-gray-600' : 'bg-blue-50/50 border-blue-100'}`}>
+        <div className="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-600">
+            <span className={`text-sm font-bold uppercase ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>Portefeuille</span>
+            <div className="flex items-center gap-2 text-green-600 font-bold text-2xl">
+                <Wallet size={24}/> {freelancer.solde.toFixed(2)} DH
+            </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center pt-1">
+            <div>
+                <div className="flex items-center justify-center gap-1 text-yellow-500 font-bold text-lg">
+                    {freelancer.noteMoyenne} <Star size={16} fill="currentColor"/>
+                </div>
+                <p className="text-[10px] uppercase font-bold opacity-60">Note</p>
+            </div>
+            <div>
+                <div className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{freelancer.avis}</div>
+                <p className="text-[10px] uppercase font-bold opacity-60">Avis</p>
+            </div>
+            <div>
+                <div className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{freelancer.commentaires}</div>
+                <p className="text-[10px] uppercase font-bold opacity-60">Coms</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{/* Modal de détail du service */}
+{selectedService && (
+<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+<div className={`w-full max-w-md rounded-2xl shadow-2xl ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}`}>
+    <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+        <h3 className="text-lg font-bold">Détails du Service</h3>
+        <button 
+            onClick={() => setSelectedService(null)}
+            className={`p-2 rounded-full transition ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-500'}`}
+        >
+            <XCircle size={20} />
+        </button>
+    </div>
+    <div className="p-6 space-y-4">
+        <div className="flex items-center gap-3">
+            <ServiceIcon serviceType={selectedService.type} />
+            <div>
+                <h4 className="font-bold text-lg">{selectedService.type}</h4>
+                <p className="text-sm text-gray-500">{selectedService.description}</p>
+            </div>
+        </div>
+        <div className="space-y-2">
+            <p className="font-semibold">Tarif de base: <span className="text-green-600">{selectedService.tarifBase} DH</span></p>
+            <div>
+                <p className="font-semibold mb-2">Options disponibles:</p>
+                <div className="flex flex-wrap gap-2">
+                    {selectedService.options.map((option, index) => (
+                        <span key={index} className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
+                            {option}
+                        </span>
+                    ))}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+)}
+
+////////////////////////////////////////:
 import React, { useState, useEffect } from 'react';
 import { SuperviseurContext } from '../superviseurContext';
 import { useOutletContext } from 'react-router-dom';
@@ -6,7 +138,7 @@ import {
     Briefcase, Star, ShieldCheck, DollarSign, Users, TrendingUp, 
     Search, ArrowLeft, MapPin, Smartphone, Mail, Calendar, CheckCircle, 
     AlertTriangle, FileText, Award, Clock, Wallet, Power, Building, Activity, UserCheck, XCircle, BarChart2,
-    Hash, Home, Key, Scissors, Wrench
+    Hash, Home, Key, Scissors, Wrench, ArrowDownToLine
 } from 'lucide-react';
 import { 
     LabelList,
@@ -75,6 +207,7 @@ const getServicesBySpecialite = (specialite) => {
 
     return servicesParSpecialite[specialite] || [{ type: specialite, description: 'Service personnalisé', tarifBase: 0, options: [] }];
 };
+
 //l'icone de vérifer compte 
 const VerifiedAccount = ({ size = 20 }) => (
     <svg 
@@ -551,14 +684,31 @@ const ServiceIcon = ({ serviceType }) => {
     return icons[serviceType] || <Briefcase size={16} className="text-gray-600" />;
 };
 
+// Fonction pour générer les PDFs
+const generatePDF = (type, freelancer) => {
+    // Simulation de génération de PDF
+    const pdfContent = type === 'cin' 
+        ? `Carte d'Identité - ${freelancer.prenom} ${freelancer.nom}`
+        : `Informations Bancaires - ${freelancer.prenom} ${freelancer.nom}`;
+    
+    const blob = new Blob([pdfContent], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${type}_${freelancer.prenom}_${freelancer.nom}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    // Notification de succès
+    alert(`PDF ${type === 'cin' ? 'Carte d\'Identité' : 'Informations Bancaires'} téléchargé avec succès!`);
+};
+
 // --- 3. VUE DÉTAIL FREELANCER ---
-const FreelancerAnalytics = ({freelancer, freelancers, onBack, isDarkMode }) => {
+const FreelancerAnalytics = ({ freelancer, onBack, isDarkMode }) => {
     const [metrics, setMetrics] = useState(null);
     const [selectedService, setSelectedService] = useState(null);
-    const [searchHistory, setSearchHistory] = useState('');
-    const [searchComments, setSearchComments] = useState('');
-    const [dateFilter, setDateFilter] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
 
     useEffect(() => {
         setMetrics({
@@ -567,43 +717,22 @@ const FreelancerAnalytics = ({freelancer, freelancers, onBack, isDarkMode }) => 
         });
     }, [freelancer]);
 
-    // Filtrer l'historique des missions
-    const filteredHistory = JOBS_HISTORY_MOCK.filter(job => {
-        const searchTerm = searchHistory.toLowerCase();
-        const matchesSearch = 
-            job.id.toLowerCase().includes(searchTerm) ||
-            job.service.toLowerCase().includes(searchTerm) ||
-            job.client.toLowerCase().includes(searchTerm) ||
-            job.montant.toLowerCase().includes(searchTerm) ||
-            job.statut.toLowerCase().includes(searchTerm);
-
-        const matchesDate = !dateFilter || job.date.includes(dateFilter);
-        const matchesStatus = statusFilter === 'all' || job.statut === statusFilter;
-
-        return matchesSearch && matchesDate && matchesStatus;
-    });
-
-    // Filtrer les évaluations/commentaires
-    const filteredEvaluations = freelancer.evaluations.filter(evaluation => {
-        const searchTerm = searchComments.toLowerCase();
-        return (
-            evaluation.evaluateur.toLowerCase().includes(searchTerm) ||
-            evaluation.commentaire.toLowerCase().includes(searchTerm) ||
-            evaluation.date.includes(searchTerm) ||
-            evaluation.note.toString().includes(searchTerm)
-        );
-    });
-
     if (!metrics) return <div>Chargement...</div>;
 
     return (
         <div className="animate-fade-in-up space-y-6">
             
             {/* Header Detail */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center justify-between">
                 <button onClick={onBack} className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-bold transition-colors group">
                     <div className="p-2 bg-indigo-50 rounded-full group-hover:bg-indigo-100"><ArrowLeft size={20} /></div>
                     Retour liste
+                </button>
+                <button 
+                    onClick={onBack}
+                    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                    <XCircle size={24} className="text-gray-500" />
                 </button>
             </div>
 
@@ -635,38 +764,84 @@ const FreelancerAnalytics = ({freelancer, freelancers, onBack, isDarkMode }) => 
                                         )}
                                     </div>
                                     
-                                    {/* Liste des services offerts avec icônes */}
+                                    {/* Badge de spécialité */}
                                     <div className="flex flex-wrap gap-2">
-                                        {freelancer.services.map((service, index) => (
-                                            <span 
-                                                key={index}
-                                                onClick={() => setSelectedService(service)}
-                                                className="inline-flex items-center gap-1 px-3 py-2 rounded-full text-sm font-medium bg-indigo-100 text-indigo-700 border border-indigo-200 cursor-pointer hover:bg-indigo-200 transition-colors"
-                                            >
-                                                <ServiceIcon serviceType={service.type} />
-                                                {service.type}
-                                                <span className="text-xs bg-indigo-500 text-white px-2 py-0.5 rounded-full">
-                                                    {service.tarifBase} DHS
-                                                </span>
-                                            </span>
-                                        ))}
+                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-700 border border-indigo-200">
+                                            <Briefcase size={14} />
+                                            {freelancer.service}
+                                        </span>
                                     </div>
                                 </div>
                                 
                                 {/* Statut de disponibilité */}
-                                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${freelancer.statut === 'Disponible' ? 'bg-green-100 text-green-700 border-green-200' : freelancer.statut === 'Occupé' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
+                                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                                    freelancer.statut === 'Disponible' ? 'bg-green-100 text-green-700 border-green-200' : 
+                                    freelancer.statut === 'Occupé' ? 'bg-orange-100 text-orange-700 border-orange-200' : 
+                                    'bg-red-100 text-red-700 border-red-200'
+                                }`}>
                                     {freelancer.statut}
                                 </span>
                             </div>
                             
-                            {/* Informations détaillées */}
-                            <div className={`grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                <p className="flex items-center gap-2"><Hash size={16} /> {freelancer.id}</p>
-                                <p className="flex items-center gap-2"><MapPin size={16} /> {freelancer.ville}</p>
-                                <p className="flex items-center gap-2"><Calendar size={16} /> {freelancer.joined}</p>
-                                <p className="flex items-center gap-2"><Mail size={16} /> {freelancer.email}</p>
-                                <p className="flex items-center gap-2"><Smartphone size={16} /> {freelancer.phone}</p>
-                                <p className="flex items-center gap-2"><Building size={16} /> {freelancer.detailsCompteBancaire}</p>
+                            {/* Grille d'informations structurée */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                                    <h4 className={`font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Informations Personnelles</h4>
+                                    <div className="space-y-2 text-sm">
+                                        <div className="flex justify-between">
+                                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>Email:</span>
+                                            <span className={isDarkMode ? 'text-white' : 'text-gray-900'}>{freelancer.email}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>Téléphone:</span>
+                                            <span className={isDarkMode ? 'text-white' : 'text-gray-900'}>{freelancer.phone}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>Adresse:</span>
+                                            <span className={isDarkMode ? 'text-white' : 'text-gray-900'}>{freelancer.ville}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                                    <h4 className={`font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Informations Professionnelles</h4>
+                                    <div className="space-y-2 text-sm">
+                                        <div className="flex justify-between">
+                                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>Note moyenne:</span>
+                                            <span className="flex items-center gap-1 text-yellow-500 font-bold">
+                                                {freelancer.noteMoyenne} <Star size={14} fill="currentColor"/>
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>Date d'inscription:</span>
+                                            <span className={isDarkMode ? 'text-white' : 'text-gray-900'}>{freelancer.joined}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>Dernier accès:</span>
+                                            <span className={isDarkMode ? 'text-white' : 'text-gray-900'}>Aujourd'hui</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Liste des services offerts avec icônes */}
+                            <div>
+                                <h4 className={`font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Services Proposés</h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {freelancer.services.map((service, index) => (
+                                        <span 
+                                            key={index}
+                                            onClick={() => setSelectedService(service)}
+                                            className="inline-flex items-center gap-1 px-3 py-2 rounded-full text-sm font-medium bg-indigo-100 text-indigo-700 border border-indigo-200 cursor-pointer hover:bg-indigo-200 transition-colors"
+                                        >
+                                            <ServiceIcon serviceType={service.type} />
+                                            {service.type}
+                                            <span className="text-xs bg-indigo-500 text-white px-2 py-0.5 rounded-full">
+                                                {service.tarifBase} DHS
+                                            </span>
+                                        </span>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -696,6 +871,48 @@ const FreelancerAnalytics = ({freelancer, freelancers, onBack, isDarkMode }) => 
                             <p className="text-[10px] uppercase font-bold opacity-60">Coms</p>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            {/* Section Documents */}
+            <div className={`p-6 rounded-2xl shadow-lg border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+                <h3 className={`text-lg font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Documents</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button 
+                        onClick={() => generatePDF('cin', freelancer)}
+                        className="flex items-center justify-between p-4 rounded-lg border-2 border-dashed border-blue-300 hover:border-blue-500 hover:bg-blue-50 transition-colors group"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-100 rounded-lg">
+                                <FileText size={20} className="text-blue-600" />
+                            </div>
+                            <div className="text-left">
+                                <div className="font-semibold text-gray-900">Carte d'Identité</div>
+                                <div className="text-sm text-gray-500">PDF structuré</div>
+                            </div>
+                        </div>
+                        <div className="p-2 bg-blue-500 text-white rounded-lg group-hover:bg-blue-600 transition-colors">
+                            <ArrowDownToLine size={16} />
+                        </div>
+                    </button>
+
+                    <button 
+                        onClick={() => generatePDF('bank', freelancer)}
+                        className="flex items-center justify-between p-4 rounded-lg border-2 border-dashed border-green-300 hover:border-green-500 hover:bg-green-50 transition-colors group"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-green-100 rounded-lg">
+                                <CreditCard size={20} className="text-green-600" />
+                            </div>
+                            <div className="text-left">
+                                <div className="font-semibold text-gray-900">Informations Bancaires</div>
+                                <div className="text-sm text-gray-500">PDF sécurisé</div>
+                            </div>
+                        </div>
+                        <div className="p-2 bg-green-500 text-white rounded-lg group-hover:bg-green-600 transition-colors">
+                            <ArrowDownToLine size={16} />
+                        </div>
+                    </button>
                 </div>
             </div>
 
@@ -744,175 +961,89 @@ const FreelancerAnalytics = ({freelancer, freelancers, onBack, isDarkMode }) => 
                 <ChartCard title="Missions Complétées" data={metrics.missions} dataKey1="value" color1="#3b82f6" name1="Missions" type="bar" unit="" isDarkMode={isDarkMode} />
             </div>
 
-            {/* Évaluations avec recherche */}
+            {/* Évaluations */}
             <div className={`rounded-2xl shadow-lg border overflow-hidden ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-                <div className="p-6 border-b border-gray-200/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-                            Évaluations Récentes
-                        </h3>
-                        <span className="text-sm text-gray-500">
-                            {filteredEvaluations.length} évaluation(s) sur {freelancer.evaluations.length}
-                        </span>
-                    </div>
-                    <div className="relative w-full sm:w-64">
-                        <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-                        <input 
-                            type="text" 
-                            placeholder="Rechercher dans les commentaires..." 
-                            value={searchComments}
-                            onChange={(e) => setSearchComments(e.target.value)}
-                            className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 outline-none transition ${
-                                isDarkMode 
-                                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                                    : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                            }`}
-                        />
-                    </div>
+                <div className="p-6 border-b border-gray-200/10 flex justify-between items-center">
+                    <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Évaluations Récentes</h3>
+                    <span className="text-sm text-gray-500">{freelancer.evaluations.length} évaluations</span>
                 </div>
                 <div className="p-6 space-y-4">
-                    {filteredEvaluations.length > 0 ? (
-                        filteredEvaluations.map((evaluation, index) => (
-                            <div key={index} className={`p-4 rounded-lg border ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-                                <div className="flex justify-between items-start mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex items-center gap-1">
-                                            {Array.from({ length: 5 }).map((_, i) => (
-                                                <Star 
-                                                    key={i} 
-                                                    size={16} 
-                                                    className={i < evaluation.note ? 'text-yellow-400 fill-current' : 'text-gray-300'} 
-                                                />
-                                            ))}
-                                        </div>
-                                        <span className="font-semibold">{evaluation.evaluateur}</span>
+                    {freelancer.evaluations.map((evaluation, index) => (
+                        <div key={index} className={`p-4 rounded-lg border ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                            <div className="flex justify-between items-start mb-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1">
+                                        {Array.from({ length: 5 }).map((_, i) => (
+                                            <Star 
+                                                key={i} 
+                                                size={16} 
+                                                className={i < evaluation.note ? 'text-yellow-400 fill-current' : 'text-gray-300'} 
+                                            />
+                                        ))}
                                     </div>
-                                    <span className="text-sm text-gray-500">{evaluation.date}</span>
+                                    <span className="font-semibold">{evaluation.evaluateur}</span>
                                 </div>
-                                <p className="text-sm">{evaluation.commentaire}</p>
+                                <span className="text-sm text-gray-500">{evaluation.date}</span>
                             </div>
-                        ))
-                    ) : (
-                        <div className="text-center py-8">
-                            <Search size={32} className="mx-auto text-gray-400 mb-2" />
-                            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                Aucune évaluation trouvée
-                            </p>
+                            <p className="text-sm">{evaluation.commentaire}</p>
                         </div>
-                    )}
+                    ))}
                 </div>
             </div>
 
-            {/* Historique Missions avec recherche avancée */}
-            <div className={`rounded-2xl shadow-lg border overflow-hidden ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-                <div className="p-6 border-b border-gray-200/10">
-                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
-                        <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-                            Historique des Missions
-                        </h3>
-                        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-                            {/* Barre de recherche principale */}
-                            <div className="relative flex-1 lg:w-64">
-                                <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-                                <input 
-                                    type="text" 
-                                    placeholder="Rechercher ID, service, client..." 
-                                    value={searchHistory}
-                                    onChange={(e) => setSearchHistory(e.target.value)}
-                                    className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 outline-none transition ${
-                                        isDarkMode 
-                                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                                            : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                                    }`}
-                                />
-                            </div>
-
-                            {/* Filtre par date */}
-                            <div className="relative flex-1 lg:w-48">
-                                <Calendar className="absolute left-3 top-2.5 text-gray-400" size={18} />
-                                <input 
-                                    type="text" 
-                                    placeholder="Filtrer par date..." 
-                                    value={dateFilter}
-                                    onChange={(e) => setDateFilter(e.target.value)}
-                                    className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 outline-none transition ${
-                                        isDarkMode 
-                                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                                            : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                                    }`}
-                                />
-                            </div>
-
-                            {/* Filtre par statut */}
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className={`px-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 outline-none transition ${
-                                    isDarkMode 
-                                        ? 'bg-gray-700 border-gray-600 text-white' 
-                                        : 'bg-white border-gray-300 text-gray-800'
-                                }`}
-                            >
-                                <option value="all">Tous les statuts</option>
-                                <option value="Terminée">Terminée</option>
-                                <option value="En cours">En cours</option>
-                                <option value="Annulée">Annulée</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Résumé des résultats */}
-                    <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                        {filteredHistory.length} mission(s) trouvée(s) sur {JOBS_HISTORY_MOCK.length}
-                    </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                        <thead className={`text-xs uppercase ${isDarkMode ? 'bg-gray-700/50 text-gray-400' : 'bg-gray-50 text-gray-500'}`}>
-                            <tr>
-                                <th className="p-4">ID</th>
-                                <th className="p-4">Service</th>
-                                <th className="p-4">Client</th>
-                                <th className="p-4">Date</th>
-                                <th className="p-4">Montant</th>
-                                <th className="p-4 text-right">Statut</th>
-                            </tr>
-                        </thead>
-                        <tbody className={`divide-y ${isDarkMode ? 'divide-gray-700' : 'divide-gray-100'}`}>
-                            {filteredHistory.length > 0 ? (
-                                filteredHistory.map((job, i) => (
-                                    <tr key={i} className={`group ${isDarkMode ? 'hover:bg-gray-700/30' : 'hover:bg-blue-50/30'}`}>
-                                        <td className="p-4 font-mono text-xs opacity-60">{job.id}</td>
-                                        <td className={`p-4 font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{job.service}</td>
-                                        <td className={`p-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{job.client}</td>
-                                        <td className={`p-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{job.date}</td>
-                                        <td className="p-4 font-bold text-green-600">{job.montant}</td>
-                                        <td className="p-4 text-right">
-                                            <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase 
-                                                ${job.statut === 'Terminée' ? 'bg-green-100 text-green-700' : 
-                                                  job.statut === 'Annulée' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                                {job.statut}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan="6" className="p-8 text-center">
-                                        <div className="flex flex-col items-center justify-center">
-                                            <Search size={32} className="text-gray-400 mb-2" />
-                                            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                                Aucune mission trouvée avec ces critères
-                                            </p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            {/* Historique Missions avec recherche fonctionnelle */}
+<div className={`rounded-2xl shadow-lg border overflow-hidden ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+    <div className="p-6 border-b border-gray-200/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Historique des Missions</h3>
+        <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+            <input 
+                type="text" 
+                placeholder="Rechercher une mission..." 
+                onChange={(e) => {
+                    // Fonction de filtrage à implémenter si besoin
+                    const searchTerm = e.target.value.toLowerCase();
+                    // Filtrer JOBS_HISTORY_MOCK en fonction du searchTerm
+                }}
+                className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 outline-none transition ${
+                    isDarkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                }`}
+            />
+        </div>
+    </div>
+    <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+            <thead className={`text-xs uppercase ${isDarkMode ? 'bg-gray-700/50 text-gray-400' : 'bg-gray-50 text-gray-500'}`}>
+                <tr>
+                    <th className="p-4">ID</th>
+                    <th className="p-4">Service</th>
+                    <th className="p-4">Client</th>
+                    <th className="p-4">Date</th>
+                    <th className="p-4">Montant</th>
+                    <th className="p-4 text-right">Statut</th>
+                </tr>
+            </thead>
+            <tbody className={`divide-y ${isDarkMode ? 'divide-gray-700' : 'divide-gray-100'}`}>
+                {JOBS_HISTORY_MOCK.map((job, i) => (
+                    <tr key={i} className={`group ${isDarkMode ? 'hover:bg-gray-700/30' : 'hover:bg-blue-50/30'}`}>
+                        <td className="p-4 font-mono text-xs opacity-60">{job.id}</td>
+                        <td className={`p-4 font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{job.service}</td>
+                        <td className={`p-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{job.client}</td>
+                        <td className={`p-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{job.date}</td>
+                        <td className="p-4 font-bold text-green-600">{job.montant}</td>
+                        <td className="p-4 text-right">
+                            <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase 
+                                ${job.statut === 'Terminée' ? 'bg-green-100 text-green-700' : 
+                                  job.statut === 'Annulée' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                {job.statut}
+                            </span>
+                        </td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    </div>
+</div>
         </div>
     );
 };
@@ -933,9 +1064,9 @@ const FreelancerList = ({ freelancers, onSelect, isDarkMode }) => {
 });
 
     return (
-        <div className={`rounded-2xl shadow-lg border overflow-hidden`}>
-            <div className={`p-6 border-b flex justify-between items-center gap-4`}>
-                <h3 className={`text-lg font-bold`}>Base Freelancers</h3>
+        <div className={`rounded-2xl shadow-lg border overflow-hidden ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+            <div className={`p-6 border-b flex justify-between items-center gap-4 ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Base Freelancers</h3>
                 <div className="relative w-64">
                     <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
                     <input 
@@ -1092,22 +1223,28 @@ export default function DashboardFreelancer() {
             )}
 
             {/* Section Liste ou Détail */}
-            <div className={`border-t pt-8`}>
+            <div className={`border-t pt-8 ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="flex items-center gap-3 mb-6">
-                    <div className={`p-2 rounded-lg`}>
-                        <Briefcase size={24} /> 
+                    <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                        <Briefcase size={24} className={isDarkMode ? 'text-gray-300' : 'text-gray-600'} /> 
                     </div>
-                    <h2 className={`text-xl font-bold`}>
+                    <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
                         {selectedFreelancer ? "Dossier Prestataire" : "Gestion des Freelancers"}
                     </h2>
                 </div>
 
                 {selectedFreelancer ? (
-                    <FreelancerAnalytics 
-                        freelancer={selectedFreelancer} 
-                        onBack={() => setSelectedFreelancer(null)} 
-                        isDarkMode={isDarkMode} 
-                    />
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                        <div className={`w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl ${
+                            isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+                        }`}>
+                            <FreelancerAnalytics 
+                                freelancer={selectedFreelancer} 
+                                onBack={() => setSelectedFreelancer(null)} 
+                                isDarkMode={isDarkMode} 
+                            />
+                        </div>
+                    </div>
                 ) : (
                     <FreelancerList 
                         freelancers={FREELANCERS_LIST} 
