@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { SuperviseurContext } from '../superviseurContext';
-// Assurez-vous d'utiliser le bon hook selon votre architecture (useOutletContext si via Outlet)
 import { useOutletContext } from 'react-router-dom';
 import { 
     CreditCard,
     Briefcase, Star, ShieldCheck, DollarSign, Users, TrendingUp, 
     Search, ArrowLeft, MapPin, Smartphone, Mail, Calendar, CheckCircle, 
-    AlertTriangle, FileText, Award, Clock, Wallet, Power, Building, Activity, UserCheck, XCircle, BarChart2
+    AlertTriangle, FileText, Award, Clock, Wallet, Power, Building, Activity, UserCheck, XCircle, BarChart2,
+    Hash, Home, Key, Scissors, Wrench
 } from 'lucide-react';
 import { 
     LabelList,
@@ -23,20 +23,189 @@ const GLOBAL_STATS = {
     revenuGlobal: 450000
 };
 
+// Types de services basés sur votre diagramme de classes
+const TYPES_SERVICES = {
+    NETTOYAGE_RESIDENTIEL: 'Nettoyage Résidentiel',
+    NETTOYAGE_SUPERFICIE: 'Nettoyage de Surface',
+    NETTOYAGE_UNITAIRE: 'Nettoyage Unitaire',
+    GESTION_CLES: 'Gestion de Clés',
+    JARDINAGE: 'Jardinage'
+};
+
+// Fonction pour générer les services basés sur la spécialité
+const getServicesBySpecialite = (specialite) => {
+    const servicesParSpecialite = {
+        'Nettoyage': [
+            {
+                type: TYPES_SERVICES.NETTOYAGE_RESIDENTIEL,
+                description: 'Nettoyage complet de résidences',
+                tarifBase: 150,
+                options: ['Nettoyage profond', 'Désinfection', 'Nettoyage vitres']
+            },
+            {
+                type: TYPES_SERVICES.NETTOYAGE_SUPERFICIE,
+                description: 'Nettoyage de surfaces spécifiques',
+                tarifBase: 80,
+                options: ['Sol', 'Murs', 'Plafonds']
+            },
+            {
+                type: TYPES_SERVICES.NETTOYAGE_UNITAIRE,
+                description: 'Nettoyage par unité',
+                tarifBase: 50,
+                options: ['Par pièce', 'Par surface']
+            }
+        ],
+        'Gestion Clés': [
+            {
+                type: TYPES_SERVICES.GESTION_CLES,
+                description: 'Gestion et remise de clés',
+                tarifBase: 30,
+                options: ['Garde de clés', 'Remise sécurisée', 'Dépannage serrurerie']
+            }
+        ],
+        'Jardinage': [
+            {
+                type: TYPES_SERVICES.JARDINAGE,
+                description: 'Entretien d\'espaces verts',
+                tarifBase: 100,
+                options: ['Tonte', 'Taille', 'Plantation']
+            }
+        ]
+    };
+
+    return servicesParSpecialite[specialite] || [{ type: specialite, description: 'Service personnalisé', tarifBase: 0, options: [] }];
+};
+//l'icone de vérifer compte 
+const VerifiedAccount = ({ size = 20 }) => (
+    <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none"
+  >
+    <circle cx="12" cy="12" r="10" fill="#1DA1F2" /> 
+    <path 
+      d="M16.2 9.2l-5.1 5.1-2.3-2.3" 
+      stroke="white" 
+      strokeWidth="2.5" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 const FREELANCERS_LIST = [
-    { id: 1, prenom: 'Karim',nom: 'Fassi', service: 'Nettoyage', ville: 'Rabat', noteMoyenne: 4.8, statut: 'Disponible', estConnecte: true, solde: 12500, detailsCompteBancaire: 'CIH *** 1234', email: 'karim.f@test.com', phone: '0661000001', joined: '12/02/2023', avisCount: 45, commentairesCount: 12 },
-    { id: 2, prenom: 'Lina', nom: 'Mouline', service: 'Gestion Clés', ville: 'Casablanca', noteMoyenne: 5.0, statut: 'Occupé', estConnecte: false, solde: 450, detailsCompteBancaire: 'BP *** 9876', email: 'lina.m@test.com', phone: '0661000002', joined: 'Hier', avisCount: 5, commentairesCount: 2 },
-    { id: 3, prenom: 'Omar', nom: 'Diouri', service: 'Jardinage', ville: 'Marrakech', noteMoyenne: 4.2, statut: 'Suspendu', estConnecte: true, solde: 0, detailsCompteBancaire: 'Attijari *** 5555', email: 'omar.d@test.com', phone: '0661000003', joined: '05/06/2023', avisCount: 20, commentairesCount: 8 },
-    { id: 4, prenom: 'Sara', nom: 'Bennani', service: 'Nettoyage', ville: 'Tanger', noteMoyenne: 4.9, statut: 'Disponible', estConnecte: false, solde: 15600, detailsCompteBancaire: 'SG *** 1111', email: 'sara.b@test.com', phone: '0661000004', joined: '01/01/2023', avisCount: 120, commentairesCount: 45 },
+    { 
+        id: 1, 
+        prenom: 'Karim',
+        nom: 'Fassi', 
+        service: 'Nettoyage', 
+        ville: 'Rabat', 
+        noteMoyenne: 4.8, 
+        statut: 'Disponible', 
+        estConnecte: true, 
+        solde: 12500, 
+        detailsCompteBancaire: 'CIH *** 1234', 
+        email: 'karim.f@test.com', 
+        phone: '0661000001', 
+        joined: '12/02/2023', 
+        avis: 45, 
+        commentaires: 12,
+        verifie: true,
+        services: getServicesBySpecialite('Nettoyage'),
+        evaluations: [
+            { id: 1, note: 5, commentaire: "Excellent service, très professionnel", evaluateur: "Client123", date: "2024-11-20" },
+            { id: 2, note: 4, commentaire: "Bon travail mais un peu en retard", evaluateur: "Client456", date: "2024-11-15" }
+        ]
+    },
+    { 
+        id: 2, 
+        prenom: 'Lina', 
+        nom: 'Mouline', 
+        service: 'Gestion Clés', 
+        ville: 'Casablanca', 
+        noteMoyenne: 5.0, 
+        statut: 'Occupé', 
+        estConnecte: false, 
+        solde: 450, 
+        detailsCompteBancaire: 'BP *** 9876', 
+        email: 'lina.m@test.com', 
+        phone: '0661000002', 
+        joined: 'Hier', 
+        avis: 5, 
+        commentaires: 2,
+        verifie: true,
+        services: getServicesBySpecialite('Gestion Clés'),
+        evaluations: [
+            { id: 1, note: 5, commentaire: "Très fiable pour la garde des clés", evaluateur: "Proprietaire789", date: "2024-11-18" }
+        ]
+    },
+    { 
+        id: 3, 
+        prenom: 'Omar', 
+        nom: 'Diouri', 
+        service: 'Jardinage', 
+        ville: 'Marrakech', 
+        noteMoyenne: 4.2, 
+        statut: 'Suspendu', 
+        estConnecte: true, 
+        solde: 0, 
+        detailsCompteBancaire: 'Attijari *** 5555', 
+        email: 'omar.d@test.com', 
+        phone: '0661000003', 
+        joined: '05/06/2023', 
+        avis: 20, 
+        commentaires: 8,
+        verifie: false,
+        services: getServicesBySpecialite('Jardinage'),
+        evaluations: [
+            { id: 1, note: 4, commentaire: "Bon jardinier, ponctuel", evaluateur: "Jardin123", date: "2024-11-10" },
+            { id: 2, note: 3, commentaire: "Qualité moyenne", evaluateur: "Jardin456", date: "2024-11-05" }
+        ]
+    },
+    { 
+        id: 4, 
+        prenom: 'Sara', 
+        nom: 'Bennani', 
+        service: 'Nettoyage', 
+        ville: 'Tanger', 
+        noteMoyenne: 4.9, 
+        statut: 'Disponible', 
+        estConnecte: false, 
+        solde: 15600, 
+        detailsCompteBancaire: 'SG *** 1111', 
+        email: 'sara.b@test.com', 
+        phone: '0661000004', 
+        joined: '01/01/2023', 
+        avis: 120, 
+        commentaires: 45,
+        verifie: true,
+        services: getServicesBySpecialite('Nettoyage'),
+        evaluations: [
+            { id: 1, note: 5, commentaire: "Parfaite, je recommande vivement", evaluateur: "Client789", date: "2024-11-22" },
+            { id: 2, note: 5, commentaire: "Service impeccable", evaluateur: "Client101", date: "2024-11-20" },
+            { id: 3, note: 4, commentaire: "Très bon rapport qualité-prix", evaluateur: "Client202", date: "2024-11-18" }
+        ]
+    },
 ];
 
-// Historique détaillé des missions pour la vue "Détail"
+// Commentaires
+const comments = [
+    { id: 1, author: "Karim (Freelancer)", date: "12 Nov 2024", text: "Client très ponctuel et respectueux. Je recommande.", rating: 5 },
+    { id: 2, author: "Sara (Support)", date: "05 Oct 2024", text: "A signalé un problème technique, résolu rapidement.", rating: 4 },
+    { id: 3, author: "Ahmed (Freelancer)", date: "20 Sep 2024", text: "Excellent travail, paiement rapide.", rating: 5 },
+    { id: 4, author: "Laila (Client)", date: "15 Aug 2024", text: "Service impeccable, je reviendrai.", rating: 4 },
+    { id: 5, author: "Youssef (Support)", date: "01 Jul 2024", text: "Client satisfait, aucune réclamation.", rating: 5 },
+];
+
+// Historique des missions
 const JOBS_HISTORY_MOCK = [
-    { id: 'CMD-101', service: 'Grand Ménage', date: '20 Nov 2024', client: 'Ziyad O.', montant: '400 DH', statut: 'Terminée' },
-    { id: 'CMD-102', service: 'Nettoyage Vitres', date: '18 Nov 2024', client: 'Sara K.', montant: '150 DH', statut: 'Terminée' },
+    { id: 'CMD-101', service: 'Nettoyage Résidentiel', date: '20 Nov 2024', client: 'Ziyad O.', montant: '400 DH', statut: 'Terminée' },
+    { id: 'CMD-102', service: 'Nettoyage de Surface', date: '18 Nov 2024', client: 'Sara K.', montant: '150 DH', statut: 'Terminée' },
     { id: 'CMD-103', service: 'Jardinage', date: '15 Nov 2024', client: 'Entreprise X', montant: '1200 DH', statut: 'En cours' },
-    { id: 'CMD-104', service: 'Bricolage', date: '10 Nov 2024', client: 'Mehdi L.', montant: '300 DH', statut: 'Annulée' },
-    { id: 'CMD-105', service: 'Plomberie', date: '05 Nov 2024', client: 'Karim T.', montant: '250 DH', statut: 'Terminée' },
+    { id: 'CMD-104', service: 'Gestion de Clés', date: '10 Nov 2024', client: 'Mehdi L.', montant: '300 DH', statut: 'Annulée' },
+    { id: 'CMD-105', service: 'Nettoyage Unitaire', date: '05 Nov 2024', client: 'Karim T.', montant: '250 DH', statut: 'Terminée' },
 ];
 
 // --- 2. OUTILS & GRAPHIQUES ---
@@ -63,7 +232,7 @@ const generateMultiPeriodData = (baseValue) => {
     };
 };
 
-// Générateur de données EMPILÉES (Multi-Lines/Bars) pour le graphique global des commandes
+// Générateur de données EMPILÉES
 const generateStackedData = (filter) => {
     const count = filter === 'Jour' ? 24 : filter === 'Mois' ? 30 : 12;
     const labels = filter === 'Jour' ? (i) => `${i}h` : filter === 'Mois' ? (i) => `J${i+1}` : (i) => ['Jan','Fev','Mar','Avr','Mai','Juin','Juil','Aout','Sep','Oct','Nov','Dec'][i];
@@ -94,11 +263,10 @@ const CustomTooltip = ({ active, payload, label, unit, isDarkMode }) => {
     return null;
 };
 
-// Carte Graphique Simple (Ligne/Aire/Barre)
+// Carte Graphique Simple
 const ChartCard = ({ title, data, type = 'area', unit, isDarkMode, dataKey1 = 'value', color1, name1, dataKey2, color2, name2 }) => {
     const [period, setPeriod] = useState('monthly');
     
-    // Si pas de données, fallback
     const currentView = (data && data[period]) ? data[period] : (data?.monthly || { total: 0, chartData: [] });
 
     return (
@@ -164,7 +332,7 @@ const ChartCard = ({ title, data, type = 'area', unit, isDarkMode, dataKey1 = 'v
     );
 };
 
-// Carte Graphique Multi-Données (Commandes: Acceptées/Terminées/Annulées)
+// Carte Graphique Multi-Données
 const MultiDataChartCard = ({ title, type = 'bar', unit, isDarkMode, dataKey1, color1, name1, dataKey2, color2, name2, dataKey3, color3, name3 }) => {
     const [filter, setFilter] = useState('Mois');
     const chartData = generateStackedData(filter);
@@ -220,7 +388,6 @@ const ServiceDistributionCard = ({
 
       <div className="flex-1 relative">
         <ResponsiveContainer width="100%" height="100%">
-          {/* PIE CHART */}
           {type === "pie" && (
             <PieChart>
               <Pie
@@ -231,7 +398,7 @@ const ServiceDistributionCard = ({
                 outerRadius={80}
                 paddingAngle={5}
                 dataKey="value"
-                label={({ value }) => `${value}${unit}`} // Affiche les pourcentages
+                label={({ value }) => `${value}${unit}`}
               >
                 {data.map((entry, index) => (
                   <Cell key={index} fill={entry.color} />
@@ -241,7 +408,6 @@ const ServiceDistributionCard = ({
             </PieChart>
           )}
 
-          {/* BAR CHART */}
           {type === "bar" && (
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -256,7 +422,6 @@ const ServiceDistributionCard = ({
             </BarChart>
           )}
 
-          {/* LINE CHART */}
           {type === "line" && (
             <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -310,7 +475,6 @@ const PaymentMethodsChartCard = ({
 
       <div className="flex-1 relative">
         <ResponsiveContainer width="100%" height="100%">
-          {/* PIE CHART */}
           {type === "pie" && (
             <PieChart>
               <Pie
@@ -321,7 +485,7 @@ const PaymentMethodsChartCard = ({
                 outerRadius={80}
                 paddingAngle={5}
                 dataKey="value"
-                label={({ value }) => `${value}${unit}`} // Affiche les pourcentages
+                label={({ value }) => `${value}${unit}`}
               >
                 {data.map((entry, index) => (
                   <Cell key={index} fill={entry.color} />
@@ -331,7 +495,6 @@ const PaymentMethodsChartCard = ({
             </PieChart>
           )}
 
-          {/* BAR CHART */}
           {type === "bar" && (
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -346,7 +509,6 @@ const PaymentMethodsChartCard = ({
             </BarChart>
           )}
 
-          {/* LINE CHART */}
           {type === "line" && (
             <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -376,9 +538,23 @@ const PaymentMethodsChartCard = ({
   );
 };
 
+// Composant pour afficher les icônes de service
+const ServiceIcon = ({ serviceType }) => {
+    const icons = {
+        [TYPES_SERVICES.NETTOYAGE_RESIDENTIEL]: <Home size={16} className="text-blue-600" />,
+        [TYPES_SERVICES.NETTOYAGE_SUPERFICIE]: <Wrench size={16} className="text-green-600" />,
+        [TYPES_SERVICES.NETTOYAGE_UNITAIRE]: <Scissors size={16} className="text-purple-600" />,
+        [TYPES_SERVICES.GESTION_CLES]: <Key size={16} className="text-orange-600" />,
+        [TYPES_SERVICES.JARDINAGE]: <Award size={16} className="text-green-600" />
+    };
+    
+    return icons[serviceType] || <Briefcase size={16} className="text-gray-600" />;
+};
+
 // --- 3. VUE DÉTAIL FREELANCER ---
 const FreelancerAnalytics = ({ freelancer, onBack, isDarkMode }) => {
     const [metrics, setMetrics] = useState(null);
+    const [selectedService, setSelectedService] = useState(null);
 
     useEffect(() => {
         setMetrics({
@@ -400,7 +576,7 @@ const FreelancerAnalytics = ({ freelancer, onBack, isDarkMode }) => {
                 </button>
             </div>
 
-            {/* Carte Profil & Statut (Attributs UML) */}
+            {/* Carte Profil & Statut */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
                 {/* Profil Gauche */}
@@ -410,22 +586,53 @@ const FreelancerAnalytics = ({ freelancer, onBack, isDarkMode }) => {
                             <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-3xl font-bold text-white shadow-lg">
                                 {freelancer.prenom.charAt(0)}{freelancer.nom.charAt(0)}
                             </div>
+                            
                             {/* Indicateur estConnecte */}
                             <div className={`absolute -bottom-2 -right-2 p-1.5 rounded-full border-4 ${isDarkMode ? 'border-gray-800' : 'border-white'} ${freelancer.estConnecte ? 'bg-green-500' : 'bg-gray-400'}`} title={freelancer.estConnecte ? 'En ligne' : 'Hors ligne'}></div>
                         </div>
-                        <div className="flex-1 space-y-3">
+                        
+                        <div className="flex-1 space-y-4">
                             <div className="flex justify-between items-start">
-                                <div>
-                                    <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{freelancer.prenom} {freelancer.nom}</h2>
-                                    <p className="text-indigo-500 font-medium">{freelancer.service}</p>
+                                <div className="space-y-2">
+                                    {/* Nom avec badge vérifié */}
+                                    <div className="flex items-center gap-2">
+                                        <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                            {freelancer.prenom} {freelancer.nom}
+                                        </h2>
+                                        {freelancer.verifie && (
+                                            <VerifiedAccount size={20} className="text-blue-500 fill-current" title="Compte vérifié" />
+                                        )}
+                                    </div>
+                                    
+                                    {/* Liste des services offerts avec icônes */}
+                                    <div className="flex flex-wrap gap-2">
+                                        {freelancer.services.map((service, index) => (
+                                            <span 
+                                                key={index}
+                                                onClick={() => setSelectedService(service)}
+                                                className="inline-flex items-center gap-1 px-3 py-2 rounded-full text-sm font-medium bg-indigo-100 text-indigo-700 border border-indigo-200 cursor-pointer hover:bg-indigo-200 transition-colors"
+                                            >
+                                                <ServiceIcon serviceType={service.type} />
+                                                {service.type}
+                                                <span className="text-xs bg-indigo-500 text-white px-2 py-0.5 rounded-full">
+                                                    {service.tarifBase} DHS
+                                                </span>
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
+                                
+                                {/* Statut de disponibilité */}
                                 <span className={`px-3 py-1 rounded-full text-xs font-bold border ${freelancer.statut === 'Disponible' ? 'bg-green-100 text-green-700 border-green-200' : freelancer.statut === 'Occupé' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
                                     {freelancer.statut}
                                 </span>
                             </div>
                             
+                            {/* Informations détaillées */}
                             <div className={`grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                <p className="flex items-center gap-2"><Hash size={16} /> {freelancer.id}</p>
                                 <p className="flex items-center gap-2"><MapPin size={16} /> {freelancer.ville}</p>
+                                <p className="flex items-center gap-2"><Calendar size={16} /> {freelancer.joined}</p>
                                 <p className="flex items-center gap-2"><Mail size={16} /> {freelancer.email}</p>
                                 <p className="flex items-center gap-2"><Smartphone size={16} /> {freelancer.phone}</p>
                                 <p className="flex items-center gap-2"><Building size={16} /> {freelancer.detailsCompteBancaire}</p>
@@ -435,25 +642,70 @@ const FreelancerAnalytics = ({ freelancer, onBack, isDarkMode }) => {
                 </div>
 
                 {/* KPIs Rapides Droite (Portefeuille) */}
-                <div className={`flex flex-col justify-between p-5 rounded-2xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-                    <div>
-                        <p className={`text-xs font-bold uppercase ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Solde Portefeuille</p>
-                        <div className="flex items-center justify-between mt-2">
-                            <h3 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{freelancer.solde.toLocaleString()} <span className="text-sm">DH</span></h3>
-                            <div className="p-2 bg-green-100 text-green-600 rounded-lg"><Wallet size={24} /></div>
+                <div className={`lg:w-80 flex flex-col gap-4 p-5 rounded-xl border ${isDarkMode ? 'bg-gray-700/30 border-gray-600' : 'bg-blue-50/50 border-blue-100'}`}>
+                    <div className="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-600">
+                        <span className={`text-sm font-bold uppercase ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>Portefeuille</span>
+                        <div className="flex items-center gap-2 text-green-600 font-bold text-2xl">
+                            <Wallet size={24}/> {freelancer.solde.toFixed(2)} DH
                         </div>
                     </div>
-                    <div className="border-t pt-4 border-gray-200 dark:border-gray-700">
-                        <p className={`text-xs font-bold uppercase ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Note Moyenne</p>
-                        <div className="flex items-center gap-2 mt-2">
-                            <h3 className="text-2xl font-bold text-yellow-500">{freelancer.noteMoyenne}</h3>
-                            <div className="flex text-yellow-400">
-                                {[...Array(5)].map((_, i) => <Star key={i} size={16} fill={i < Math.round(freelancer.noteMoyenne) ? "currentColor" : "none"} />)}
+                    <div className="grid grid-cols-3 gap-2 text-center pt-1">
+                        <div>
+                            <div className="flex items-center justify-center gap-1 text-yellow-500 font-bold text-lg">
+                                {freelancer.noteMoyenne} <Star size={16} fill="currentColor"/>
                             </div>
+                            <p className="text-[10px] uppercase font-bold opacity-60">Note</p>
+                        </div>
+                        <div>
+                            <div className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{freelancer.avis}</div>
+                            <p className="text-[10px] uppercase font-bold opacity-60">Avis</p>
+                        </div>
+                        <div>
+                            <div className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{freelancer.commentaires}</div>
+                            <p className="text-[10px] uppercase font-bold opacity-60">Coms</p>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Modal de détail du service */}
+            {selectedService && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className={`w-full max-w-md rounded-2xl shadow-2xl ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}`}>
+                        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+                            <h3 className="text-lg font-bold">Détails du Service</h3>
+                            <button 
+                                onClick={() => setSelectedService(null)}
+                                className={`p-2 rounded-full transition ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-500'}`}
+                            >
+                                <XCircle size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="flex items-center gap-3">
+                                <ServiceIcon serviceType={selectedService.type} />
+                                <div>
+                                    <h4 className="font-bold text-lg">{selectedService.type}</h4>
+                                    <p className="text-sm text-gray-500">{selectedService.description}</p>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <p className="font-semibold">Tarif de base: <span className="text-green-600">{selectedService.tarifBase} DH</span></p>
+                                <div>
+                                    <p className="font-semibold mb-2">Options disponibles:</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedService.options.map((option, index) => (
+                                            <span key={index} className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
+                                                {option}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Graphiques Activité Individuelle */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -461,7 +713,37 @@ const FreelancerAnalytics = ({ freelancer, onBack, isDarkMode }) => {
                 <ChartCard title="Missions Complétées" data={metrics.missions} dataKey1="value" color1="#3b82f6" name1="Missions" type="bar" unit="" isDarkMode={isDarkMode} />
             </div>
 
-            {/* Historique Missions (Tableau Détaillé) */}
+            {/* Évaluations */}
+            <div className={`rounded-2xl shadow-lg border overflow-hidden ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+                <div className="p-6 border-b border-gray-200/10 flex justify-between items-center">
+                    <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Évaluations Récentes</h3>
+                    <span className="text-sm text-gray-500">{freelancer.evaluations.length} évaluations</span>
+                </div>
+                <div className="p-6 space-y-4">
+                    {freelancer.evaluations.map((evaluation, index) => (
+                        <div key={index} className={`p-4 rounded-lg border ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                            <div className="flex justify-between items-start mb-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1">
+                                        {Array.from({ length: 5 }).map((_, i) => (
+                                            <Star 
+                                                key={i} 
+                                                size={16} 
+                                                className={i < evaluation.note ? 'text-yellow-400 fill-current' : 'text-gray-300'} 
+                                            />
+                                        ))}
+                                    </div>
+                                    <span className="font-semibold">{evaluation.evaluateur}</span>
+                                </div>
+                                <span className="text-sm text-gray-500">{evaluation.date}</span>
+                            </div>
+                            <p className="text-sm">{evaluation.commentaire}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Historique Missions */}
             <div className={`rounded-2xl shadow-lg border overflow-hidden ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
                 <div className="p-6 border-b border-gray-200/10 flex justify-between items-center">
                     <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Historique des Missions</h3>
@@ -517,6 +799,7 @@ const FreelancerList = ({ freelancers, onSelect, isDarkMode }) => {
         (f.statut || '').toLowerCase().includes(s)
     );
 });
+
     return (
         <div className={`rounded-2xl shadow-lg border overflow-hidden`}>
             <div className={`p-6 border-b flex justify-between items-center gap-4`}>
@@ -609,7 +892,7 @@ export default function DashboardFreelancer() {
 
             {!selectedFreelancer && (
                 <>
-                    {/* KPIs Globaux avec Cartes Simples */}
+                    {/* KPIs Globaux */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className={`p-5 rounded-2xl shadow-sm border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
                             <p className="text-xs text-gray-500 uppercase font-bold">Total Freelancers</p>
@@ -629,7 +912,7 @@ export default function DashboardFreelancer() {
                         </div>
                     </div>
 
-                    {/* Graphiques Globaux Stratégiques */}
+                    {/* Graphiques Globaux */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                          <ChartCard title="Revenus de la Plateforme" data={globalMetrics.revenu} dataKey1="value" color1="#10b981" name1="Revenus" type="area" unit="DH" isDarkMode={isDarkMode} />
                          <ChartCard title="Activité en Ligne" data={globalMetrics.activite} dataKey1="value" color1="#3b82f6" name1="Connectés" type="bar" unit="" isDarkMode={isDarkMode} />
@@ -638,7 +921,6 @@ export default function DashboardFreelancer() {
                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                          <ChartCard title="Progression Inscriptions" data={globalMetrics.inscriptions} dataKey1="value" color1="#f59e0b" name1="Nouveaux" type="line" unit="" isDarkMode={isDarkMode} />
                          
-                         {/* Graphique "État des Commandes" ajouté ici */}
                          <MultiDataChartCard 
                             title="État des Commandes" 
                             type="bar" 
@@ -663,7 +945,7 @@ export default function DashboardFreelancer() {
                         <PaymentMethodsChartCard
                             isDarkMode={isDarkMode}
                             title="Méthodes de paiement utilisées"
-                            type="pie"      // pie | bar | line
+                            type="pie"
                             unit="%"
                             data={[
                                 { name: "Visa", value: 45, color: "#0057ff" },
@@ -677,7 +959,7 @@ export default function DashboardFreelancer() {
                 </>
             )}
 
-            {/* Section Liste ou Détail (Toggle) */}
+            {/* Section Liste ou Détail */}
             <div className={`border-t pt-8`}>
                 <div className="flex items-center gap-3 mb-6">
                     <div className={`p-2 rounded-lg`}>
