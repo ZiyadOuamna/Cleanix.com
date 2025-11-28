@@ -8,7 +8,7 @@ import ForgotPasswordPage from './pages/forgotPasswordPage';
 //import ResetPasswordPage from './pages/ResetPasswordPage';
 //les import des pages après la connexion de la page de superviseur 
 import DashboardSuperviseur from './pages/superviseur/superviseur';
-
+import DashboardClient from './pages/client/Client';
 
 //les imports des pages de la partie : réclamations , rembourssement et settings
 import Reclamations from './pages/superviseur/gestionReclamations';
@@ -52,6 +52,9 @@ function App() {
         <Route path="gestion-freelancers"   element={<GestionFreelancersPage />} />
 
         
+      </Route>
+      <Route path="/dev-Client-page" element={<DashboardClient />} >
+
       </Route>
 
     </Routes>

@@ -1,4 +1,4 @@
-// Page d'accueil Cleanix - Version Complète avec toutes les fonctionnalités
+// Page d'accueil Cleanix - Version Complète et Corrigée
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,6 +7,11 @@ export default function CleanixLandingPage() {
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
+    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [chatMessages, setChatMessages] = useState([
+        { id: 1, text: "👋 Bonjour ! Je suis l'assistant Cleanix. Comment puis-je vous aider aujourd'hui ?", sender: 'bot' }
+    ]);
+    const [chatInput, setChatInput] = useState('');
     
     // Refs pour le scroll vers les sections
     const servicesRef = useRef(null);
@@ -116,6 +121,50 @@ export default function CleanixLandingPage() {
         }
     ];
 
+    // Fonction pour gérer l'envoi du formulaire de contact
+    const handleContactSubmit = (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData);
+        
+        // Simulation d'envoi
+        setTimeout(() => {
+            alert('✅ Message envoyé avec succès ! Nous vous répondrons dans les 24h.');
+            e.target.reset();
+        }, 1000);
+    };
+
+    // Fonction pour gérer le chat
+    const handleChatSubmit = (e) => {
+        e.preventDefault();
+        if (!chatInput.trim()) return;
+
+        // Ajouter le message de l'utilisateur
+        const userMessage = {
+            id: chatMessages.length + 1,
+            text: chatInput,
+            sender: 'user'
+        };
+        setChatMessages(prev => [...prev, userMessage]);
+        setChatInput('');
+
+        // Réponse automatique de l'IA
+        setTimeout(() => {
+            const responses = [
+                "Je comprends votre question. Notre équipe de support peut vous aider avec cela. Souhaitez-vous que je vous connecte avec un conseiller ?",
+                "Pour cette question, je vous recommande de consulter notre section FAQ ou de contacter notre support client.",
+                "Merci pour votre message ! Un de nos experts vous répondra rapidement.",
+                "Je peux vous aider avec les informations sur nos services de nettoyage, la gestion des clés, ou devenir freelancer. Que souhaitez-vous savoir ?"
+            ];
+            const botMessage = {
+                id: chatMessages.length + 2,
+                text: responses[Math.floor(Math.random() * responses.length)],
+                sender: 'bot'
+            };
+            setChatMessages(prev => [...prev, botMessage]);
+        }, 1000);
+    };
+
     // Header avec mode sombre/clair et navigation par ancres
     const Header = () => (
         <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
@@ -126,7 +175,7 @@ export default function CleanixLandingPage() {
                 : 'bg-transparent py-4'
         }`}>
             <div className="max-w-7xl mx-auto flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
-                {/* Logo */}
+                {/* Logo déplacé à gauche */}
                 <div className="flex items-center space-x-2">
                     <div className={`text-3xl font-bold transition-transform hover:scale-105 ${
                         isDarkMode ? 'text-white' : 'text-blue-600'
@@ -258,7 +307,7 @@ export default function CleanixLandingPage() {
         </header>
     );
 
-    // Hero Section - 50% gauche texte, 50% droite slider
+    // Hero Section - 50% gauche texte, 50% droite slider amélioré
     const HeroSection = () => (
         <section className={`pt-32 min-h-screen flex items-center relative overflow-hidden ${
             isDarkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-blue-50 via-white to-orange-50'
@@ -272,10 +321,10 @@ export default function CleanixLandingPage() {
                 </>
             )}
 
-            <div className="max-w-7xl flex flex-col md:flex-row items-center justify-between px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between px-4 sm:px-6 lg:px-8 relative z-10">
                 
                 {/* Texte Gauche - 50% */}
-                <div className="w-full md:w-2/2 space-y-8 p-8 text-left">
+                <div className="w-full md:w-1/2 space-y-8 p-8 text-left">
                     <h1 className={`text-5xl md:text-6xl font-extrabold leading-tight ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                         Votre <span className="text-blue-600">Espace</span>,<br/>
                         Impeccable en un Clic.
@@ -288,7 +337,7 @@ export default function CleanixLandingPage() {
                     </p>
                     
                     {/* Boutons CTA */}
-                    <div className="flex flex-col sm:flex-col gap-4 pt-6">
+                    <div className="flex flex-col sm:flex-row gap-4 pt-6">
                         <button 
                             onClick={() => scrollToSection(servicesRef)}
                             className="bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold text-lg px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
@@ -296,57 +345,49 @@ export default function CleanixLandingPage() {
                             Commander un nettoyage
                         </button>
                          <button 
-                            onClick={() => scrollToSection(servicesRef)}
+                            onClick={() => navigate('/register-freelancer')}
                             className="bg-gradient-to-r from-green-500 to-green-600 text-white font-bold text-lg px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                         >
                             Devenir un Freelancer
                         </button>
-                        <button 
-                            onClick={() => navigate('./frontend/src/pages/registerPage.jsx')}
-                            className={`border-2 font-semibold text-lg px-8 py-4 rounded-2xl transition-all duration-300 transform hover:scale-105 italic ${
-                                isDarkMode 
-                                    ? 'border-gray-600 text-gray-300 hover:border-blue-500 hover:text-blue-400' 
-                                    : 'border-gray-300 text-gray-700 hover:border-blue-500 hover:text-blue-600'
-                            }`}
-                        >
-                            Voir les services
-                        </button>
                     </div>
                 </div>
 
-                {/* Slider Droite - 50% */}
-                <div className="w-full md:w-1/2 space-y-8 p-8 text-right">
-                    
-                    <div className={`rounded-2xl p-8 flex flex-col items-center justify-center${
-                        isDarkMode ? 'bg-gray-800 ' : 'bg-white '
+                {/* Slider Droite - 50% avec images agrandies */}
+                <div className="w-full md:w-1/2 relative h-[500px] mt-10 md:mt-0">
+                    <div className={`absolute inset-0 rounded-3xl transform rotate-2 ${
+                        isDarkMode ? 'bg-blue-600/20' : 'bg-blue-500/20'
+                    }`}></div>
+                    <div className={`absolute inset-0 rounded-3xl p-8 shadow-2xl flex flex-col items-center justify-center transform -rotate-1 ${
+                        isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
                     }`}>
-                        {/* Slide Actuelle */}
-                        <div className="text-6xl mb-4 transform transition-all duration-500">
+                        {/* Slide Actuelle avec image agrandie */}
+                        <div className="text-8xl mb-6 transform transition-all duration-500 hover:scale-110">
                             {slides[currentSlide].image}
                         </div>
-                        <h3 className={`text-2xl font-bold mb-2 text-center ${
+                        <h3 className={`text-3xl font-bold mb-3 text-center ${
                             isDarkMode ? 'text-white' : 'text-gray-800'
                         }`}>
                             {slides[currentSlide].title}
                         </h3>
-                        <p className={`text-center ${
+                        <p className={`text-lg text-center max-w-md ${
                             isDarkMode ? 'text-gray-400' : 'text-gray-600'
                         }`}>
                             {slides[currentSlide].description}
                         </p>
                         
                         {/* Indicateurs de slide */}
-                        <div className="flex space-x-2 mt-6">
+                        <div className="flex space-x-3 mt-8">
                             {slides.map((_, index) => (
                                 <button
                                     key={index}
                                     onClick={() => setCurrentSlide(index)}
-                                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                                    className={`w-4 h-4 rounded-full transition-all duration-300 transform hover:scale-125 ${
                                         index === currentSlide
-                                            ? 'bg-blue-600'
+                                            ? 'bg-blue-600 scale-110'
                                             : isDarkMode
-                                            ? 'bg-gray-600'
-                                            : 'bg-gray-300'
+                                            ? 'bg-gray-600 hover:bg-gray-500'
+                                            : 'bg-gray-300 hover:bg-gray-400'
                                     }`}
                                 />
                             ))}
@@ -441,8 +482,6 @@ export default function CleanixLandingPage() {
                         Pour les <span className="text-blue-600">Clients</span>
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 relative">
-                        {/* Ligne de connexion */}
-                       
                         {clientSteps.map((step, index) => (
                             <div key={index} className="text-center group">
                                 <div className="relative">
@@ -620,130 +659,277 @@ export default function CleanixLandingPage() {
         </section>
     );
 
-    // Section Contact
-    const ContactSection = () => {
-        const [formData, setFormData] = useState({
-            name: '',
-            email: '',
-            message: ''
-        });
+    // Section Contact avec formulaire corrigé
+    const ContactSection = () => (
+        <section 
+            ref={contactRef}
+            className={`py-20 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}
+        >
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="text-center mb-16">
+                    <h2 className={`text-4xl font-bold mb-4 ${
+                        isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}>
+                        Contactez-<span className="text-blue-600">nous</span>
+                    </h2>
+                    <p className={`text-xl ${
+                        isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                        Une question ? Notre équipe vous répond sous 24h
+                    </p>
+                </div>
 
-        const handleInputChange = (e) => {
-            setFormData({
-                ...formData,
-                [e.target.name]: e.target.value
-            });
-        };
-
-        const handleSubmit = (e) => {
-            e.preventDefault();
-            // Intégration avec Laravel à faire ici
-            console.log('Formulaire soumis:', formData);
-            alert('Message envoyé avec succès!');
-            setFormData({ name: '', email: '', message: '' });
-        };
-
-        return (
-            <section 
-                ref={contactRef}
-                className={`py-20 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}
-            >
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-16">
-                        <h2 className={`text-4xl font-bold mb-4 ${
-                            isDarkMode ? 'text-white' : 'text-gray-900'
-                        }`}>
-                            Contactez-<span className="text-blue-600">nous</span>
-                        </h2>
-                        <p className={`text-xl ${
-                            isDarkMode ? 'text-gray-300' : 'text-gray-600'
-                        }`}>
-                            Une question ? Notre équipe vous répond sous 24h
-                        </p>
-                    </div>
-
-                    <form 
-                        onSubmit={handleSubmit} 
-                        className={`rounded-2xl p-8 shadow-lg ${
-                            isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
-                        }`}
-                    >
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            <div>
-                                <label className={`block mb-2 font-medium ${
-                                    isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                                }`}>
-                                    Nom complet
-                                </label>
-                                <input
-                                    type="text"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleInputChange}
-                                    className={`w-full px-4 py-3 rounded-lg border transition ${
-                                        isDarkMode 
-                                            ? 'bg-gray-600 border-gray-500 text-white focus:border-blue-500' 
-                                            : 'bg-white border-gray-300 focus:border-blue-500'
-                                    }`}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className={`block mb-2 font-medium ${
-                                    isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                                }`}>
-                                    Email
-                                </label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleInputChange}
-                                    className={`w-full px-4 py-3 rounded-lg border transition ${
-                                        isDarkMode 
-                                            ? 'bg-gray-600 border-gray-500 text-white focus:border-blue-500' 
-                                            : 'bg-white border-gray-300 focus:border-blue-500'
-                                    }`}
-                                    required
-                                />
-                            </div>
-                        </div>
-                        <div className="mb-6">
+                <form 
+                    onSubmit={handleContactSubmit}
+                    className={`rounded-2xl p-8 shadow-lg ${
+                        isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+                    }`}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
                             <label className={`block mb-2 font-medium ${
                                 isDarkMode ? 'text-gray-300' : 'text-gray-700'
                             }`}>
-                                Message
+                                Nom complet
                             </label>
-                            <textarea
-                                name="message"
-                                value={formData.message}
-                                onChange={handleInputChange}
-                                rows="5"
+                            <input
+                                type="text"
+                                name="name"
                                 className={`w-full px-4 py-3 rounded-lg border transition ${
                                     isDarkMode 
                                         ? 'bg-gray-600 border-gray-500 text-white focus:border-blue-500' 
                                         : 'bg-white border-gray-300 focus:border-blue-500'
                                 }`}
                                 required
-                            ></textarea>
+                            />
                         </div>
-                        <button
-                            type="submit"
-                            className="bg-blue-600 text-white font-semibold px-8 py-4 rounded-lg hover:bg-blue-700 transition w-full"
-                        >
-                            Envoyer le message
-                        </button>
-                    </form>
-                </div>
-            </section>
-        );
-    };
+                        <div>
+                            <label className={`block mb-2 font-medium ${
+                                isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                            }`}>
+                                Email
+                            </label>
+                            <input
+                                type="email"
+                                name="email"
+                                className={`w-full px-4 py-3 rounded-lg border transition ${
+                                    isDarkMode 
+                                        ? 'bg-gray-600 border-gray-500 text-white focus:border-blue-500' 
+                                        : 'bg-white border-gray-300 focus:border-blue-500'
+                                }`}
+                                required
+                            />
+                        </div>
+                    </div>
+                    <div className="mb-6">
+                        <label className={`block mb-2 font-medium ${
+                            isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
+                            Message
+                        </label>
+                        <textarea
+                            name="message"
+                            rows="5"
+                            className={`w-full px-4 py-3 rounded-lg border transition ${
+                                isDarkMode 
+                                    ? 'bg-gray-600 border-gray-500 text-white focus:border-blue-500' 
+                                    : 'bg-white border-gray-300 focus:border-blue-500'
+                            }`}
+                            required
+                        ></textarea>
+                    </div>
+                    <button
+                        type="submit"
+                        className="bg-blue-600 text-white font-semibold px-8 py-4 rounded-lg hover:bg-blue-700 transition w-full transform hover:scale-105"
+                    >
+                        Envoyer le message
+                    </button>
+                </form>
+            </div>
+        </section>
+    );
 
-    // Footer
+    // Chat Bot Component
+    const ChatBot = () => (
+        <div className="fixed bottom-6 right-6 z-50">
+            {/* Fenêtre de chat */}
+            {isChatOpen && (
+                <div className={`absolute bottom-16 right-0 w-80 h-96 rounded-2xl shadow-2xl mb-4 flex flex-col ${
+                    isDarkMode ? 'bg-gray-800' : 'bg-white'
+                }`}>
+                    {/* Header du chat */}
+                    <div className={`p-4 rounded-t-2xl flex justify-between items-center ${
+                        isDarkMode ? 'bg-gray-700' : 'bg-blue-600'
+                    }`}>
+                        <span className={isDarkMode ? 'text-white font-semibold' : 'text-white font-semibold'}>
+                            💬 Assistant Cleanix
+                        </span>
+                        <button 
+                            onClick={() => setIsChatOpen(false)}
+                            className={isDarkMode ? 'text-gray-300 hover:text-white' : 'text-white hover:text-gray-200'}
+                        >
+                            ✕
+                        </button>
+                    </div>
+                    
+                    {/* Messages du chat */}
+                    <div className={`flex-1 p-4 overflow-y-auto ${
+                        isDarkMode ? 'bg-gray-800' : 'bg-gray-50'
+                    }`}>
+                        <div className="space-y-4">
+                            {chatMessages.map((message) => (
+                                <div
+                                    key={message.id}
+                                    className={`max-w-[80%] p-3 rounded-2xl ${
+                                        message.sender === 'user'
+                                            ? 'bg-blue-500 text-white ml-auto'
+                                            : isDarkMode
+                                            ? 'bg-gray-700 text-gray-300'
+                                            : 'bg-white text-gray-700 border'
+                                    }`}
+                                >
+                                    {message.text}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* Input du chat */}
+                    <div className="p-4 border-t border-gray-600">
+                        <form onSubmit={handleChatSubmit} className="flex gap-2">
+                            <input 
+                                type="text"
+                                value={chatInput}
+                                onChange={(e) => setChatInput(e.target.value)}
+                                placeholder="Tapez votre message..."
+                                className={`flex-1 px-3 py-2 rounded-lg border text-sm ${
+                                    isDarkMode 
+                                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                                        : 'bg-white border-gray-300 text-gray-700 placeholder-gray-500'
+                                }`}
+                            />
+                            <button 
+                                type="submit"
+                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                            >
+                                Envoyer
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+            
+            {/* Bouton principal du chat */}
+            <button
+                onClick={() => setIsChatOpen(!isChatOpen)}
+                className={`w-14 h-14 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 flex items-center justify-center ${
+                    isChatOpen
+                        ? 'bg-red-500 text-white'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+            >
+                {isChatOpen ? '✕' : '💬'}
+            </button>
+        </div>
+    );
+
+    // Footer amélioré avec réseaux sociaux
     const Footer = () => (
-        <footer className={`py-8 ${isDarkMode ? 'bg-gray-900 text-gray-400' : 'bg-gray-800 text-gray-400'}`}>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                <p>© 2024 Cleanix.ma. Tous droits réservés.</p>
+        <footer className={`${isDarkMode ? 'bg-gray-900 text-gray-400' : 'bg-gray-800 text-gray-400'}`}>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    {/* Colonne 1 - Logo et description */}
+                    <div className="col-span-1">
+                        <div className={`text-3xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-white'}`}>
+                            Cleanix.ma
+                        </div>
+                        <p className="mb-4 text-sm">
+                            Votre partenaire de confiance pour tous vos besoins de nettoyage et gestion immobilière.
+                        </p>
+                        <div className="flex space-x-4">
+                            {/* Réseaux sociaux */}
+                            {[
+                                { name: 'Facebook', icon: '📘', url: '#' },
+                                { name: 'Instagram', icon: '📷', url: '#' },
+                                { name: 'Twitter', icon: '🐦', url: '#' },
+                                { name: 'LinkedIn', icon: '💼', url: '#' }
+                            ].map((social, index) => (
+                                <a
+                                    key={index}
+                                    href={social.url}
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center transition transform hover:scale-110 ${
+                                        isDarkMode 
+                                            ? 'bg-gray-700 hover:bg-gray-600' 
+                                            : 'bg-gray-700 hover:bg-gray-600'
+                                    }`}
+                                    title={social.name}
+                                >
+                                    {social.icon}
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Colonne 2 - Liens rapides */}
+                    <div>
+                        <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-white'}`}>
+                            Liens Rapides
+                        </h3>
+                        <ul className="space-y-2">
+                            {['Accueil', 'Services', 'Comment ça marche', 'Contact'].map((link) => (
+                                <li key={link}>
+                                    <button 
+                                        onClick={() => {
+                                            if (link === 'Accueil') window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            else if (link === 'Services') scrollToSection(servicesRef);
+                                            else if (link === 'Comment ça marche') scrollToSection(processRef);
+                                            else if (link === 'Contact') scrollToSection(contactRef);
+                                        }}
+                                        className="hover:text-white transition-colors text-sm"
+                                    >
+                                        {link}
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* Colonne 3 - Services */}
+                    <div>
+                        <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-white'}`}>
+                            Nos Services
+                        </h3>
+                        <ul className="space-y-2">
+                            {services.map((service) => (
+                                <li key={service.name}>
+                                    <button 
+                                        onClick={() => scrollToSection(servicesRef)}
+                                        className="hover:text-white transition-colors text-sm"
+                                    >
+                                        {service.name}
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* Colonne 4 - Contact */}
+                    <div>
+                        <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-white'}`}>
+                            Contact
+                        </h3>
+                        <div className="space-y-2 text-sm">
+                            <p>📧 contact@cleanix.ma</p>
+                            <p>📞 +212 5 XX XX XX XX</p>
+                            <p>🏢 Casablanca, Maroc</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Copyright */}
+                <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm">
+                    <p>© 2024 Cleanix.ma. Tous droits réservés.</p>
+                </div>
             </div>
         </footer>
     );
@@ -760,6 +946,7 @@ export default function CleanixLandingPage() {
             <TestimonialsSection />
             <ContactSection />
             <Footer />
+            <ChatBot />
             
             {/* Styles d'animation personnalisés */}
             <style jsx>{`
