@@ -7,7 +7,12 @@ export default function CleanixLandingPage() {
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
-    
+    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [chatMessages, setChatMessages] = useState([
+            { id: 1, text: "👋 Bonjour ! Je suis l'assistant Cleanix. Comment puis-je vous aider aujourd'hui ?", sender: 'bot' }
+        ]);
+    const [chatInput, setChatInput] = useState('');
+        
     // Refs pour le scroll vers les sections
     const servicesRef = useRef(null);
     const processRef = useRef(null);
@@ -115,6 +120,37 @@ export default function CleanixLandingPage() {
             rating: 4
         }
     ];
+
+    // Fonction pour gérer le chat
+    const handleChatSubmit = (e) => {
+        e.preventDefault();
+        if (!chatInput.trim()) return;
+
+        // Ajouter le message de l'utilisateur
+        const userMessage = {
+            id: chatMessages.length + 1,
+            text: chatInput,
+            sender: 'user'
+        };
+        setChatMessages(prev => [...prev, userMessage]);
+        setChatInput('');
+
+        // Réponse automatique de l'IA
+        setTimeout(() => {
+            const responses = [
+                "Je comprends votre question. Notre équipe de support peut vous aider avec cela. Souhaitez-vous que je vous connecte avec un conseiller ?",
+                "Pour cette question, je vous recommande de consulter notre section FAQ ou de contacter notre support client.",
+                "Merci pour votre message ! Un de nos experts vous répondra rapidement.",
+                "Je peux vous aider avec les informations sur nos services de nettoyage, la gestion des clés, ou devenir freelancer. Que souhaitez-vous savoir ?"
+            ];
+            const botMessage = {
+                id: chatMessages.length + 2,
+                text: responses[Math.floor(Math.random() * responses.length)],
+                sender: 'bot'
+            };
+            setChatMessages(prev => [...prev, botMessage]);
+        }, 1000);
+    };
 
     // Header avec mode sombre/clair et navigation par ancres
     const Header = () => (
@@ -738,7 +774,89 @@ export default function CleanixLandingPage() {
             </section>
         );
     };
-
+// Chat Bot Component
+    const ChatBot = () => (
+        <div className="fixed bottom-6 right-6 z-50">
+            {/* Fenêtre de chat */}
+            {isChatOpen && (
+                <div className={`absolute bottom-16 right-0 w-80 h-96 rounded-2xl shadow-2xl mb-4 flex flex-col ${
+                    isDarkMode ? 'bg-gray-800' : 'bg-white'
+                }`}>
+                    {/* Header du chat */}
+                    <div className={`p-4 rounded-t-2xl flex justify-between items-center ${
+                        isDarkMode ? 'bg-gray-700' : 'bg-blue-600'
+                    }`}>
+                        <span className={isDarkMode ? 'text-white font-semibold' : 'text-white font-semibold'}>
+                            💬 Assistant Cleanix
+                        </span>
+                        <button 
+                            onClick={() => setIsChatOpen(false)}
+                            className={isDarkMode ? 'text-gray-300 hover:text-white' : 'text-white hover:text-gray-200'}
+                        >
+                            ✕
+                        </button>
+                    </div>
+                    
+                    {/* Messages du chat */}
+                    <div className={`flex-1 p-4 overflow-y-auto ${
+                        isDarkMode ? 'bg-gray-800' : 'bg-gray-50'
+                    }`}>
+                        <div className="space-y-4">
+                            {chatMessages.map((message) => (
+                                <div
+                                    key={message.id}
+                                    className={`max-w-[80%] p-3 rounded-2xl ${
+                                        message.sender === 'user'
+                                            ? 'bg-blue-500 text-white ml-auto'
+                                            : isDarkMode
+                                            ? 'bg-gray-700 text-gray-300'
+                                            : 'bg-white text-gray-700 border'
+                                    }`}
+                                >
+                                    {message.text}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* Input du chat */}
+                    <div className="p-4 border-t border-gray-600">
+                        <form onSubmit={handleChatSubmit} className="flex gap-2">
+                            <input 
+                                type="text"
+                                value={chatInput}
+                                onChange={(e) => setChatInput(e.target.value)}
+                                placeholder="Tapez votre message..."
+                                className={`flex-1 px-3 py-2 rounded-lg border text-sm ${
+                                    isDarkMode 
+                                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                                        : 'bg-white border-gray-300 text-gray-700 placeholder-gray-500'
+                                }`}
+                            />
+                            <button 
+                                type="submit"
+                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                            >
+                                Envoyer
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+            
+            {/* Bouton principal du chat */}
+            <button
+                onClick={() => setIsChatOpen(!isChatOpen)}
+                className={`w-14 h-14 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 flex items-center justify-center ${
+                    isChatOpen
+                        ? 'bg-red-500 text-white'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+            >
+                {isChatOpen ? '✕' : '💬'}
+            </button>
+        </div>
+    );
     // Footer
     const Footer = () => (
         <footer className={`py-8 ${isDarkMode ? 'bg-gray-900 text-gray-400' : 'bg-gray-800 text-gray-400'}`}>
@@ -760,7 +878,7 @@ export default function CleanixLandingPage() {
             <TestimonialsSection />
             <ContactSection />
             <Footer />
-            
+            <ChatBot />
             {/* Styles d'animation personnalisés */}
             <style jsx>{`
                 @keyframes blob {

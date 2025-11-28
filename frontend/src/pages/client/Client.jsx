@@ -292,6 +292,8 @@ function InnerLayout() {
               {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
+            
+
             {/* Notifications */}
             <div className="relative" ref={notificationRef}>
               <button onClick={() => setShowNotifications(s => !s)} className={`relative p-2 rounded-full border-2 hover:bg-gray-500`}>
@@ -329,6 +331,10 @@ function InnerLayout() {
                 </div>
               )}
             </div>
+            {/* Mon Profile Client 
+            <button onClick={() => {navigate('client-profile')}} className="p-2 rounded-full border-2 hover:bg-gray-500">
+                <User size={18} />
+            </button>*/}
           </div>
         </header>
 
