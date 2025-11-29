@@ -5,7 +5,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { 
   ChevronRight, Sun, Moon, User, Briefcase, HelpCircle, DollarSign, 
   Home, Clock, Star, MessageCircle, Settings, Bell, Menu, Package, 
-  History, TrendingUp, FileText, Users, MapPin, Filter, RefreshCw
+  History, TrendingUp, FileText, Users, MapPin, Filter, RefreshCw, X
 } from 'lucide-react';
 import { FreelancerProvider, FreelancerContext } from './freelancerContext';
 
@@ -30,6 +30,7 @@ const ICONS = {
   location: MapPin,
   filter: Filter,
   refresh: RefreshCw,
+  close: X,
 };
 
 const STRING_ICONS = {
@@ -56,6 +57,7 @@ function InnerLayout() {
   const navigate = useNavigate();
   const notificationRef = useRef(null);
   const profileRef = useRef(null);
+  const sidebarRef = useRef(null);
   
   // Consommer l'état partagé
   const {
@@ -154,8 +156,12 @@ function InnerLayout() {
     setOrders(mockOrders);
   }, []);
 
+  // Gestion du clic en dehors de la sidebar
   useEffect(() => {
     function handleClickOutside(event) {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        setIsSidebarVisible(false);
+      }
       if (notificationRef.current && !notificationRef.current.contains(event.target)) {
         setShowNotifications(false);
       }
@@ -194,6 +200,47 @@ function InnerLayout() {
     setOpenSubmenu(openSubmenu === menuName ? null : menuName);
   };
 
+  const handleNavigation = (page, path = null) => {
+    setActivePage(page);
+    setIsSidebarVisible(false);
+    if (path) {
+      navigate(path);
+    }
+  };
+
+  // Fonction pour déterminer le style des éléments de menu
+  const getMenuItemStyle = (pageName) => {
+    const isActive = activePage === pageName;
+    const colorMap = {
+      'dashboard': COLORS.dashboard,
+      'orders-received': COLORS.orders,
+      'orders-accepted': COLORS.orders,
+      'orders-history': COLORS.orders,
+      'services-list': COLORS.services,
+      'publish-service': COLORS.services,
+      'earnings': COLORS.earnings,
+      'support': COLORS.support,
+      'settings': COLORS.settings,
+      'profile': COLORS.settings
+    };
+    
+    const color = colorMap[pageName] || COLORS.settings;
+    
+    if (isActive) {
+      return {
+        button: `bg-opacity-20 border font-semibold`,
+        text: 'font-semibold',
+        iconColor: color
+      };
+    }
+    
+    return {
+      button: `text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-400`,
+      text: '',
+      iconColor: '#6B7280'
+    };
+  };
+
   const filteredOrders = selectedService === 'all' 
     ? orders.filter(order => order.status === 'en attente')
     : orders.filter(order => order.status === 'en attente' && order.serviceId === selectedService);
@@ -202,15 +249,15 @@ function InnerLayout() {
   const OrdersReceived = () => (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Commandes Reçues</h2>
+        <h2 className="text-2xl font-bold ">Commandes Reçues</h2>
         
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           {/* Filtre par service */}
-          <div className="relative">
+          <div className="relative ">
             <select
               value={selectedService}
               onChange={(e) => setSelectedService(e.target.value)}
-              className="appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg pl-4 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="text-black rounded-lg pl-4 pr-10 py-2"
             >
               {availableServices.map(service => (
                 <option key={service.id} value={service.id}>
@@ -218,7 +265,7 @@ function InnerLayout() {
                 </option>
               ))}
             </select>
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
               <ICONS.filter size={16} />
             </div>
           </div>
@@ -236,7 +283,7 @@ function InnerLayout() {
 
       <div className="grid gap-6">
         {filteredOrders.length === 0 ? (
-          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+          <div className="text-center py-12 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
             <ICONS.orders size={48} className="mx-auto text-gray-400 mb-4" />
             <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">
               Aucune commande trouvée
@@ -250,41 +297,41 @@ function InnerLayout() {
           </div>
         ) : (
           filteredOrders.map((order) => (
-            <div key={order.id} className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 dark:bg-gray-800 dark:border-gray-700">
+            <div key={order.id} className=" rounded-xl shadow-lg   p-6 border ">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center border font-bold">
                     {order.clientPhoto}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg dark:text-white">{order.clientName}</h3>
+                    <h3 className="font-semibold text-lg">{order.clientName}</h3>
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1">
                         <ICONS.star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="text-sm text-gray-600 dark:text-gray-400">{order.rating}</span>
+                        <span className="text-sm">{order.rating}</span>
                       </div>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">• {order.completedOrders} commandes</span>
+                      <span className="text-sm ">• {order.completedOrders} commandes</span>
                     </div>
                   </div>
                 </div>
-                <span className="text-sm text-gray-500 dark:text-gray-400">{order.time}</span>
+                <span className="text-sm">{order.time}</span>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Service demandé</h4>
-                  <p className="text-gray-900 dark:text-white">{order.service}</p>
+                  <h4 className="font-medium mb-2">Service demandé</h4>
+                  <p className="">{order.service}</p>
                 </div>
                 <div>
-                  <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Adresse</h4>
-                  <div className="flex items-center gap-2 text-gray-900 dark:text-white">
+                  <h4 className="font-medium mb-2">Adresse</h4>
+                  <div className="flex items-center gap-2">
                     <ICONS.location size={14} />
                     {order.address}
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center ">
                 <div className="text-2xl font-bold text-green-600">{order.price}€</div>
                 <div className="flex gap-3">
                   <button 
@@ -311,11 +358,27 @@ function InnerLayout() {
   return (
     <div className={`min-h-screen flex transition-colors duration-300 font-sans ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-[#f0fdf4] text-gray-800'}`}>
       
+      {/* Overlay pour mobile */}
+      {isSidebarVisible && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden" />
+      )}
+      
       {/* SIDEBAR À GAUCHE */}
-      <aside className={`fixed md:relative z-40 h-screen shadow-2xl transition-transform duration-300 ease-in-out flex flex-col ${isDarkMode ? 'bg-gray-800 border-r border-gray-700' : 'bg-white border-r border-gray-200'} w-72 ${isSidebarVisible ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+      <aside 
+        ref={sidebarRef}
+        className={`fixed md:relative z-40 h-screen shadow-2xl transition-transform duration-300 ease-in-out flex flex-col ${isDarkMode ? 'bg-gray-800 border-r border-gray-700' : 'bg-white border-r border-gray-200'} w-72 ${isSidebarVisible ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+      >
 
-        {/* Header Sidebar centré */}
-        <div className="flex flex-col items-center justify-center py-8 px-4 border-b dark:border-gray-700">
+        {/* Header Sidebar centré avec bouton fermer */}
+        <div className="flex flex-col items-center justify-center py-8 px-4 border-b dark:border-gray-700 relative">
+          {/* Bouton fermer visible seulement sur mobile */}
+          <button 
+            onClick={() => setIsSidebarVisible(false)}
+            className="absolute top-4 right-4 text-gray-400 hover:text-green-600 md:hidden"
+          >
+            <ICONS.close size={20} />
+          </button>
+          
           <div className="relative mb-4">
             <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
               {user?.name?.charAt(0) || 'F'}
@@ -339,15 +402,18 @@ function InnerLayout() {
             {/* Tableau de Bord */}
             <li>
               <button 
-                onClick={() => { navigate('dashboard'); setActivePage('dashboard'); setIsSidebarVisible(false); }}
+                onClick={() => handleNavigation('dashboard', 'dashboard')}
                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all text-left ${
-                  activePage === 'dashboard' 
-                    ? 'bg-blue-50 text-blue-700 font-semibold border border-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-700' 
-                    : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-400'
+                  getMenuItemStyle('dashboard').button
                 }`}
+                style={{ 
+                  backgroundColor: activePage === 'dashboard' ? `${COLORS.dashboard}20` : '',
+                  borderColor: activePage === 'dashboard' ? COLORS.dashboard : '',
+                  color: activePage === 'dashboard' ? COLORS.dashboard : ''
+                }}
               >
-                <ICONS.dashboard size={20} style={{ color: COLORS.dashboard }} />
-                <span>Tableau de Bord</span>
+                <ICONS.dashboard size={20} style={{ color: getMenuItemStyle('dashboard').iconColor }} />
+                <span className={getMenuItemStyle('dashboard').text}>Tableau de Bord</span>
               </button>
             </li>
 
@@ -355,12 +421,10 @@ function InnerLayout() {
             <li>
               <button 
                 onClick={() => toggleSubmenu('orders')} 
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all ${
-                  activePage.startsWith('orders') ? ' font-semibold ' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-red-400'
-                }`}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-400"
               >
                 <div className="flex items-center gap-4">
-                  <ICONS.orders size={20} style={{ color: COLORS.orders }} />
+                  <ICONS.orders size={20} style={{ color: '#6B7280' }} />
                   <span>Mes Commandes</span>
                   {pendingOrders > 0 && (
                     <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -374,35 +438,50 @@ function InnerLayout() {
                 <ul className="ml-4 space-y-1 border-l-2 border-purple-200 dark:border-purple-700 pl-4">
                   <li>
                     <button 
-                      onClick={() => { setActivePage('orders-received'); setIsSidebarVisible(false); }}
+                      onClick={() => handleNavigation('orders-received')}
                       className={`w-full flex items-center gap-4 px-4 py-2 rounded-lg transition-all ${
-                        activePage === 'orders-received' ? 'bg-purple-50 text-purple-700 font-semibold dark:bg-purple-900 dark:text-purple-300' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-400'
+                        getMenuItemStyle('orders-received').button
                       }`}
+                      style={{ 
+                        backgroundColor: activePage === 'orders-received' ? `${COLORS.orders}20` : '',
+                        borderColor: activePage === 'orders-received' ? COLORS.orders : '',
+                        color: activePage === 'orders-received' ? COLORS.orders : ''
+                      }}
                     >
-                      <ICONS.clock size={16} style={{ color: COLORS.orders }} />
-                      <span>Commandes Reçues</span>
+                      <ICONS.clock size={16} style={{ color: getMenuItemStyle('orders-received').iconColor }} />
+                      <span className={getMenuItemStyle('orders-received').text}>Commandes Reçues</span>
                     </button>
                   </li>
                   <li>
                     <button 
-                      onClick={() => { navigate('orders-accepted'); setActivePage('orders-accepted'); setIsSidebarVisible(false); }}
+                      onClick={() => handleNavigation('orders-accepted', 'orders-accepted')}
                       className={`w-full flex items-center gap-4 px-4 py-2 rounded-lg transition-all ${
-                        activePage === 'orders-accepted' ? 'bg-purple-50 text-purple-700 font-semibold dark:bg-purple-900 dark:text-purple-300' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-400'
+                        getMenuItemStyle('orders-accepted').button
                       }`}
+                      style={{ 
+                        backgroundColor: activePage === 'orders-accepted' ? `${COLORS.orders}20` : '',
+                        borderColor: activePage === 'orders-accepted' ? COLORS.orders : '',
+                        color: activePage === 'orders-accepted' ? COLORS.orders : ''
+                      }}
                     >
-                      <ICONS.trending size={16} style={{ color: COLORS.orders }} />
-                      <span>Commandes Acceptées</span>
+                      <ICONS.trending size={16} style={{ color: getMenuItemStyle('orders-accepted').iconColor }} />
+                      <span className={getMenuItemStyle('orders-accepted').text}>Commandes Acceptées</span>
                     </button>
                   </li>
                   <li>
                     <button 
-                      onClick={() => { navigate('orders-history'); setActivePage('orders-history'); setIsSidebarVisible(false); }}
+                      onClick={() => handleNavigation('orders-history', 'orders-history')}
                       className={`w-full flex items-center gap-4 px-4 py-2 rounded-lg transition-all ${
-                        activePage === 'orders-history' ? 'bg-purple-50 text-purple-700 font-semibold dark:bg-purple-900 dark:text-purple-300' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-400'
+                        getMenuItemStyle('orders-history').button
                       }`}
+                      style={{ 
+                        backgroundColor: activePage === 'orders-history' ? `${COLORS.orders}20` : '',
+                        borderColor: activePage === 'orders-history' ? COLORS.orders : '',
+                        color: activePage === 'orders-history' ? COLORS.orders : ''
+                      }}
                     >
-                      <ICONS.history size={16} style={{ color: COLORS.orders }} />
-                      <span>Historique</span>
+                      <ICONS.history size={16} style={{ color: getMenuItemStyle('orders-history').iconColor }} />
+                      <span className={getMenuItemStyle('orders-history').text}>Historique</span>
                     </button>
                   </li>
                 </ul>
@@ -413,10 +492,10 @@ function InnerLayout() {
             <li>
               <button 
                 onClick={() => toggleSubmenu('services')} 
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-400`}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-400"
               >
                 <div className="flex items-center gap-4">
-                  <ICONS.services size={20} style={{ color: COLORS.services }} />
+                  <ICONS.services size={20} style={{ color: '#6B7280' }} />
                   <span>Services</span>
                 </div>
                 <span className="text-xs transition">{openSubmenu === 'services' ? STRING_ICONS.chevronUp : STRING_ICONS.chevronDown}</span>
@@ -425,24 +504,34 @@ function InnerLayout() {
                 <ul className="ml-4 space-y-1 border-l-2 border-cyan-200 dark:border-cyan-700 pl-4">
                   <li>
                     <button 
-                      onClick={() => { navigate('services-list'); setActivePage('services-list'); setIsSidebarVisible(false); }}
+                      onClick={() => handleNavigation('services-list', 'services-list')}
                       className={`w-full flex items-center gap-4 px-4 py-2 rounded-lg transition-all ${
-                        activePage === 'services-list' ? 'bg-cyan-50 text-cyan-700 font-semibold dark:bg-cyan-900 dark:text-cyan-300' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-400'
+                        getMenuItemStyle('services-list').button
                       }`}
+                      style={{ 
+                        backgroundColor: activePage === 'services-list' ? `${COLORS.services}20` : '',
+                        borderColor: activePage === 'services-list' ? COLORS.services : '',
+                        color: activePage === 'services-list' ? COLORS.services : ''
+                      }}
                     >
-                      <ICONS.file size={16} style={{ color: COLORS.services }} />
-                      <span>Gérer mes Services</span>
+                      <ICONS.file size={16} style={{ color: getMenuItemStyle('services-list').iconColor }} />
+                      <span className={getMenuItemStyle('services-list').text}>Gérer mes Services</span>
                     </button>
                   </li>
                   <li>
                     <button 
-                      onClick={() => { navigate('publish-service'); setActivePage('publish-service'); setIsSidebarVisible(false); }}
+                      onClick={() => handleNavigation('publish-service', 'publish-service')}
                       className={`w-full flex items-center gap-4 px-4 py-2 rounded-lg transition-all ${
-                        activePage === 'publish-service' ? 'bg-cyan-50 text-cyan-700 font-semibold dark:bg-cyan-900 dark:text-cyan-300' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-400'
+                        getMenuItemStyle('publish-service').button
                       }`}
+                      style={{ 
+                        backgroundColor: activePage === 'publish-service' ? `${COLORS.services}20` : '',
+                        borderColor: activePage === 'publish-service' ? COLORS.services : '',
+                        color: activePage === 'publish-service' ? COLORS.services : ''
+                      }}
                     >
-                      <ICONS.services size={16} style={{ color: COLORS.services }} />
-                      <span>Publier un Service</span>
+                      <ICONS.services size={16} style={{ color: getMenuItemStyle('publish-service').iconColor }} />
+                      <span className={getMenuItemStyle('publish-service').text}>Publier un Service</span>
                     </button>
                   </li>
                 </ul>
@@ -452,45 +541,54 @@ function InnerLayout() {
             {/* Portefeuille */}
             <li>
               <button 
-                onClick={() => { navigate('earnings'); setActivePage('earnings'); setIsSidebarVisible(false); }}
+                onClick={() => handleNavigation('earnings', 'earnings')}
                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all text-left ${
-                  activePage === 'earnings' 
-                    ? 'bg-green-50 text-green-700 font-semibold border border-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-700' 
-                    : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-400'
+                  getMenuItemStyle('earnings').button
                 }`}
+                style={{ 
+                  backgroundColor: activePage === 'earnings' ? `${COLORS.earnings}20` : '',
+                  borderColor: activePage === 'earnings' ? COLORS.earnings : '',
+                  color: activePage === 'earnings' ? COLORS.earnings : ''
+                }}
               >
-                <ICONS.earnings size={20} style={{ color: COLORS.earnings }} />
-                <span>Portefeuille</span>
+                <ICONS.earnings size={20} style={{ color: getMenuItemStyle('earnings').iconColor }} />
+                <span className={getMenuItemStyle('earnings').text}>Portefeuille</span>
               </button>
             </li>
 
             {/* Support */}
             <li>
               <button 
-                onClick={() => { navigate('support'); setActivePage('support'); setIsSidebarVisible(false); }}
+                onClick={() => handleNavigation('support', 'support')}
                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all text-left ${
-                  activePage === 'support' 
-                    ? 'bg-amber-50 text-amber-700 font-semibold border border-amber-200 dark:bg-amber-900 dark:text-amber-300 dark:border-amber-700' 
-                    : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-400'
+                  getMenuItemStyle('support').button
                 }`}
+                style={{ 
+                  backgroundColor: activePage === 'support' ? `${COLORS.support}20` : '',
+                  borderColor: activePage === 'support' ? COLORS.support : '',
+                  color: activePage === 'support' ? COLORS.support : ''
+                }}
               >
-                <ICONS.support size={20} style={{ color: COLORS.support }} />
-                <span>Support</span>
+                <ICONS.support size={20} style={{ color: getMenuItemStyle('support').iconColor }} />
+                <span className={getMenuItemStyle('support').text}>Support</span>
               </button>
             </li>
 
             {/* Paramètres */}
             <li>
               <button 
-                onClick={() => { navigate('settings'); setActivePage('settings'); setIsSidebarVisible(false); }}
+                onClick={() => handleNavigation('settings', 'settings-freelancer')}
                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all text-left ${
-                  activePage === 'settings' 
-                    ? 'bg-gray-100 text-gray-700 font-semibold border border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600' 
-                    : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-400'
+                  getMenuItemStyle('settings').button
                 }`}
+                style={{ 
+                  backgroundColor: activePage === 'settings' ? `${COLORS.settings}20` : '',
+                  borderColor: activePage === 'settings' ? COLORS.settings : '',
+                  color: activePage === 'settings' ? COLORS.settings : ''
+                }}
               >
-                <ICONS.settings size={20} style={{ color: COLORS.settings }} />
-                <span>Paramètres</span>
+                <ICONS.settings size={20} style={{ color: getMenuItemStyle('settings').iconColor }} />
+                <span className={getMenuItemStyle('settings').text}>Paramètres</span>
               </button>
             </li>
           </ul>
@@ -529,15 +627,7 @@ function InnerLayout() {
 
           {/* Partie droite: Actions */}
           <div className="flex items-center gap-2 md:gap-4">
-            {/* Bouton nouveau service - visible sur desktop seulement */}
-            <button 
-              onClick={() => { navigate('publish-service'); setActivePage('publish-service'); }}
-              className="hidden md:flex bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition duration-200 items-center gap-2 text-sm"
-            >
-              <Plus size={14} />
-              Publier
-            </button>
-
+            
             {/* Mode sombre */}
             <button onClick={toggleDarkMode} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
               {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
@@ -606,14 +696,14 @@ function InnerLayout() {
                   isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
                 }`}>
                   <button 
-                    onClick={() => { navigate('profile'); setActivePage('profile'); setShowProfileMenu(false); }}
+                    onClick={() => { handleNavigation('profile', 'profile'); setShowProfileMenu(false); }}
                     className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 dark:text-white"
                   >
                     <ICONS.profile size={16} />
                     Mon Profil
                   </button>
                   <button 
-                    onClick={() => { navigate('settings'); setActivePage('settings'); setShowProfileMenu(false); }}
+                    onClick={() => { handleNavigation('settings', 'settings-freelancer'); setShowProfileMenu(false); }}
                     className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 dark:text-white"
                   >
                     <ICONS.settings size={16} />
@@ -638,7 +728,7 @@ function InnerLayout() {
           {activePage === 'orders-received' && <OrdersReceived />}
           
           {/* Outlet pour les autres pages */}
-          <Outlet context={{ isDarkMode }} />
+          <Outlet />
         </main>
       </div>
     </div>

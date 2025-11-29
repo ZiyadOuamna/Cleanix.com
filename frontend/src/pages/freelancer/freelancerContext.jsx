@@ -1,45 +1,41 @@
-// src/pages/freelancerContext.jsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const FreelancerContext = createContext();
 
 export const FreelancerProvider = ({ children }) => {
-  const getInitialDarkMode = () => {
-    const saved = localStorage.getItem('freelancerDarkMode');
-    return saved ? JSON.parse(saved) : false;
+  const [notifications, setNotifications] = useState([
+    { id: 1, message: 'Nouvelle commande reçue', date: 'Il y a 5 min', read: false },
+    { id: 2, message: 'Votre profil a été mis à jour', date: 'Il y a 1 heure', read: true },
+    { id: 3, message: 'Paiement reçu - 85€', date: 'Il y a 2 heures', read: true }
+  ]);
+  
+  const [isMenuOpen, setIsMenuOpen] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+
+  const user = {
+    name: 'Freelancer Test',
+    email: 'freelancer@cleanix.com',
+    phone: '+33 1 23 45 67 89',
+    specialty: 'Nettoyage résidentiel',
+    rating: 4.8
   };
 
-  const [isMenuOpen, setIsMenuOpen] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(getInitialDarkMode);
-  const [isOnline, setIsOnline] = useState(true); // Statut en ligne
+  const earnings = {
+    total: 1250,
+    pending: 320,
+    available: 930
+  };
 
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: 'Nouvelle commande reçue #1234', date: '2024-01-15', read: false },
-    { id: 2, message: 'Votre service a été évalué 5 étoiles', date: '2024-01-15', read: false },
-    { id: 3, message: 'Paiement reçu: 85.50€', date: '2024-01-14', read: true },
-  ]);
-
-  const [user] = useState({
-    name: 'Marie Martin',
-    email: 'marie.martin@email.com',
-    membership: 'Freelancer Premium',
-    joinDate: '2023-03-20',
-    specialty: 'Nettoyage résidentiel',
-    phone: '+33 6 12 34 56 78'
-  });
-
-  const [earnings] = useState({
-    total: 2450,
-    thisMonth: 520,
-    pending: 150
-  });
-
-  const [pendingOrders] = useState(3);
-  const [rating] = useState(4.8);
+  const pendingOrders = 3;
+  const rating = 4.8;
 
   useEffect(() => {
-    localStorage.setItem('freelancerDarkMode', JSON.stringify(isDarkMode));
-  }, [isDarkMode]);
+    const savedDarkMode = localStorage.getItem('freelancerDarkMode');
+    if (savedDarkMode) {
+      setIsDarkMode(JSON.parse(savedDarkMode));
+    }
+  }, []);
 
   const markAsRead = (id) => {
     setNotifications(notifications.map(notif => 
@@ -51,24 +47,20 @@ export const FreelancerProvider = ({ children }) => {
     setNotifications(notifications.map(notif => ({ ...notif, read: true })));
   };
 
-  const toggleOnlineStatus = () => {
-    setIsOnline(!isOnline);
-  };
-
   const value = {
+    notifications,
+    markAsRead,
+    markAllAsRead,
     isMenuOpen,
     setIsMenuOpen,
     isDarkMode,
     setIsDarkMode,
-    isOnline,
-    setIsOnline: toggleOnlineStatus,
-    notifications,
-    markAsRead,
-    markAllAsRead,
     user,
     earnings,
     pendingOrders,
-    rating
+    rating,
+    isOnline,
+    setIsOnline
   };
 
   return (
