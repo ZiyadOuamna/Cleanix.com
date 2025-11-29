@@ -287,7 +287,7 @@ function InnerLayout() {
               Nouvelle Commande
             </button>
 
-            {/* Mode sombre */}
+            {/* Mode sombre . */}
             <button onClick={toggleDarkMode} className="p-2 rounded-full border-2 hover:bg-gray-500">
               {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
