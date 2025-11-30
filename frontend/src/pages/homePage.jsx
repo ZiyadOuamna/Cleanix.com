@@ -10,7 +10,7 @@ import PaymentSection from '../../src/landing/paymentSection';
 import ContactSection from '../../src/landing/contactSection';
 import ChatBot from '../../src/landing/chatBot';
 import Footer from '../../src/landing/footer';
-import TestimonialsSection from '../../src/landing/testimonialsSection';
+import TestimonialsSection from '../landing/temoins';
 const LandingPage = () => {
   const navigate = useNavigate();
   const [isDarkMode, setIsDarkMode] = useState(false);
