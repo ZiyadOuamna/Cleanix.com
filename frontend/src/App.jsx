@@ -41,7 +41,7 @@ import SupportFreelancer      from './pages/freelancer/support';
 //les imports des pages de la partie Gestion de mes services chez freelancer
 //----------------------------------------------------------------------//
 // ( 3 ) imports des pages après la connexion de la page de Client
-import DashboardClient from './pages/client/client';
+import DashboardClient from './pages/client/Client';
 
 
 export default function App() {
