@@ -655,8 +655,7 @@ export default function CleanixLandingPage() {
             </div>
         </section>
     );
-
-    // Section Contact
+    
     const ContactSection = () => {
         const [formData, setFormData] = useState({
             name: '',

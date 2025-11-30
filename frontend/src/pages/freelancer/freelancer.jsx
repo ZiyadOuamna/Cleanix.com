@@ -559,7 +559,7 @@ function InnerLayout() {
             {/* Support */}
             <li>
               <button 
-                onClick={() => handleNavigation('support', 'support')}
+                onClick={() => handleNavigation('support', 'support-freelancer')}
                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all text-left ${
                   getMenuItemStyle('support').button
                 }`}
