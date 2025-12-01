@@ -53,6 +53,7 @@ const COLORS = {
 
 // Layout principal de la page freelancer
 function InnerLayout() { 
+  
   const [activePage, setActivePage] = useState('orders-received');
   const navigate = useNavigate();
   const notificationRef = useRef(null);
@@ -237,7 +238,7 @@ function InnerLayout() {
     return {
       button: `text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-400`,
       text: '',
-      iconColor: '#6B7280'
+      iconColor: '#6B7280',
     };
   };
 
@@ -356,7 +357,7 @@ function InnerLayout() {
   );
 
   return (
-    <div className={`min-h-screen flex transition-colors duration-300 font-sans ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-[#f0fdf4] text-gray-800'}`}>
+    <div className={`min-h-screen flex transition-colors duration-300 font-sans ${isDarkMode ? 'dark bg-gray-900 text-white' : 'bg-[#f0fdf4] text-gray-800'}`}>
       
       {/* Overlay pour mobile */}
       {isSidebarVisible && (
@@ -454,18 +455,18 @@ function InnerLayout() {
                   </li>
                   <li>
                     <button 
-                      onClick={() => handleNavigation('orders-accepted', 'orders-accepted')}
-                      className={`w-full flex items-center gap-4 px-4 py-2 rounded-lg transition-all ${
+                      onClick={() => handleNavigation('orders-accepted', 'accepted-cmd-freelancer')}
+                      className={` ${isDarkMode} w-full flex items-center gap-4 px-4 py-2 rounded-lg transition-all ${
                         getMenuItemStyle('orders-accepted').button
                       }`}
                       style={{ 
-                        backgroundColor: activePage === 'orders-accepted' ? `${COLORS.orders}20` : '',
-                        borderColor: activePage === 'orders-accepted' ? COLORS.orders : '',
-                        color: activePage === 'orders-accepted' ? COLORS.orders : ''
+                        backgroundColor: activePage === 'accepted-cmd-freelancer' ? `${COLORS.orders}20` : '',
+                        borderColor: activePage === 'accepted-cmd-freelancer' ? COLORS.orders : '',
+                        color: activePage === 'accepted-cmd-freelancer' ? COLORS.orders : ''
                       }}
                     >
-                      <ICONS.trending size={16} style={{ color: getMenuItemStyle('orders-accepted').iconColor }} />
-                      <span className={getMenuItemStyle('orders-accepted').text}>Commandes Acceptées</span>
+                      <ICONS.trending size={16} style={{ color: getMenuItemStyle('accepted-cmd-freelancer').iconColor }} />
+                      <span className={getMenuItemStyle('accepted-cmd-freelancer').text}>Commandes Acceptées</span>
                     </button>
                   </li>
                   <li>
@@ -541,7 +542,7 @@ function InnerLayout() {
             {/* Portefeuille */}
             <li>
               <button 
-                onClick={() => handleNavigation('earnings', 'earnings')}
+                onClick={() => handleNavigation('earnings', 'portefeuille-freelancer')}
                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all text-left ${
                   getMenuItemStyle('earnings').button
                 }`}

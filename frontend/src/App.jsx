@@ -37,6 +37,8 @@ import SettingsFreelancer     from './pages/freelancer/settings';
 import SupportFreelancer      from './pages/freelancer/support';
 
 //les imports des pages de la partie Mes Commandes chez freelancer
+import CommandesAcceptees from './pages/freelancer/commades/acceptedCmd';
+import HistoriqueCommandes from './pages/freelancer/commades/historiqueCmd';
 
 //les imports des pages de la partie Gestion de mes services chez freelancer
 //----------------------------------------------------------------------//
@@ -75,6 +77,8 @@ export default function App() {
       </Route>
 
       <Route path='/dev-freelancer-page'      element={<DashboardFreelancer />}>
+        <Route path='historique-commandes-freelancer' element={<HistoriqueCommandes />}/>
+        <Route path='accepted-cmd-freelancer' element={<CommandesAcceptees />}/>
         <Route path='portefeuille-freelancer' element={<PortefeuilleFreelancer />}/>
         <Route path='settings-freelancer'     element={<SettingsFreelancer />}/>
         <Route path='support-freelancer'      element={<SupportFreelancer />}/>
