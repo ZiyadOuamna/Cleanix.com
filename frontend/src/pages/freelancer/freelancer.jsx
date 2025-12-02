@@ -471,18 +471,18 @@ function InnerLayout() {
                   </li>
                   <li>
                     <button 
-                      onClick={() => handleNavigation('orders-history', 'orders-history')}
+                      onClick={() => handleNavigation('orders-history', 'orders-history-freelancer')}
                       className={`w-full flex items-center gap-4 px-4 py-2 rounded-lg transition-all ${
-                        getMenuItemStyle('orders-history').button
+                        getMenuItemStyle('orders-history-freelancer').button
                       }`}
                       style={{ 
-                        backgroundColor: activePage === 'orders-history' ? `${COLORS.orders}20` : '',
-                        borderColor: activePage === 'orders-history' ? COLORS.orders : '',
-                        color: activePage === 'orders-history' ? COLORS.orders : ''
+                        backgroundColor: activePage === 'orders-history-freelancer' ? `${COLORS.orders}20` : '',
+                        borderColor: activePage === 'orders-history-freelancer' ? COLORS.orders : '',
+                        color: activePage === 'orders-history-freelancer' ? COLORS.orders : ''
                       }}
                     >
-                      <ICONS.history size={16} style={{ color: getMenuItemStyle('orders-history').iconColor }} />
-                      <span className={getMenuItemStyle('orders-history').text}>Historique</span>
+                      <ICONS.history size={16} style={{ color: getMenuItemStyle('orders-history-freelancer').iconColor }} />
+                      <span className={getMenuItemStyle('orders-history-freelancer').text}>Historique</span>
                     </button>
                   </li>
                 </ul>
