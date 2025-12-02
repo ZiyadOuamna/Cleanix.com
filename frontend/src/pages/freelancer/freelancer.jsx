@@ -1,6 +1,6 @@
-// src/pages/FreelancerPage.jsx
+// src/pages/freelancer/freelancer.jsx
 import React, { useRef, useEffect, useContext, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 
 import { 
   ChevronRight, Sun, Moon, User, Briefcase, HelpCircle, DollarSign, 
@@ -53,9 +53,9 @@ const COLORS = {
 
 // Layout principal de la page freelancer
 function InnerLayout() { 
-  
   const [activePage, setActivePage] = useState('orders-received');
   const navigate = useNavigate();
+  const location = useLocation();
   const notificationRef = useRef(null);
   const profileRef = useRef(null);
   const sidebarRef = useRef(null);
@@ -76,86 +76,33 @@ function InnerLayout() {
   
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  // États pour les sous-menus - maintenant un seul peut être ouvert à la fois
-  const [openSubmenu, setOpenSubmenu] = useState('orders');
+  // États pour les sous-menus
+  const [openSubmenu, setOpenSubmenu] = useState(null);
   
   // États pour la visibilité
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
-  // États pour les filtres
-  const [selectedService, setSelectedService] = useState('all');
-  const [orders, setOrders] = useState([]);
-
-  // Services disponibles pour le filtre
-  const availableServices = [
-    { id: 'all', name: 'Tous les services' },
-    { id: 'nettoyage-complet', name: 'Nettoyage complet' },
-    { id: 'nettoyage-printemps', name: 'Nettoyage de printemps' },
-    { id: 'nettoyage-bureau', name: 'Nettoyage bureau' },
-    { id: 'nettoyage-vitres', name: 'Nettoyage de vitres' },
-    { id: 'nettoyage-apres-travaux', name: 'Nettoyage après travaux' }
-  ];
-
-  // Données simulées pour les commandes
+  // Synchroniser activePage avec la route actuelle
   useEffect(() => {
-    const mockOrders = [
-      {
-        id: 1,
-        clientName: "Jean Dupont",
-        clientPhoto: "JD",
-        rating: 4.5,
-        completedOrders: 12,
-        service: "Nettoyage complet",
-        serviceId: "nettoyage-complet",
-        address: "123 Rue de Paris, 75001 Paris",
-        price: 85,
-        time: "Il y a 15 min",
-        status: "en attente"
-      },
-      {
-        id: 2,
-        clientName: "Marie Martin",
-        clientPhoto: "MM",
-        rating: 4.8,
-        completedOrders: 25,
-        service: "Nettoyage de printemps",
-        serviceId: "nettoyage-printemps",
-        address: "456 Avenue des Champs, 75008 Paris",
-        price: 120,
-        time: "Il y a 30 min",
-        status: "en attente"
-      },
-      {
-        id: 3,
-        clientName: "Pierre Bernard",
-        clientPhoto: "PB",
-        rating: 4.2,
-        completedOrders: 8,
-        service: "Nettoyage bureau",
-        serviceId: "nettoyage-bureau",
-        address: "789 Boulevard Saint-Germain, 75006 Paris",
-        price: 150,
-        time: "Il y a 1 heure",
-        status: "en attente"
-      },
-      {
-        id: 4,
-        clientName: "Sophie Laurent",
-        clientPhoto: "SL",
-        rating: 4.9,
-        completedOrders: 18,
-        service: "Nettoyage de vitres",
-        serviceId: "nettoyage-vitres",
-        address: "321 Rue de Rivoli, 75004 Paris",
-        price: 65,
-        time: "Il y a 2 heures",
-        status: "en attente"
-      }
-    ];
-    setOrders(mockOrders);
-  }, []);
+    const path = location.pathname;
+    
+    if (path.includes('accepted-cmd-freelancer')) {
+      setActivePage('accepted-cmd-freelancer');
+    } else if (path.includes('historique-commandes-freelancer')) {
+      setActivePage('historique-commandes-freelancer');
+    } else if (path.includes('portefeuille-freelancer')) {
+      setActivePage('earnings');
+    } else if (path.includes('settings-freelancer')) {
+      setActivePage('settings');
+    } else if (path.includes('support-freelancer')) {
+      setActivePage('support');
+    } else if (path === '/dev-freelancer-page' || path === '/dev-freelancer-page/') {
+      // Page d'accueil
+      setActivePage('orders-received');
+    }
+  }, [location.pathname]);
 
   // Gestion du clic en dehors de la sidebar
   useEffect(() => {
@@ -180,23 +127,6 @@ function InnerLayout() {
     localStorage.setItem('freelancerDarkMode', JSON.stringify(newDarkMode));
   };
 
-  const acceptOrder = (orderId) => {
-    setOrders(orders.map(order => 
-      order.id === orderId ? { ...order, status: 'acceptée' } : order
-    ));
-    alert(`Commande #${orderId} acceptée avec succès!`);
-  };
-
-  const rejectOrder = (orderId) => {
-    setOrders(orders.filter(order => order.id !== orderId));
-    alert(`Commande #${orderId} refusée`);
-  };
-
-  const refreshOrders = () => {
-    // Simuler un rafraîchissement des commandes
-    alert('Actualisation des commandes...');
-  };
-
   const toggleSubmenu = (menuName) => {
     setOpenSubmenu(openSubmenu === menuName ? null : menuName);
   };
@@ -204,8 +134,14 @@ function InnerLayout() {
   const handleNavigation = (page, path = null) => {
     setActivePage(page);
     setIsSidebarVisible(false);
+    
     if (path) {
       navigate(path);
+    } else {
+      // Si pas de chemin spécifié, naviguer vers la page d'accueil
+      if (page === 'orders-received') {
+        navigate('/dev-freelancer-page');
+      }
     }
   };
 
@@ -213,10 +149,9 @@ function InnerLayout() {
   const getMenuItemStyle = (pageName) => {
     const isActive = activePage === pageName;
     const colorMap = {
-      'dashboard': COLORS.dashboard,
       'orders-received': COLORS.orders,
-      'orders-accepted': COLORS.orders,
-      'orders-history': COLORS.orders,
+      'accepted-cmd-freelancer': COLORS.orders,
+      'historique-commandes-freelancer': COLORS.orders,
       'services-list': COLORS.services,
       'publish-service': COLORS.services,
       'earnings': COLORS.earnings,
@@ -241,120 +176,6 @@ function InnerLayout() {
       iconColor: '#6B7280',
     };
   };
-
-  const filteredOrders = selectedService === 'all' 
-    ? orders.filter(order => order.status === 'en attente')
-    : orders.filter(order => order.status === 'en attente' && order.serviceId === selectedService);
-
-  // Composant pour afficher les commandes (page par défaut)
-  const OrdersReceived = () => (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h2 className="text-2xl font-bold ">Commandes Reçues</h2>
-        
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          {/* Filtre par service */}
-          <div className="relative ">
-            <select
-              value={selectedService}
-              onChange={(e) => setSelectedService(e.target.value)}
-              className="text-black rounded-lg pl-4 pr-10 py-2"
-            >
-              {availableServices.map(service => (
-                <option key={service.id} value={service.id}>
-                  {service.name}
-                </option>
-              ))}
-            </select>
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <ICONS.filter size={16} />
-            </div>
-          </div>
-
-          {/* Bouton Actualiser */}
-          <button 
-            onClick={refreshOrders}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-          >
-            <ICONS.refresh size={16} />
-            Actualiser
-          </button>
-        </div>
-      </div>
-
-      <div className="grid gap-6">
-        {filteredOrders.length === 0 ? (
-          <div className="text-center py-12 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
-            <ICONS.orders size={48} className="mx-auto text-gray-400 mb-4" />
-            <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">
-              Aucune commande trouvée
-            </h3>
-            <p className="text-gray-500 dark:text-gray-400">
-              {selectedService === 'all' 
-                ? "Aucune commande en attente pour le moment"
-                : `Aucune commande pour le service "${availableServices.find(s => s.id === selectedService)?.name}"`
-              }
-            </p>
-          </div>
-        ) : (
-          filteredOrders.map((order) => (
-            <div key={order.id} className=" rounded-xl shadow-lg   p-6 border ">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center border font-bold">
-                    {order.clientPhoto}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">{order.clientName}</h3>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1">
-                        <ICONS.star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="text-sm">{order.rating}</span>
-                      </div>
-                      <span className="text-sm ">• {order.completedOrders} commandes</span>
-                    </div>
-                  </div>
-                </div>
-                <span className="text-sm">{order.time}</span>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <h4 className="font-medium mb-2">Service demandé</h4>
-                  <p className="">{order.service}</p>
-                </div>
-                <div>
-                  <h4 className="font-medium mb-2">Adresse</h4>
-                  <div className="flex items-center gap-2">
-                    <ICONS.location size={14} />
-                    {order.address}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center ">
-                <div className="text-2xl font-bold text-green-600">{order.price}€</div>
-                <div className="flex gap-3">
-                  <button 
-                    onClick={() => rejectOrder(order.id)}
-                    className="px-6 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 transition dark:hover:bg-red-900 dark:border-red-400 dark:text-red-400"
-                  >
-                    Refuser
-                  </button>
-                  <button 
-                    onClick={() => acceptOrder(order.id)}
-                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-                  >
-                    Accepter
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
 
   return (
     <div className={`min-h-screen flex transition-colors duration-300 font-sans ${isDarkMode ? 'dark bg-gray-900 text-white' : 'bg-[#f0fdf4] text-gray-800'}`}>
@@ -455,9 +276,9 @@ function InnerLayout() {
                   </li>
                   <li>
                     <button 
-                      onClick={() => handleNavigation('orders-accepted', 'accepted-cmd-freelancer')}
-                      className={` ${isDarkMode} w-full flex items-center gap-4 px-4 py-2 rounded-lg transition-all ${
-                        getMenuItemStyle('orders-accepted').button
+                      onClick={() => handleNavigation('accepted-cmd-freelancer', 'accepted-cmd-freelancer')}
+                      className={`w-full flex items-center gap-4 px-4 py-2 rounded-lg transition-all ${
+                        getMenuItemStyle('accepted-cmd-freelancer').button
                       }`}
                       style={{ 
                         backgroundColor: activePage === 'accepted-cmd-freelancer' ? `${COLORS.orders}20` : '',
@@ -471,18 +292,18 @@ function InnerLayout() {
                   </li>
                   <li>
                     <button 
-                      onClick={() => handleNavigation('orders-history', 'orders-history-freelancer')}
+                      onClick={() => handleNavigation('historique-commandes-freelancer', 'historique-commandes-freelancer')}
                       className={`w-full flex items-center gap-4 px-4 py-2 rounded-lg transition-all ${
-                        getMenuItemStyle('orders-history-freelancer').button
+                        getMenuItemStyle('historique-commandes-freelancer').button
                       }`}
                       style={{ 
-                        backgroundColor: activePage === 'orders-history-freelancer' ? `${COLORS.orders}20` : '',
-                        borderColor: activePage === 'orders-history-freelancer' ? COLORS.orders : '',
-                        color: activePage === 'orders-history-freelancer' ? COLORS.orders : ''
+                        backgroundColor: activePage === 'historique-commandes-freelancer' ? `${COLORS.orders}20` : '',
+                        borderColor: activePage === 'historique-commandes-freelancer' ? COLORS.orders : '',
+                        color: activePage === 'historique-commandes-freelancer' ? COLORS.orders : ''
                       }}
                     >
-                      <ICONS.history size={16} style={{ color: getMenuItemStyle('orders-history-freelancer').iconColor }} />
-                      <span className={getMenuItemStyle('orders-history-freelancer').text}>Historique</span>
+                      <ICONS.history size={16} style={{ color: getMenuItemStyle('historique-commandes-freelancer').iconColor }} />
+                      <span className={getMenuItemStyle('historique-commandes-freelancer').text}>Historique</span>
                     </button>
                   </li>
                 </ul>
@@ -723,13 +544,9 @@ function InnerLayout() {
           </div>
         </header>
 
-        {/* Contenu principal */}
+        {/* Contenu principal - MAINTENANT TOUJOURS OUTLET */}
         <main className={`flex-1 overflow-y-auto p-4 md:p-6 ${isDarkMode ? 'bg-gray-900' : 'bg-[#f0fdf4]'}`}>
-          {/* Afficher les commandes reçues par défaut */}
-          {activePage === 'orders-received' && <OrdersReceived />}
-          
-          {/* Outlet pour les autres pages */}
-          <Outlet />
+          <Outlet context={{ isDarkMode }} />
         </main>
       </div>
     </div>

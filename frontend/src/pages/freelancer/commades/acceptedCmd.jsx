@@ -1,9 +1,14 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
+import { Camera, Upload, X, Check, MapPin, Phone, Mail, Calendar, Clock, AlertCircle, Shield, ShieldCheck, ShieldOff, MessageCircle } from 'lucide-react';
 
-const CommandesAcceptees = ({ isDarkMode }) => {
+const CommandesAcceptees = () => {
+  const { isDarkMode } = useOutletContext();
   const [activeFilter, setActiveFilter] = useState('en_cours');
   const [expandedOrder, setExpandedOrder] = useState(null);
+  const [uploadingPhotos, setUploadingPhotos] = useState({ before: false, after: false });
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [selectedOrderForPermission, setSelectedOrderForPermission] = useState(null);
 
   // Classes conditionnelles pour le dark mode
   const bgClass = isDarkMode ? 'bg-gray-900' : 'bg-gray-50';
@@ -12,7 +17,7 @@ const CommandesAcceptees = ({ isDarkMode }) => {
   const cardBgClass = isDarkMode ? 'bg-gray-800' : 'bg-white';
   const borderClass = isDarkMode ? 'border-gray-700' : 'border-gray-200';
   const inputBgClass = isDarkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300';
-  const hoverBgClass = isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50';
+  const hoverBgClass = isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100';
 
   // Données simulées des commandes acceptées
   const [orders, setOrders] = useState([
@@ -33,8 +38,14 @@ const CommandesAcceptees = ({ isDarkMode }) => {
       acceptedAt: '2024-01-14 15:45',
       beforePhotos: [],
       afterPhotos: [],
+      photoPermission: 'pending', // 'pending', 'granted', 'denied'
+      permissionRequestedAt: null,
+      permissionResponseAt: null,
+      permissionReason: '',
       submitted: false,
-      clientValidation: false
+      clientValidation: false,
+      rating: 4.8,
+      completedOrders: 15
     },
     {
       id: 'CMD-2024-002',
@@ -42,66 +53,97 @@ const CommandesAcceptees = ({ isDarkMode }) => {
       clientPhone: '+212 6 45 67 89 01',
       clientEmail: 'ahmed.elamrani@email.com',
       service: 'Nettoyage de bureau',
-      date: '2024-01-18',
+      date: '2024-01-16',
       time: '08:00 - 11:00',
       address: '12 Rue des Entrepreneurs, Casablanca',
       amount: 520.00,
-      status: 'à_venir',
+      status: 'en_cours',
       paymentStatus: 'payé',
       specialInstructions: 'Bureau au 3ème étage. Code d\'accès: 1234',
       createdAt: '2024-01-16 16:45',
       acceptedAt: '2024-01-16 17:30',
       beforePhotos: [],
       afterPhotos: [],
+      photoPermission: 'pending',
+      permissionRequestedAt: null,
+      permissionResponseAt: null,
+      permissionReason: '',
       submitted: false,
-      clientValidation: false
+      clientValidation: false,
+      rating: 4.5,
+      completedOrders: 8
     }
   ]);
-
-  // Vérifier si une commande est déjà en cours
-  const hasOrderInProgress = () => {
-    return orders.some(order => order.status === 'en_cours' && !order.submitted);
-  };
 
   // Fonction pour développer/réduire les détails d'une commande
   const toggleOrderDetails = (orderId) => {
     setExpandedOrder(expandedOrder === orderId ? null : orderId);
   };
 
-  // Fonction pour démarrer une commande
-  const startOrder = (orderId) => {
-    if (hasOrderInProgress()) {
-      alert('Vous avez déjà une commande en cours. Terminez-la avant d\'en démarrer une nouvelle.');
-      return;
-    }
-    
-    setOrders(prev => prev.map(order => 
-      order.id === orderId ? { ...order, status: 'en_cours' } : order
-    ));
-    alert(`Commande ${orderId} démarrée !`);
-  };
-
   // Fonction pour annuler une commande
   const cancelOrder = (orderId) => {
-    if (window.confirm('Êtes-vous sûr de vouloir annuler cette commande ?')) {
-      setOrders(prev => prev.filter(order => order.id !== orderId));
+    if (window.confirm('Êtes-vous sûr de vouloir annuler cette commande ? Cette action est irréversible.')) {
+      setOrders(prev => prev.map(order => 
+        order.id === orderId ? { ...order, status: 'annulée' } : order
+      ));
       alert(`Commande ${orderId} annulée.`);
     }
   };
 
-  // Filtres disponibles (seulement en cours et à venir)
-  const filters = [
-    { id: 'en_cours', label: 'En cours', count: orders.filter(o => o.status === 'en_cours').length },
-    { id: 'à_venir', label: 'À venir', count: orders.filter(o => o.status === 'à_venir').length },
-  ];
+  // Fonction pour demander la permission de photos
+  const requestPhotoPermission = (orderId) => {
+    setSelectedOrderForPermission(orderId);
+    setShowPermissionModal(true);
+  };
 
-  // Filtrer les commandes
-  const filteredOrders = activeFilter === 'toutes' 
-    ? orders 
-    : orders.filter(order => order.status === activeFilter);
+  // Fonction pour envoyer la demande de permission
+  const sendPermissionRequest = () => {
+    if (!selectedOrderForPermission) return;
+    
+    const reason = document.getElementById('permission-reason')?.value || 
+                   'Documentation de qualité pour notre assurance qualité';
+    
+    setOrders(prev => prev.map(order => 
+      order.id === selectedOrderForPermission ? { 
+        ...order, 
+        photoPermission: 'pending',
+        permissionRequestedAt: new Date().toLocaleString(),
+        permissionReason: reason
+      } : order
+    ));
+    
+    // Simuler l'envoi de notification au client
+    alert(`📩 Demande de permission envoyée au client ${selectedOrderForPermission} !\nLe client recevra une notification pour autoriser les photos.`);
+    
+    setShowPermissionModal(false);
+    setSelectedOrderForPermission(null);
+  };
 
-  // Fonction pour gérer l'upload de photos
+  // Fonction pour simuler la réponse du client (dans la réalité, ce serait côté client)
+  const simulateClientResponse = (orderId, response) => {
+    setOrders(prev => prev.map(order => 
+      order.id === orderId ? { 
+        ...order, 
+        photoPermission: response,
+        permissionResponseAt: new Date().toLocaleString()
+      } : order
+    ));
+    
+    if (response === 'granted') {
+      alert(`✅ Le client a accepté la prise de photos pour la commande ${orderId}`);
+    } else {
+      alert(`❌ Le client a refusé la prise de photos pour la commande ${orderId}`);
+    }
+  };
+
+  // Fonction pour gérer l'upload de photos (seulement si permission accordée)
   const handlePhotoUpload = (orderId, type, files) => {
+    const order = orders.find(o => o.id === orderId);
+    if (order.photoPermission !== 'granted') {
+      alert('Vous devez avoir la permission du client pour ajouter des photos');
+      return;
+    }
+    
     const fileList = Array.from(files);
     const photoUrls = fileList.map(file => URL.createObjectURL(file));
     
@@ -116,6 +158,9 @@ const CommandesAcceptees = ({ isDarkMode }) => {
           }
         : order
     ));
+    
+    setUploadingPhotos({ ...uploadingPhotos, [type]: true });
+    setTimeout(() => setUploadingPhotos({ ...uploadingPhotos, [type]: false }), 1000);
   };
 
   // Fonction pour supprimer une photo
@@ -136,38 +181,43 @@ const CommandesAcceptees = ({ isDarkMode }) => {
 
   // Fonction pour soumettre une commande terminée
   const submitCompletedOrder = (orderId) => {
+    const order = orders.find(o => o.id === orderId);
+    
+    // Vérifier si des photos sont requises (si permission accordée)
+    if (order.photoPermission === 'granted' && order.afterPhotos.length === 0) {
+      if (!window.confirm("Le client a autorisé les photos mais vous n'avez pas ajouté de photos 'après'. Voulez-vous quand même soumettre la commande ?")) {
+        return;
+      }
+    }
+    
     // Marquer la commande comme soumise pour validation
     setOrders(prev => prev.map(order => 
-      order.id === orderId ? { ...order, submitted: true } : order
+      order.id === orderId ? { ...order, status: 'soumis', submitted: true } : order
     ));
     
     // Simuler l'envoi de notification au client
-    alert(`Notification envoyée au client pour valider la terminaison de la commande ${orderId}.`);
-    
-    // Simuler l'envoi de notification au superviseur
-    alert(`Commande ${orderId} soumise au superviseur pour validation finale.`);
+    alert(`🎉 Commande ${orderId} terminée et soumise !\nLe client a reçu une notification pour validation.`);
   };
 
   // Fonction pour soumettre une réclamation
   const submitComplaint = (orderId) => {
     const complaintReason = prompt('Veuillez décrire la raison de votre réclamation :');
     if (complaintReason) {
-      alert(`Réclamation pour la commande ${orderId} envoyée au superviseur et au support.`);
-      // Ici, vous pourriez envoyer la réclamation à une API
+      alert(`🚨 Réclamation pour la commande ${orderId} envoyée au superviseur et au support.\n\nRaison: ${complaintReason}`);
     }
   };
 
   // Fonction pour formater le statut
   const getStatusBadge = (status) => {
     const statusConfig = {
-      'à_venir': { label: 'À venir', color: 'bg-blue-100 text-blue-800', darkColor: 'bg-blue-900 text-blue-200' },
       'en_cours': { label: 'En cours', color: 'bg-yellow-100 text-yellow-800', darkColor: 'bg-yellow-900 text-yellow-200' },
       'soumis': { label: 'En validation', color: 'bg-purple-100 text-purple-800', darkColor: 'bg-purple-900 text-purple-200' },
-      'validé': { label: 'Validé', color: 'bg-green-100 text-green-800', darkColor: 'bg-green-900 text-green-200' },
+      'validée': { label: 'Validée', color: 'bg-green-100 text-green-800', darkColor: 'bg-green-900 text-green-200' },
+      'annulée': { label: 'Annulée', color: 'bg-red-100 text-red-800', darkColor: 'bg-red-900 text-red-200' },
     };
     const config = statusConfig[status] || statusConfig['en_cours'];
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
         isDarkMode ? config.darkColor : config.color
       }`}>
         {config.label}
@@ -175,56 +225,282 @@ const CommandesAcceptees = ({ isDarkMode }) => {
     );
   };
 
-  // Fonction pour formater le statut de paiement
-  const getPaymentBadge = (paymentStatus) => {
-    const paymentConfig = {
-      'payé': { label: 'Payé', color: 'bg-green-100 text-green-800', darkColor: 'bg-green-900 text-green-200' },
-      'acompte': { label: 'Acompte', color: 'bg-yellow-100 text-yellow-800', darkColor: 'bg-yellow-900 text-yellow-200' },
-      'non_payé': { label: 'À payer', color: 'bg-red-100 text-red-800', darkColor: 'bg-red-900 text-red-200' },
+  // Fonction pour formater le statut de permission
+  const getPermissionBadge = (permission) => {
+    const permissionConfig = {
+      'pending': { label: 'Permission en attente', color: 'bg-yellow-100 text-yellow-800', darkColor: 'bg-yellow-900 text-yellow-200', icon: <Shield size={14} /> },
+      'granted': { label: 'Photos autorisées', color: 'bg-green-100 text-green-800', darkColor: 'bg-green-900 text-green-200', icon: <ShieldCheck size={14} /> },
+      'denied': { label: 'Photos refusées', color: 'bg-red-100 text-red-800', darkColor: 'bg-red-900 text-red-200', icon: <ShieldOff size={14} /> },
     };
-    const config = paymentConfig[paymentStatus];
+    const config = permissionConfig[permission] || permissionConfig['pending'];
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${
         isDarkMode ? config.darkColor : config.color
       }`}>
+        {config.icon}
         {config.label}
       </span>
     );
   };
 
-  // Rendu des photos
-  const renderPhotos = (orderId, type, photos) => {
-    if (photos.length === 0) {
+  // Composant pour afficher le formulaire de photos en tableau (seulement si permission accordée)
+  const PhotoUploadForm = ({ orderId, beforePhotos, afterPhotos, permission }) => {
+    if (permission !== 'granted') {
       return (
-        <div className="text-center py-4">
-          <p className={textSecondaryClass}>Aucune photo ajoutée (optionnel)</p>
+        <div className="mt-6">
+          <h4 className={`text-lg font-semibold ${textClass} mb-4 flex items-center gap-2`}>
+            <Camera size={20} /> Documentation de l'intervention
+          </h4>
+          <div className={`p-6 rounded-lg border ${borderClass} text-center ${isDarkMode ? 'bg-gray-900/50' : 'bg-gray-50'}`}>
+            <ShieldOff size={48} className="mx-auto text-gray-400 mb-4" />
+            <h5 className={`font-medium ${textClass} mb-2`}>
+              {permission === 'pending' 
+                ? 'En attente de permission du client' 
+                : 'Photos non autorisées par le client'}
+            </h5>
+            <p className={textSecondaryClass}>
+              {permission === 'pending' 
+                ? 'Le client n\'a pas encore répondu à votre demande de permission pour les photos.'
+                : 'Le client a refusé la prise de photos. Vous pouvez terminer la commande sans photos.'}
+            </p>
+            {permission === 'pending' && (
+              <p className={`text-sm ${textSecondaryClass} mt-2`}>
+                Demande envoyée le: {orders.find(o => o.id === orderId)?.permissionRequestedAt}
+              </p>
+            )}
+          </div>
         </div>
       );
     }
 
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-        {photos.map((photo, index) => (
-          <div key={index} className="relative group">
-            <img 
-              src={photo} 
-              alt={`Photo ${type === 'before' ? 'avant' : 'après'} ${index + 1}`}
-              className="w-full h-32 object-cover rounded"
-            />
-            <button
-              onClick={() => removePhoto(orderId, type, index)}
-              className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              ×
-            </button>
+      <div className="mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h4 className={`text-lg font-semibold ${textClass} flex items-center gap-2`}>
+            <Camera size={20} /> Documentation de l'intervention
+          </h4>
+          <div className="flex items-center gap-2">
+            {getPermissionBadge('granted')}
+            <span className={`text-sm ${textSecondaryClass}`}>
+              Autorisé le: {orders.find(o => o.id === orderId)?.permissionResponseAt}
+            </span>
           </div>
-        ))}
+        </div>
+        
+        <div className={`rounded-lg border ${borderClass} overflow-hidden`}>
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            {/* Colonne Photos Avant */}
+            <div className={`p-4 border-r ${borderClass}`}>
+              <div className="flex items-center justify-between mb-3">
+                <h5 className={`font-medium ${textClass} flex items-center gap-2`}>
+                  <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+                  Photos Avant l'intervention
+                </h5>
+                <span className={`text-xs px-2 py-1 rounded ${isDarkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
+                  {beforePhotos.length} photo{beforePhotos.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              
+              {beforePhotos.length > 0 ? (
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {beforePhotos.map((photo, index) => (
+                    <div key={index} className="relative group">
+                      <img 
+                        src={photo} 
+                        alt={`Photo avant ${index + 1}`}
+                        className="w-full h-24 object-cover rounded border border-gray-300 dark:border-gray-600"
+                      />
+                      <button
+                        onClick={() => removePhoto(orderId, 'before', index)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className={`text-center py-8 rounded border-2 border-dashed ${borderClass} mb-4`}>
+                  <Camera size={32} className="mx-auto text-gray-400 mb-2" />
+                  <p className={textSecondaryClass}>Aucune photo avant</p>
+                </div>
+              )}
+              
+              <label className={`block mb-2 text-sm font-medium ${textClass}`}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => handlePhotoUpload(orderId, 'before', e.target.files)}
+                  className="hidden"
+                  id={`before-upload-${orderId}`}
+                />
+                <div className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border ${borderClass} cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${uploadingPhotos.before ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  <Upload size={16} />
+                  {uploadingPhotos.before ? 'Téléchargement...' : 'Ajouter des photos'}
+                </div>
+              </label>
+              <p className={`text-xs ${textSecondaryClass} mt-2`}>Maximum 10 photos, 5MB chacune</p>
+            </div>
+
+            {/* Colonne Photos Après */}
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h5 className={`font-medium ${textClass} flex items-center gap-2`}>
+                  <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                  Photos Après l'intervention
+                </h5>
+                <span className={`text-xs px-2 py-1 rounded ${isDarkMode ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800'}`}>
+                  {afterPhotos.length} photo{afterPhotos.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              
+              {afterPhotos.length > 0 ? (
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {afterPhotos.map((photo, index) => (
+                    <div key={index} className="relative group">
+                      <img 
+                        src={photo} 
+                        alt={`Photo après ${index + 1}`}
+                        className="w-full h-24 object-cover rounded border border-gray-300 dark:border-gray-600"
+                      />
+                      <button
+                        onClick={() => removePhoto(orderId, 'after', index)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className={`text-center py-8 rounded border-2 border-dashed ${borderClass} mb-4`}>
+                  <Camera size={32} className="mx-auto text-gray-400 mb-2" />
+                  <p className={textSecondaryClass}>Aucune photo après</p>
+                </div>
+              )}
+              
+              <label className={`block mb-2 text-sm font-medium ${textClass}`}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => handlePhotoUpload(orderId, 'after', e.target.files)}
+                  className="hidden"
+                  id={`after-upload-${orderId}`}
+                />
+                <div className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border ${borderClass} cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${uploadingPhotos.after ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  <Upload size={16} />
+                  {uploadingPhotos.after ? 'Téléchargement...' : 'Ajouter des photos'}
+                </div>
+              </label>
+              <p className={`text-xs ${textSecondaryClass} mt-2`}>Maximum 10 photos, 5MB chacune</p>
+            </div>
+          </div>
+          
+          {/* Résumé du tableau */}
+          <div className={`px-4 py-3 border-t ${borderClass} ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+                  <span className={`text-sm ${textSecondaryClass}`}>
+                    Avant: {beforePhotos.length}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                  <span className={`text-sm ${textSecondaryClass}`}>
+                    Après: {afterPhotos.length}
+                  </span>
+                </div>
+              </div>
+              <div className={`text-sm ${textSecondaryClass}`}>
+                Total: {beforePhotos.length + afterPhotos.length} photos
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   };
 
+  // Modal pour demander la permission
+  const PermissionModal = () => {
+    if (!showPermissionModal) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className={`rounded-xl shadow-lg p-6 w-full max-w-md ${cardBgClass}`}>
+          <div className="flex items-center gap-3 mb-4">
+            <Shield size={24} className="text-blue-600" />
+            <h3 className={`text-xl font-bold ${textClass}`}>
+              Demande de permission
+            </h3>
+          </div>
+          
+          <p className={`mb-4 ${textSecondaryClass}`}>
+            Demander l'autorisation au client pour prendre des photos avant et après l'intervention.
+          </p>
+          
+          <div className="mb-4">
+            <label className={`block mb-2 text-sm font-medium ${textClass}`}>
+              Raison de la demande (optionnel) :
+            </label>
+            <textarea
+              id="permission-reason"
+              rows="3"
+              className={`w-full p-3 rounded-lg border ${borderClass} ${inputBgClass}`}
+              placeholder="Ex: Pour documenter la qualité du travail, pour notre assurance qualité..."
+              defaultValue="Documentation de qualité pour notre assurance qualité"
+            />
+          </div>
+          
+          <div className={`p-3 rounded-lg mb-4 ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50'}`}>
+            <p className={`text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-800'}`}>
+              📝 Le client recevra une notification et pourra accepter ou refuser la prise de photos.
+            </p>
+          </div>
+          
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                setShowPermissionModal(false);
+                setSelectedOrderForPermission(null);
+              }}
+              className={`flex-1 px-4 py-3 border ${borderClass} rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition`}
+            >
+              Annuler
+            </button>
+            <button
+              onClick={sendPermissionRequest}
+              className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            >
+              Envoyer la demande
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Filtres disponibles
+  const filters = [
+    { id: 'en_cours', label: 'En cours', count: orders.filter(o => o.status === 'en_cours').length },
+    { id: 'soumis', label: 'En validation', count: orders.filter(o => o.status === 'soumis').length },
+    { id: 'validée', label: 'Validée', count: orders.filter(o => o.status === 'validée').length },
+    { id: 'annulée', label: 'Annulée', count: orders.filter(o => o.status === 'annulée').length },
+  ];
+
+  // Filtrer les commandes
+  const filteredOrders = activeFilter === 'toutes' 
+    ? orders 
+    : orders.filter(order => order.status === activeFilter);
+
   return (
     <div className={`min-h-screen ${bgClass} py-8 transition-colors duration-300`}>
+      <PermissionModal />
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* En-tête */}
@@ -232,48 +508,25 @@ const CommandesAcceptees = ({ isDarkMode }) => {
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
             <div>
               <h1 className={`text-3xl font-bold ${textClass}`}>Commandes Acceptées</h1>
-              <p className={`${textSecondaryClass} mt-2`}>Gérez vos interventions en cours et à venir</p>
+              <p className={`${textSecondaryClass} mt-2`}>Gérez vos interventions en cours</p>
             </div>
             <div className="mt-4 md:mt-0">
-              <Link
-                to="/freelancer/commandes-disponibles"
-                className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium ${
-                  isDarkMode 
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Voir nouvelles commandes
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Avertissement si commande en cours */}
-        {hasOrderInProgress() && (
-          <div className={`mb-6 p-4 rounded-lg ${isDarkMode ? 'bg-yellow-900/30 border border-yellow-700' : 'bg-yellow-50 border border-yellow-200'}`}>
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className={`h-5 w-5 ${isDarkMode ? 'text-yellow-400' : 'text-yellow-600'}`} viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className={`text-sm font-medium ${isDarkMode ? 'text-yellow-300' : 'text-yellow-800'}`}>
-                  Vous avez une commande en cours
-                </h3>
-                <div className={`mt-2 text-sm ${isDarkMode ? 'text-yellow-200' : 'text-yellow-700'}`}>
-                  <p>
-                    Vous ne pouvez avoir qu'une seule commande en cours à la fois. 
-                    Terminez votre commande actuelle avant d'en accepter une nouvelle.
-                  </p>
+              <div className={`inline-flex items-center px-4 py-2 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'} ${borderClass} border`}>
+                <div className="mr-3">
+                  <div className={`text-sm ${textSecondaryClass}`}>Commandes actives</div>
+                  <div className={`text-xl font-bold ${textClass}`}>{orders.filter(o => o.status === 'en_cours').length}</div>
+                </div>
+                <div className={`w-px h-10 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                <div className="ml-3">
+                  <div className={`text-sm ${textSecondaryClass}`}>Permissions</div>
+                  <div className={`text-xl font-bold ${textClass}`}>
+                    {orders.filter(o => o.photoPermission === 'granted').length}/{orders.length}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Filtres */}
         <div className={`${cardBgClass} rounded-lg shadow mb-6 ${borderClass} border`}>
@@ -283,14 +536,14 @@ const CommandesAcceptees = ({ isDarkMode }) => {
                 <button
                   key={filter.id}
                   onClick={() => setActiveFilter(filter.id)}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
                     activeFilter === filter.id
                       ? 'bg-blue-600 text-white'
                       : `${textSecondaryClass} ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`
                   }`}
                 >
                   {filter.label}
-                  <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
+                  <span className={`px-2 py-1 text-xs rounded-full ${
                     activeFilter === filter.id
                       ? 'bg-blue-500 text-white'
                       : isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
@@ -310,8 +563,17 @@ const CommandesAcceptees = ({ isDarkMode }) => {
               <div className="text-4xl mb-4">📭</div>
               <h3 className={`text-lg font-medium ${textClass} mb-2`}>Aucune commande trouvée</h3>
               <p className={textSecondaryClass}>
-                Vous n'avez pas de commandes {activeFilter !== 'toutes' ? `avec le statut "${filters.find(f => f.id === activeFilter)?.label}"` : 'acceptées'}.
+                {activeFilter === 'toutes' 
+                  ? "Vous n'avez pas encore de commandes acceptées."
+                  : `Vous n'avez pas de commandes avec le statut "${filters.find(f => f.id === activeFilter)?.label}".`
+                }
               </p>
+              <Link 
+                to="/freelancer/commandes" 
+                className="inline-block mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Voir les nouvelles commandes
+              </Link>
             </div>
           ) : (
             filteredOrders.map((order) => (
@@ -321,7 +583,7 @@ const CommandesAcceptees = ({ isDarkMode }) => {
                   <div className="flex flex-col md:flex-row md:items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
                           isDarkMode ? 'bg-blue-900' : 'bg-blue-100'
                         }`}>
                           <span className={`font-bold ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>
@@ -333,24 +595,22 @@ const CommandesAcceptees = ({ isDarkMode }) => {
                             {order.clientName} • {order.service}
                           </h3>
                           <div className="flex items-center space-x-2 mt-1">
-                            {getStatusBadge(order.status)}
-                            {order.submitted && getStatusBadge('soumis')}
-                            {getPaymentBadge(order.paymentStatus)}
-                            <span className={`text-sm ${textSecondaryClass}`}>
-                              {order.date} • {order.time}
-                            </span>
+                            <div className="flex items-center gap-1">
+                              <span className={`text-sm ${textSecondaryClass}`}>
+                                ⭐ {order.rating} ({order.completedOrders} commandes)
+                              </span>
+                            </div>
+                            {getPermissionBadge(order.photoPermission)}
                           </div>
                         </div>
                       </div>
                     </div>
                     <div className="mt-4 md:mt-0 md:text-right">
                       <div className={`text-2xl font-bold ${textClass}`}>{order.amount.toFixed(2)} MAD</div>
-                      <div className="flex items-center justify-end mt-1">
-                        <span className={`text-sm ${textSecondaryClass}`}>
-                          {order.id}
-                        </span>
+                      <div className="flex items-center justify-end gap-3 mt-1">
+                        {getStatusBadge(order.status)}
                         <svg 
-                          className={`w-5 h-5 ml-2 transform transition-transform ${
+                          className={`w-5 h-5 transform transition-transform ${
                             expandedOrder === order.id ? 'rotate-180' : ''
                           } ${textSecondaryClass}`}
                           fill="none" 
@@ -367,52 +627,75 @@ const CommandesAcceptees = ({ isDarkMode }) => {
                 {/* Détails de la commande (expandable) */}
                 {expandedOrder === order.id && (
                   <div className={`border-t ${borderClass} p-6`}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Informations client */}
-                      <div>
-                        <h4 className={`font-medium ${textClass} mb-3`}>👤 Informations client</h4>
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className={textSecondaryClass}>Nom :</span>
-                            <span className={textClass}>{order.clientName}</span>
+                    <div className="space-y-6">
+                      {/* Informations principales */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className={`p-4 rounded-lg border ${borderClass}`}>
+                          <div className="flex items-center gap-3 mb-2">
+                            <Calendar size={18} className={textSecondaryClass} />
+                            <span className={`font-medium ${textClass}`}>Date</span>
                           </div>
-                          <div className="flex justify-between">
-                            <span className={textSecondaryClass}>Téléphone :</span>
-                            <a href={`tel:${order.clientPhone}`} className="text-blue-600 hover:text-blue-800">
-                              {order.clientPhone}
-                            </a>
+                          <p className={textClass}>{order.date}</p>
+                        </div>
+                        
+                        <div className={`p-4 rounded-lg border ${borderClass}`}>
+                          <div className="flex items-center gap-3 mb-2">
+                            <Clock size={18} className={textSecondaryClass} />
+                            <span className={`font-medium ${textClass}`}>Heure</span>
                           </div>
-                          <div className="flex justify-between">
-                            <span className={textSecondaryClass}>Email :</span>
-                            <a href={`mailto:${order.clientEmail}`} className="text-blue-600 hover:text-blue-800">
-                              {order.clientEmail}
-                            </a>
+                          <p className={textClass}>{order.time}</p>
+                        </div>
+                        
+                        <div className={`p-4 rounded-lg border ${borderClass}`}>
+                          <div className="flex items-center gap-3 mb-2">
+                            <MapPin size={18} className={textSecondaryClass} />
+                            <span className={`font-medium ${textClass}`}>Adresse</span>
                           </div>
+                          <p className={textClass}>{order.address}</p>
+                        </div>
+                        
+                        <div className={`p-4 rounded-lg border ${borderClass}`}>
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className={`font-medium ${textClass}`}>Montant</span>
+                          </div>
+                          <p className="text-2xl font-bold text-green-600">{order.amount.toFixed(2)} MAD</p>
                         </div>
                       </div>
 
-                      {/* Détails de la commande */}
-                      <div>
-                        <h4 className={`font-medium ${textClass} mb-3`}>📋 Détails de la commande</h4>
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className={textSecondaryClass}>Date :</span>
-                            <span className={textClass}>{order.date}</span>
+                      {/* Coordonnées du client */}
+                      <div className={`p-4 rounded-lg border ${borderClass}`}>
+                        <h4 className={`font-medium ${textClass} mb-3`}>📞 Coordonnées du client</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="flex items-center gap-3">
+                            <Phone size={16} className={textSecondaryClass} />
+                            <div>
+                              <p className={`text-sm ${textSecondaryClass}`}>Téléphone</p>
+                              <a href={`tel:${order.clientPhone}`} className="text-blue-600 hover:text-blue-800">
+                                {order.clientPhone}
+                              </a>
+                            </div>
                           </div>
-                          <div className="flex justify-between">
-                            <span className={textSecondaryClass}>Heure :</span>
-                            <span className={textClass}>{order.time}</span>
+                          
+                          <div className="flex items-center gap-3">
+                            <Mail size={16} className={textSecondaryClass} />
+                            <div>
+                              <p className={`text-sm ${textSecondaryClass}`}>Email</p>
+                              <a href={`mailto:${order.clientEmail}`} className="text-blue-600 hover:text-blue-800">
+                                {order.clientEmail}
+                              </a>
+                            </div>
                           </div>
-                          <div className="flex justify-between">
-                            <span className={textSecondaryClass}>Adresse :</span>
-                            <span className={`text-right ${textClass}`}>{order.address}</span>
+                          
+                          <div>
+                            <p className={`text-sm ${textSecondaryClass}`}>Client depuis</p>
+                            <p className={textClass}>{order.completedOrders} commandes</p>
                           </div>
                         </div>
                       </div>
 
                       {/* Instructions spéciales */}
                       {order.specialInstructions && (
-                        <div className="md:col-span-2">
+                        <div className={`p-4 rounded-lg border ${borderClass}`}>
                           <h4 className={`font-medium ${textClass} mb-3`}>📝 Instructions spéciales</h4>
                           <div className={`p-3 rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
                             <p className={textClass}>{order.specialInstructions}</p>
@@ -420,169 +703,210 @@ const CommandesAcceptees = ({ isDarkMode }) => {
                         </div>
                       )}
 
-                      {/* Historique */}
-                      <div className="md:col-span-2">
-                        <h4 className={`font-medium ${textClass} mb-3`}>🕒 Historique</h4>
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className={textSecondaryClass}>Créée le :</span>
-                            <span className={textClass}>{order.createdAt}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className={textSecondaryClass}>Acceptée le :</span>
-                            <span className={textClass}>{order.acceptedAt}</span>
-                          </div>
+                      {/* Section Permission de Photos */}
+                      <div className={`p-4 rounded-lg border ${borderClass}`}>
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className={`font-medium ${textClass} flex items-center gap-2`}>
+                            <Shield size={20} /> Permission pour les photos
+                          </h4>
+                          {order.photoPermission === 'pending' && order.permissionRequestedAt && (
+                            <span className={`text-sm ${textSecondaryClass}`}>
+                              Demande envoyée le: {order.permissionRequestedAt}
+                            </span>
+                          )}
+                          {order.photoPermission !== 'pending' && order.permissionResponseAt && (
+                            <span className={`text-sm ${textSecondaryClass}`}>
+                              Réponse le: {order.permissionResponseAt}
+                            </span>
+                          )}
                         </div>
-                      </div>
-
-                      {/* Formulaire de photos pour les commandes en cours */}
-                      {order.status === 'en_cours' && !order.submitted && (
-                        <div className="md:col-span-2 pt-4 border-t border-gray-200">
-                          <h4 className={`font-medium ${textClass} mb-4`}>📸 Documentation de l'intervention (Optionnel)</h4>
+                        
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className={textClass}>Statut de permission :</p>
+                              <p className={`text-sm ${textSecondaryClass}`}>
+                                {order.photoPermission === 'pending' 
+                                  ? 'En attente de réponse du client'
+                                  : order.photoPermission === 'granted'
+                                  ? 'Le client a autorisé la prise de photos'
+                                  : 'Le client a refusé la prise de photos'}
+                              </p>
+                            </div>
+                            <div>
+                              {getPermissionBadge(order.photoPermission)}
+                            </div>
+                          </div>
                           
-                          {/* Section photos avant */}
-                          <div className="mb-6">
-                            <h5 className={`font-medium ${textClass} mb-2`}>Photos avant l'intervention :</h5>
-                            {renderPhotos(order.id, 'before', order.beforePhotos)}
-                            <div className="mt-2">
-                              <label className={`block text-sm font-medium ${textSecondaryClass} mb-2`}>
-                                Ajouter des photos "avant" (optionnel)
-                              </label>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                onChange={(e) => handlePhotoUpload(order.id, 'before', e.target.files)}
-                                className={`block w-full text-sm ${textSecondaryClass} border ${borderClass} rounded-lg cursor-pointer focus:outline-none ${inputBgClass}`}
-                              />
-                              <p className={`mt-1 text-sm ${textSecondaryClass}`}>Format: JPG, PNG (max 5Mo)</p>
-                            </div>
-                          </div>
-
-                          {/* Section photos après */}
-                          <div className="mb-6">
-                            <h5 className={`font-medium ${textClass} mb-2`}>Photos après l'intervention :</h5>
-                            {renderPhotos(order.id, 'after', order.afterPhotos)}
-                            <div className="mt-2">
-                              <label className={`block text-sm font-medium ${textSecondaryClass} mb-2`}>
-                                Ajouter des photos "après" (optionnel)
-                              </label>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                onChange={(e) => handlePhotoUpload(order.id, 'after', e.target.files)}
-                                className={`block w-full text-sm ${textSecondaryClass} border ${borderClass} rounded-lg cursor-pointer focus:outline-none ${inputBgClass}`}
-                              />
-                              <p className={`mt-1 text-sm ${textSecondaryClass}`}>Format: JPG, PNG (max 5Mo)</p>
-                            </div>
-                          </div>
-
-                          {/* Bouton de soumission */}
-                          <div className="flex justify-end gap-3">
-                            <button
-                              onClick={() => submitCompletedOrder(order.id)}
-                              className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium"
-                            >
-                              ✅ Terminer la commande
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Message pour les commandes soumises */}
-                      {order.submitted && (
-                        <div className="md:col-span-2 pt-4 border-t border-gray-200">
-                          <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50'}`}>
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0">
-                                <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              </div>
-                              <div className="ml-3">
-                                <h3 className={`text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-800'}`}>
-                                  Commande en attente de validation
-                                </h3>
-                                <div className={`mt-2 text-sm ${isDarkMode ? 'text-blue-200' : 'text-blue-700'}`}>
-                                  <p>
-                                    Cette commande a été soumise. Le client doit valider la terminaison.
-                                    Une fois validée par le client, le superviseur procédera au paiement.
+                          {order.photoPermission === 'pending' && (
+                            <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-yellow-900/20' : 'bg-yellow-50'}`}>
+                              <div className="flex items-center gap-3">
+                                <AlertCircle size={20} className="text-yellow-600" />
+                                <div>
+                                  <p className={`text-sm ${isDarkMode ? 'text-yellow-300' : 'text-yellow-800'}`}>
+                                    En attente de réponse du client
                                   </p>
-                                  <p className="mt-1">
-                                    {order.beforePhotos.length > 0 || order.afterPhotos.length > 0 ? (
-                                      `Photos avant : ${order.beforePhotos.length} | Photos après : ${order.afterPhotos.length}`
-                                    ) : (
-                                      "Aucune photo n'a été ajoutée"
-                                    )}
+                                  <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                                    Vous pouvez toujours terminer la commande sans photos
                                   </p>
                                 </div>
                               </div>
                             </div>
-                            <div className="mt-4 flex gap-3">
+                          )}
+                          
+                          <div className="flex flex-wrap gap-3">
+                            {order.photoPermission === 'pending' && !order.permissionRequestedAt && (
                               <button
-                                onClick={() => submitComplaint(order.id)}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium"
+                                onClick={() => requestPhotoPermission(order.id)}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                               >
-                                🚨 Signaler un problème
+                                <MessageCircle size={16} />
+                                Demander la permission
+                              </button>
+                            )}
+                            
+                            {order.photoPermission === 'pending' && order.permissionRequestedAt && (
+                              <button
+                                onClick={() => alert('La demande a déjà été envoyée. En attente de réponse du client.')}
+                                className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg"
+                              >
+                                <MessageCircle size={16} />
+                                Demande déjà envoyée
+                              </button>
+                            )}
+                            
+                            {/* Boutons de simulation pour le développement (à enlever en production) */}
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => simulateClientResponse(order.id, 'granted')}
+                                className="flex items-center gap-2 px-3 py-2 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700"
+                              >
+                                (Simuler Acceptation)
+                              </button>
+                              <button
+                                onClick={() => simulateClientResponse(order.id, 'denied')}
+                                className="flex items-center gap-2 px-3 py-2 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700"
+                              >
+                                (Simuler Refus)
                               </button>
                             </div>
                           </div>
                         </div>
+                      </div>
+
+                      {/* Formulaire de photos (seulement si permission accordée) */}
+                      {order.status === 'en_cours' && !order.submitted && (
+                        <>
+                          <PhotoUploadForm 
+                            orderId={order.id}
+                            beforePhotos={order.beforePhotos}
+                            afterPhotos={order.afterPhotos}
+                            permission={order.photoPermission}
+                          />
+
+                          {/* Bouton de soumission */}
+                          <div className="flex flex-col sm:flex-row justify-between gap-4 pt-4 border-t border-gray-700">
+                            <div className="text-sm">
+                              <p className={textSecondaryClass}>
+                                {order.photoPermission === 'granted' && (order.beforePhotos.length > 0 || order.afterPhotos.length > 0) ? (
+                                  <span className="flex items-center gap-2 text-green-600">
+                                    <Check size={16} />
+                                    {order.beforePhotos.length + order.afterPhotos.length} photo(s) ajoutée(s)
+                                  </span>
+                                ) : order.photoPermission === 'denied' ? (
+                                  <span className="flex items-center gap-2 text-gray-600">
+                                    <ShieldOff size={16} />
+                                    Photos non autorisées par le client
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-2 text-yellow-600">
+                                    <AlertCircle size={16} />
+                                    {order.photoPermission === 'pending' 
+                                      ? 'En attente de permission pour les photos'
+                                      : 'Ajoutez des photos pour terminer la commande'}
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                            
+                            <div className="flex flex-wrap gap-3">
+                              <button
+                                onClick={() => alert(`Contacter ${order.clientName}`)}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${borderClass} ${
+                                  isDarkMode 
+                                    ? 'text-gray-300 hover:bg-gray-700' 
+                                    : 'text-gray-700 hover:bg-gray-100'
+                                }`}
+                              >
+                                <Phone size={16} />
+                                Contacter
+                              </button>
+                              
+                              <button
+                                onClick={() => cancelOrder(order.id)}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                              >
+                                <X size={16} />
+                                Annuler
+                              </button>
+                              
+                              <button
+                                onClick={() => submitCompletedOrder(order.id)}
+                                disabled={order.photoPermission === 'granted' && order.afterPhotos.length === 0}
+                                className={`flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg font-medium transition-colors ${
+                                  order.photoPermission === 'granted' && order.afterPhotos.length === 0
+                                    ? 'opacity-50 cursor-not-allowed'
+                                    : 'hover:bg-green-700'
+                                }`}
+                              >
+                                <Check size={16} />
+                                Terminer la commande
+                              </button>
+                            </div>
+                          </div>
+                        </>
                       )}
 
-                      {/* Actions */}
-                      <div className="md:col-span-2 pt-4 border-t border-gray-700">
-                        <div className="flex flex-wrap gap-3">
-                          {order.status === 'à_venir' && (
-                            <button
-                              onClick={() => startOrder(order.id)}
-                              disabled={hasOrderInProgress()}
-                              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                                hasOrderInProgress()
-                                  ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
-                                  : 'bg-green-600 hover:bg-green-700 text-white'
-                              }`}
-                            >
-                              🚀 Démarrer la commande
-                            </button>
-                          )}
-                          
-                          {order.status === 'en_cours' && !order.submitted && (
-                            <button
-                              onClick={() => alert(`Contacter ${order.clientName}`)}
-                              className={`border ${borderClass} px-4 py-2 rounded-md text-sm font-medium ${
-                                isDarkMode 
-                                  ? 'text-gray-300 hover:bg-gray-700' 
-                                  : 'text-gray-700 hover:bg-gray-100'
-                              }`}
-                            >
-                              📞 Contacter le client
-                            </button>
-                          )}
-                          
-                          <button
-                            onClick={() => alert(`Voir l'adresse sur la carte`)}
-                            className={`border ${borderClass} px-4 py-2 rounded-md text-sm font-medium ${
-                              isDarkMode 
-                                ? 'text-gray-300 hover:bg-gray-700' 
-                                : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                          >
-                            🗺️ Voir sur la carte
-                          </button>
-                          
-                          {/* Bouton d'annulation */}
-                          {!order.submitted && (
-                            <button
-                              onClick={() => cancelOrder(order.id)}
-                              className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700"
-                            >
-                              ❌ Annuler la commande
-                            </button>
-                          )}
+                      {/* Message pour les commandes soumises */}
+                      {order.status === 'soumis' && (
+                        <div className={`p-4 rounded-lg border border-purple-300 dark:border-purple-700 ${isDarkMode ? 'bg-purple-900/20' : 'bg-purple-50'}`}>
+                          <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0">
+                              <Check size={24} className="text-purple-600" />
+                            </div>
+                            <div>
+                              <h4 className={`text-lg font-medium ${textClass} mb-2`}>
+                                Commande en attente de validation
+                              </h4>
+                              <div className={`space-y-2 ${textSecondaryClass}`}>
+                                <p>
+                                  ✅ La commande a été soumise avec succès.
+                                </p>
+                                <p>
+                                  ⏳ Le client doit maintenant valider l'intervention.
+                                </p>
+                                <p>
+                                  💰 Une fois validée, le superviseur procédera au paiement.
+                                </p>
+                                {order.photoPermission === 'granted' && (
+                                  <p>
+                                    📸 Photos : {order.beforePhotos.length + order.afterPhotos.length} photo(s) ajoutée(s)
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap gap-3 mt-4">
+                                <button
+                                  onClick={() => submitComplaint(order.id)}
+                                  className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium"
+                                >
+                                  <AlertCircle size={16} />
+                                  Signaler un problème
+                                </button>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 )}

@@ -71,14 +71,14 @@ const Portefeuille = ({ isDarkMode, toggleDarkMode }) => {
   ];
 
   // Classes conditionnelles pour le dark mode
-  const bgClass = isDarkMode ? 'bg-gray-900' : 'bg-gray-50';
-  const textClass = isDarkMode ? 'text-white' : 'text-gray-900';
-  const textSecondaryClass = isDarkMode ? 'text-gray-300' : 'text-gray-600';
-  const cardBgClass = isDarkMode ? 'bg-gray-800' : 'bg-white';
-  const borderClass = isDarkMode ? 'border-gray-700' : 'border-gray-200';
-  const inputBgClass = isDarkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300';
-  const tableHeaderBgClass = isDarkMode ? 'bg-gray-700' : 'bg-gray-50';
-  const tableRowBgClass = isDarkMode ? 'bg-gray-800' : 'bg-white';
+  const bgClass = isDarkMode;
+  const textClass = isDarkMode;
+  const textSecondaryClass = isDarkMode;
+  const cardBgClass = isDarkMode;
+  const borderClass = isDarkMode;
+  const inputBgClass = isDarkMode;
+  const tableHeaderBgClass = isDarkMode;
+  const tableRowBgClass = isDarkMode;
 
   const handleWithdraw = (e) => {
     e.preventDefault();
@@ -173,28 +173,28 @@ const Portefeuille = ({ isDarkMode, toggleDarkMode }) => {
   };
 
   return (
-    <div className={`min-h-screen ${bgClass} py-8 transition-colors duration-300`}>
+    <div className={`min-h-screen ${isDarkMode} py-8 transition-colors duration-300`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* En-tête */}
         <div className="mb-8">
-          <h1 className={`text-3xl font-bold ${textClass}`}>Mon Portefeuille</h1>
-          <p className={`${textSecondaryClass} mt-2`}>Gérez vos gains et vos retraits</p>
+          <h1 className={`text-3xl font-bold`}>Mon Portefeuille</h1>
+          <p className={`dark:text-gray-400 mt-2`}>Gérez vos gains et vos retraits</p>
         </div>
 
         {/* Cartes de statistiques */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 ">
           {stats.map((stat, index) => (
-            <div key={index} className={`${cardBgClass} rounded-lg shadow p-6`}>
-              <p className={`text-sm font-medium ${textSecondaryClass}`}>{stat.label}</p>
+            <div key={index} className={`rounded-lg shadow p-6 border`}>
+              <p className={`text-sm font-medium`}>{stat.label}</p>
               <p className={`text-2xl font-bold ${stat.color} mt-2`}>{stat.value}</p>
             </div>
           ))}
         </div>
 
         {/* Navigation par onglets */}
-        <div className={`${cardBgClass} rounded-lg shadow mb-8`}>
-          <div className={`border-b ${borderClass}`}>
+        <div className={`rounded-lg shadow mb-8 border`}>
+          <div className={`border-b`}>
             <nav className="flex -mb-px">
               {[
                 { id: 'overview', label: 'Aperçu' },
@@ -207,8 +207,8 @@ const Portefeuille = ({ isDarkMode, toggleDarkMode }) => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${
                     activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : `border-transparent ${textSecondaryClass} hover:${isDarkMode ? 'text-gray-300' : 'text-gray-700'} hover:border-gray-300`
+                      ? 'border-green-500 text-green-600'
+                      : `border-transparent hover:bg-gray-100 dark:hover:text-gray-900 hover:border-gray-300`
                   }`}
                 >
                   {tab.label}
@@ -223,9 +223,11 @@ const Portefeuille = ({ isDarkMode, toggleDarkMode }) => {
               <div>
                 <h3 className={`text-lg font-medium ${textClass} mb-4`}>Aperçu du portefeuille</h3>
                 <div className="space-y-4">
-                  <div className={`flex justify-between items-center p-4 rounded-lg ${
-                    isDarkMode ? 'bg-blue-900' : 'bg-blue-50'
-                  }`}>
+                  <div className={`
+                    flex justify-between items-center p-4 rounded-lg ${isDarkMode}
+                    border  
+                  
+                  `}>
                     <span className={`font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
                       Prochain paiement
                     </span>
@@ -233,9 +235,10 @@ const Portefeuille = ({ isDarkMode, toggleDarkMode }) => {
                       {walletData.pending} MAD
                     </span>
                   </div>
-                  <div className={`flex justify-between items-center p-4 rounded-lg ${
-                    isDarkMode ? 'bg-green-900' : 'bg-green-50'
-                  }`}>
+                  <div className={`
+                    flex justify-between items-center p-4 rounded-lg ${isDarkMode}
+                    border
+                  `}>
                     <span className={`font-medium ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>
                       Disponible immédiatement
                     </span>
@@ -243,10 +246,11 @@ const Portefeuille = ({ isDarkMode, toggleDarkMode }) => {
                       {walletData.balance} MAD
                     </span>
                   </div>
-                  <div className={`border rounded-lg p-4 ${
-                    isDarkMode ? 'bg-yellow-900 border-yellow-700' : 'bg-yellow-50 border-yellow-200'
-                  }`}>
-                    <p className={`text-sm ${isDarkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>
+                  <div className={`
+                    border rounded-lg p-4 ${isDarkMode}
+                    bg-orange-700
+                  `}>
+                    <p className={`text-sm ${isDarkMode}`}>
                       💡 <strong>Conseil :</strong> Les retraits sont traités le jour même. 
                       Assurez-vous d'avoir une méthode de paiement vérifiée.
                     </p>
@@ -257,26 +261,26 @@ const Portefeuille = ({ isDarkMode, toggleDarkMode }) => {
 
             {activeTab === 'transactions' && (
               <div>
-                <h3 className={`text-lg font-medium ${textClass} mb-4`}>Historique des transactions</h3>
+                <h3 className={`text-lg font-medium ${isDarkMode} mb-4`}>Historique des transactions</h3>
                 <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg">
                   <table className="min-w-full divide-y divide-gray-300">
                     <thead className={tableHeaderBgClass}>
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                           Date
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                           Description
                         </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
                           Montant
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                           Statut
                         </th>
                       </tr>
                     </thead>
-                    <tbody className={`divide-y ${isDarkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                    <tbody className={`divide-y ${bgClass}`}>
                       {walletData.transactions.map((transaction) => (
                         <tr key={transaction.id} className={tableRowBgClass}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

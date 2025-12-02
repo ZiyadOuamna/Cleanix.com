@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
-  Search, Download, Star, X, Package 
+  Search, Download, Star, X, Package, FileText, Save, Plus, Minus
 } from 'lucide-react';
+import jsPDF from 'jspdf';
 
 const HistoriqueCommandes = ({ isDarkMode }) => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showExportSettings, setShowExportSettings] = useState(false);
+  const [exportFormat, setExportFormat] = useState('append'); // 'append' ou 'replace'
+  
+  // Référence pour le contenu HTML de la facture
+  const invoiceRef = useRef(null);
 
   // Données d'historique des commandes
   const [orderHistory, setOrderHistory] = useState([
@@ -24,7 +30,8 @@ const HistoriqueCommandes = ({ isDarkMode }) => {
       rating: 5,
       clientReview: "Excellent travail, très professionnel!",
       paymentMethod: "Carte bancaire",
-      paymentStatus: "paid"
+      paymentStatus: "paid",
+      exportDate: null // Date d'exportation pour le suivi
     },
     {
       id: 102,
@@ -40,7 +47,8 @@ const HistoriqueCommandes = ({ isDarkMode }) => {
       rating: 4,
       clientReview: "Très satisfaite, à recommander",
       paymentMethod: "PayPal",
-      paymentStatus: "paid"
+      paymentStatus: "paid",
+      exportDate: null
     },
     {
       id: 103,
@@ -57,7 +65,8 @@ const HistoriqueCommandes = ({ isDarkMode }) => {
       clientReview: null,
       paymentMethod: "Carte bancaire",
       paymentStatus: "refunded",
-      cancellationReason: "Client a annulé"
+      cancellationReason: "Client a annulé",
+      exportDate: null
     },
     {
       id: 104,
@@ -73,7 +82,8 @@ const HistoriqueCommandes = ({ isDarkMode }) => {
       rating: 5,
       clientReview: "Parfait, merci beaucoup!",
       paymentMethod: "Espèces",
-      paymentStatus: "paid"
+      paymentStatus: "paid",
+      exportDate: null
     },
     {
       id: 105,
@@ -89,7 +99,8 @@ const HistoriqueCommandes = ({ isDarkMode }) => {
       rating: 4,
       clientReview: "Très bon service",
       paymentMethod: "Carte bancaire",
-      paymentStatus: "paid"
+      paymentStatus: "paid",
+      exportDate: null
     },
     {
       id: 106,
@@ -105,7 +116,8 @@ const HistoriqueCommandes = ({ isDarkMode }) => {
       rating: 5,
       clientReview: "Impeccable, je recommande",
       paymentMethod: "PayPal",
-      paymentStatus: "paid"
+      paymentStatus: "paid",
+      exportDate: null
     },
     {
       id: 107,
@@ -121,7 +133,8 @@ const HistoriqueCommandes = ({ isDarkMode }) => {
       rating: 3,
       clientReview: "Correct, mais pourrait mieux faire",
       paymentMethod: "Espèces",
-      paymentStatus: "paid"
+      paymentStatus: "paid",
+      exportDate: null
     },
     {
       id: 108,
@@ -138,7 +151,8 @@ const HistoriqueCommandes = ({ isDarkMode }) => {
       clientReview: null,
       paymentMethod: "Carte bancaire",
       paymentStatus: "refunded",
-      cancellationReason: "Problème d'emploi du temps"
+      cancellationReason: "Problème d'emploi du temps",
+      exportDate: null
     }
   ]);
 
@@ -178,10 +192,201 @@ const HistoriqueCommandes = ({ isDarkMode }) => {
     return true;
   });
 
+  // Fonction pour générer et télécharger la facture PDF
+  const generateInvoicePDF = (order) => {
+    if (!order) return;
+
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    // Définir les couleurs
+    const primaryColor = [59, 130, 246]; // Blue-500
+    const secondaryColor = [55, 65, 81]; // Gray-700
+    const successColor = [34, 197, 94]; // Green-500
+
+    // En-tête de la facture
+    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.rect(0, 0, 210, 50, 'F');
+    
+    // Titre principal
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('FACTURE', 105, 20, { align: 'center' });
+    
+    // Numéro de facture
+    doc.setFontSize(12);
+    doc.text(`N° ${order.id}`, 105, 30, { align: 'center' });
+    doc.text(`Date: ${order.date}`, 105, 35, { align: 'center' });
+
+    // Logo/En-tête de la société (simplifié)
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.text('Cleanix Services', 20, 45);
+    doc.text('Nettoyage Professionnel', 20, 50);
+
+    // Informations client
+    doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INFORMATIONS CLIENT', 20, 70);
+    
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Nom: ${order.clientName}`, 20, 80);
+    doc.text(`Adresse: ${order.address}`, 20, 85);
+    doc.text(`Téléphone: Non spécifié`, 20, 90);
+    doc.text(`Email: client@email.com`, 20, 95);
+
+    // Détails de la commande
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('DÉTAILS DE LA COMMANDE', 20, 110);
+
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    
+    // Tableau des détails
+    const detailsY = 120;
+    doc.setFillColor(240, 240, 240);
+    doc.rect(20, detailsY - 5, 170, 10, 'F');
+    
+    doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Description', 25, detailsY);
+    doc.text('Quantité', 120, detailsY);
+    doc.text('Prix unitaire', 150, detailsY);
+    doc.text('Total', 180, detailsY);
+
+    // Ligne de la commande
+    doc.setFont('helvetica', 'normal');
+    doc.text(order.service, 25, detailsY + 10);
+    doc.text('1', 120, detailsY + 10);
+    doc.text(`${order.price} €`, 150, detailsY + 10);
+    doc.text(`${order.price} €`, 180, detailsY + 10);
+
+    // Sous-totaux
+    const subtotalY = detailsY + 25;
+    doc.setFont('helvetica', 'normal');
+    doc.text('Sous-total:', 150, subtotalY);
+    doc.text(`${order.price} €`, 180, subtotalY);
+
+    // TVA (20%)
+    const tva = order.price * 0.2;
+    doc.text('TVA (20%):', 150, subtotalY + 10);
+    doc.text(`${tva.toFixed(2)} €`, 180, subtotalY + 10);
+
+    // Total
+    doc.setFont('helvetica', 'bold');
+    const totalY = subtotalY + 25;
+    doc.setFillColor(successColor[0], successColor[1], successColor[2]);
+    doc.rect(20, totalY - 5, 170, 12, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.text('TOTAL:', 150, totalY);
+    doc.text(`${(order.price + tva).toFixed(2)} €`, 180, totalY);
+
+    // Informations de paiement
+    doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INFORMATIONS DE PAIEMENT', 20, totalY + 25);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`Méthode: ${order.paymentMethod}`, 20, totalY + 35);
+    doc.text(`Statut: ${order.paymentStatus === 'paid' ? 'Payé' : 'En attente'}`, 20, totalY + 40);
+    doc.text(`Date de paiement: ${order.date}`, 20, totalY + 45);
+
+    // Avis client (si disponible)
+    if (order.rating && order.clientReview) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('AVIS DU CLIENT', 20, totalY + 60);
+      
+      doc.setFont('helvetica', 'normal');
+      // Note en étoiles
+      let starsText = '';
+      for (let i = 0; i < 5; i++) {
+        starsText += i < order.rating ? '★' : '☆';
+      }
+      doc.text(`Note: ${starsText} (${order.rating}/5)`, 20, totalY + 70);
+      doc.text(`Commentaire: ${order.clientReview}`, 20, totalY + 80);
+    }
+
+    // Pied de page
+    const footerY = 280;
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text('Merci pour votre confiance!', 105, footerY, { align: 'center' });
+    doc.text('Cleanix Services - SIRET 123 456 789 00001 - TVA FR 12 345 678 90', 105, footerY + 5, { align: 'center' });
+    doc.text('Tél: 01 23 45 67 89 - Email: contact@cleanix.fr - Site: www.cleanix.fr', 105, footerY + 10, { align: 'center' });
+
+    // Télécharger le PDF
+    doc.save(`facture-${order.id}-${order.date.replace(/ /g, '_')}.pdf`);
+    
+    alert(`Facture #${order.id} téléchargée avec succès!`);
+  };
+
+  // Fonction pour exporter l'historique
+  const handleExportHistory = () => {
+    // Filtrer seulement les commandes terminées
+    const completedOrders = orderHistory.filter(order => order.status === 'completed');
+    
+    if (completedOrders.length === 0) {
+      alert('Aucune commande terminée à exporter.');
+      return;
+    }
+
+    const currentDate = new Date().toISOString().split('T')[0];
+    const exportData = {
+      exportDate: currentDate,
+      totalOrders: completedOrders.length,
+      orders: completedOrders.map(order => ({
+        id: order.id,
+        clientName: order.clientName,
+        service: order.service,
+        date: order.date,
+        price: order.price,
+        rating: order.rating,
+        paymentMethod: order.paymentMethod
+      }))
+    };
+
+    // Convertir en JSON avec formatage
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    
+    // Créer un lien de téléchargement
+    const downloadUrl = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = 'historiqueCommandesTerminees.json';
+    
+    // Simuler le clic
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Libérer l'URL
+    URL.revokeObjectURL(downloadUrl);
+    
+    // Marquer les commandes comme exportées
+    const updatedHistory = orderHistory.map(order => 
+      order.status === 'completed' 
+        ? { ...order, exportDate: currentDate }
+        : order
+    );
+    setOrderHistory(updatedHistory);
+    
+    alert(`${completedOrders.length} commandes terminées exportées avec succès!`);
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-      case 'cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+      case 'completed': return 'text-green-800 dark:text-green-300';
+      case 'cancelled': return 'text-red-800 dark:text-red-300';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
   };
@@ -196,8 +401,8 @@ const HistoriqueCommandes = ({ isDarkMode }) => {
 
   const getPaymentStatusColor = (status) => {
     switch (status) {
-      case 'paid': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-      case 'refunded': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+      case 'paid': return 'text-green-800 dark:text-green-300';
+      case 'refunded': return 'text-blue-800 dark:text-blue-300';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
   };
@@ -256,25 +461,25 @@ const HistoriqueCommandes = ({ isDarkMode }) => {
             </div>
 
             {/* Détails de la commande */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${bgClass}`}>
               <div>
-                <h4 className="font-semibold dark:text-white mb-3">Détails du service</h4>
+                <h4 className="font-semibold mb-3">Détails du service</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Service</span>
-                    <span className="font-medium dark:text-white">{order.service}</span>
+                    <span className="">Service</span>
+                    <span className="font-medium">{order.service}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Date</span>
-                    <span className="font-medium dark:text-white">{order.date} à {order.time}</span>
+                    <span className="">Date</span>
+                    <span className="font-medium ">{order.date} à {order.time}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Durée</span>
-                    <span className="font-medium dark:text-white">{order.duration}</span>
+                    <span className="">Durée</span>
+                    <span className="font-medium">{order.duration}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Adresse</span>
-                    <span className="font-medium dark:text-white text-right">{order.address}</span>
+                    <span className="">Adresse</span>
+                    <span className="font-medium">{order.address}</span>
                   </div>
                 </div>
               </div>
@@ -345,7 +550,11 @@ const HistoriqueCommandes = ({ isDarkMode }) => {
                 Fermer
               </button>
               {order.status === 'completed' && (
-                <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                <button 
+                  onClick={() => generateInvoicePDF(order)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2"
+                >
+                  <FileText size={16} />
                   Télécharger facture
                 </button>
               )}
@@ -356,41 +565,123 @@ const HistoriqueCommandes = ({ isDarkMode }) => {
     );
   };
 
-  const ExportDataButton = () => {
-    const handleExport = () => {
-      const dataStr = JSON.stringify(filteredOrders, null, 2);
-      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-      
-      const exportFileDefaultName = `historique-commandes-${new Date().toISOString().split('T')[0]}.json`;
-      
-      const linkElement = document.createElement('a');
-      linkElement.setAttribute('href', dataUri);
-      linkElement.setAttribute('download', exportFileDefaultName);
-      linkElement.click();
-      
-      alert('Export terminé! Votre fichier a été téléchargé.');
-    };
+  // Modal de paramètres d'export
+  const ExportSettingsModal = () => {
+    if (!showExportSettings) return null;
+
+    const completedOrders = orderHistory.filter(order => order.status === 'completed');
+    const exportedOrders = completedOrders.filter(order => order.exportDate);
+    const newOrders = completedOrders.filter(order => !order.exportDate);
 
     return (
-      <button
-        onClick={handleExport}
-        className="flex items-center gap-2 px-4 py-2 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 dark:hover:bg-green-900 transition"
-      >
-        <Download size={16} />
-        Exporter
-      </button>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full">
+          <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 rounded-t-xl flex justify-between items-center">
+            <h3 className="text-xl font-bold dark:text-white">Paramètres d'export</h3>
+            <button
+              onClick={() => setShowExportSettings(false)}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="p-6 space-y-6">
+            {/* Statistiques */}
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+              <h4 className="font-semibold dark:text-white mb-3">Récapitulatif</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Commandes terminées</span>
+                  <span className="font-medium dark:text-white">{completedOrders.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Déjà exportées</span>
+                  <span className="font-medium dark:text-white">{exportedOrders.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Nouvelles commandes</span>
+                  <span className="font-medium dark:text-white text-green-600">{newOrders.length}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Options d'export */}
+            <div>
+              <h4 className="font-semibold dark:text-white mb-3">Mode d'export</h4>
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <input
+                    type="radio"
+                    name="exportFormat"
+                    value="append"
+                    checked={exportFormat === 'append'}
+                    onChange={(e) => setExportFormat(e.target.value)}
+                    className="text-blue-600"
+                  />
+                  <div>
+                    <span className="font-medium dark:text-white">Ajouter au fichier existant</span>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      Ajoute seulement les nouvelles commandes au fichier historique
+                    </p>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <input
+                    type="radio"
+                    name="exportFormat"
+                    value="replace"
+                    checked={exportFormat === 'replace'}
+                    onChange={(e) => setExportFormat(e.target.value)}
+                    className="text-blue-600"
+                  />
+                  <div>
+                    <span className="font-medium dark:text-white">Remplacer le fichier</span>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      Crée un nouveau fichier avec toutes les commandes terminées
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Boutons d'action */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowExportSettings(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => {
+                  handleExportHistory();
+                  setShowExportSettings(false);
+                }}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
+              >
+                <Download size={16} />
+                Exporter ({newOrders.length} nouvelles)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   };
 
   // Classes pour le dark mode
-  const bgClass = isDarkMode ? 'bg-gray-900' : 'bg-gray-50';
-  const textClass = isDarkMode ? 'text-gray-100' : 'text-gray-900';
-  const textSecondaryClass = isDarkMode ? 'text-gray-400' : 'text-gray-600';
-  const cardBgClass = isDarkMode ? 'bg-gray-800' : 'bg-white';
-  const borderClass = isDarkMode ? 'border-gray-700' : 'border-gray-200';
+  const bgClass = isDarkMode;
+  const textClass = isDarkMode;
+  const textSecondaryClass = isDarkMode;
+  const cardBgClass = isDarkMode;
+  const borderClass = isDarkMode;
 
   return (
     <div className={`min-h-screen ${bgClass} py-8 transition-colors duration-300`}>
+      <ExportSettingsModal />
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         {/* En-tête */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -402,21 +693,27 @@ const HistoriqueCommandes = ({ isDarkMode }) => {
           </div>
           
           <div className="flex items-center gap-3">
-            <ExportDataButton />
+            <button
+              onClick={() => setShowExportSettings(true)}
+              className="flex items-center gap-2 px-4 py-2 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 dark:hover:bg-green-900 transition"
+            >
+              <Download size={16} />
+              Exporter
+            </button>
           </div>
         </div>
 
         {/* Filtres et recherche */}
-        <div className="flex flex-col lg:flex-row gap-4">
+        <div className={`flex flex-col lg:flex-row gap-4 ${cardBgClass} p-4 rounded-lg border`}>
           {/* Barre de recherche */}
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${bgClass}`} size={20} />
             <input
               type="text"
               placeholder="Rechercher par client, service, adresse..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2 ${cardBgClass} border ${borderClass} rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${textClass}`}
+              className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 dark:bg-gray-900 focus:ring-green-500 focus:border-transparent`}
             />
           </div>
 
@@ -426,11 +723,11 @@ const HistoriqueCommandes = ({ isDarkMode }) => {
               <button
                 key={filter.id}
                 onClick={() => setActiveFilter(filter.id)}
-                className={`px-4 py-2 rounded-lg transition ${
-                  activeFilter === filter.id
-                    ? 'bg-green-600 text-white'
-                    : `${textSecondaryClass} ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`
-                }`}
+                className={`
+                  px-4 py-2 rounded-lg transition ${activeFilter === filter.id ? 'bg-green-700 text-white': `${textSecondaryClass}`}
+                  border
+
+                `}
               >
                 {filter.label}
                 <span className="ml-2 bg-white/20 px-2 py-0.5 rounded-full text-sm">
@@ -481,7 +778,7 @@ const HistoriqueCommandes = ({ isDarkMode }) => {
         <div className={`${cardBgClass} rounded-xl shadow-lg border ${borderClass} overflow-hidden`}>
           {filteredOrders.length === 0 ? (
             <div className="text-center py-12">
-              <Package size={48} className="mx-auto text-gray-400 mb-4" />
+              <Package size={48} className="mx-auto mb-4" />
               <h3 className={`text-xl font-semibold ${textSecondaryClass} mb-2`}>
                 Aucune commande trouvée
               </h3>
@@ -492,34 +789,34 @@ const HistoriqueCommandes = ({ isDarkMode }) => {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className={isDarkMode ? "bg-gray-700" : "bg-gray-50"}>
+                <thead className={`${isDarkMode} ${textClass} border`}>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium  uppercase tracking-wider">
                       Commande
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                       Client
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                       Service
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                       Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                       Prix
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                       Statut
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className={`divide-y ${isDarkMode ? "divide-gray-700" : "divide-gray-200"}`}>
                   {filteredOrders.map((order) => (
-                    <tr key={order.id} className={isDarkMode ? "hover:bg-gray-750" : "hover:bg-gray-50"}>
+                    <tr key={order.id} className={isDarkMode ? 'hover:bg-blue-50' : 'hover:bg-blue-900'}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <p className={`font-medium ${textClass}`}>#{order.id}</p>
@@ -552,7 +849,7 @@ const HistoriqueCommandes = ({ isDarkMode }) => {
                         <p className={textClass}>{order.date}</p>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <p className="text-lg font-bold text-green-600">{order.price}€</p>
+                        <p className="text-lg font-bold text-green-600">{order.price} DH</p>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-col gap-1">
@@ -572,11 +869,6 @@ const HistoriqueCommandes = ({ isDarkMode }) => {
                           >
                             Détails
                           </button>
-                          {order.status === 'completed' && (
-                            <button className="px-3 py-1 text-sm bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 rounded-lg transition">
-                              Facture
-                            </button>
-                          )}
                         </div>
                       </td>
                     </tr>
