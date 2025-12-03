@@ -12,6 +12,7 @@ export const FreelancerProvider = ({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [isAccountActive, setIsAccountActive] = useState(false);
 
   const user = {
     name: 'Freelancer Test',
@@ -60,7 +61,9 @@ export const FreelancerProvider = ({ children }) => {
     pendingOrders,
     rating,
     isOnline,
-    setIsOnline
+    setIsOnline,
+    isAccountActive,
+    setIsAccountActive
   };
 
   return (
