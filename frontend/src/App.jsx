@@ -74,6 +74,7 @@ export default function App() {
       </Route>
 
       <Route path='/dev-freelancer-page' element={<PageFreelancer />}>
+      
         <Route path='profile-freelancer' element={<ProfileFreelancer />} />
         <Route path='dashboard-freelancer' element={<DashboardFreelancer/>} />
         {/* les routes de partie commandes */}

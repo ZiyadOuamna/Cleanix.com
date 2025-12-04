@@ -28,14 +28,10 @@ const PublierService = () => {
     category: '',
     description: '',
     detailedDescription: '',
-    price: '',
-    priceType: 'par_heure',
-    duration: '',
     availability: {
       lundi: true, mardi: true, mercredi: true, jeudi: true, vendredi: true, samedi: false, dimanche: false
     },
     zones: [],
-    images: [],
     includedItems: ['Matériel de nettoyage', 'Produits professionnels'],
     status: 'pending_review',
     termsAccepted: false,
@@ -69,23 +65,6 @@ const PublierService = () => {
     }));
   };
 
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    const newImages = files.map(file => ({
-      file,
-      preview: URL.createObjectURL(file),
-      name: file.name
-    }));
-    setFormData(prev => ({ ...prev, images: [...prev.images, ...newImages].slice(0, 5) }));
-  };
-
-  const removeImage = (index) => {
-    const newImages = [...formData.images];
-    URL.revokeObjectURL(newImages[index].preview);
-    newImages.splice(index, 1);
-    setFormData(prev => ({ ...prev, images: newImages }));
-  };
-
   const toggleZone = (zone) => {
     const isAllCity = zone.startsWith('Toute la ville');
     setFormData(prev => {
@@ -105,7 +84,7 @@ const PublierService = () => {
   const validateCurrentStep = () => {
     switch (currentStep) {
       case 1: return formData.name && formData.category && formData.description;
-      case 2: return formData.price && formData.duration;
+      case 2: return true; // Pas de validation nécessaire pour cette étape
       case 3: return formData.zones.length > 0;
       case 4: return formData.termsAccepted && formData.pricingAccepted;
       default: return true;
@@ -139,9 +118,6 @@ const PublierService = () => {
       allowOutsideClick: true, 
       allowEscapeKey: true
     }).then(() => {
-      // CORRECTION : Redirection correcte vers la page parente
-      // Utilisation de navigate('..') pour remonter d'un niveau dans la hiérarchie des routes
-      // Ou utilisation du chemin absolu si vous préférez : '/freelancer/gestion-services-freelancer'
       navigate('/dev-freelancer-page/gestion-services-freelancer', { 
         state: { newService: { ...formData, id: Date.now(), status: 'pending_review' } } 
       });
@@ -168,30 +144,6 @@ const PublierService = () => {
              {formData.category || "Catégorie"}
           </span>
           <p className={`mt-3 text-sm ${theme.textSecondary}`}>{formData.description || "Description courte..."}</p>
-        </div>
-        
-        {formData.images.length > 0 ? (
-          <div className="grid grid-cols-3 gap-2">
-            {formData.images.map((img, index) => (
-              <img key={index} src={img.preview} alt="Preview" className="w-full h-20 object-cover rounded bg-gray-200" />
-            ))}
-          </div>
-        ) : (
-          <div className={`w-full h-32 rounded border-2 border-dashed ${theme.border} flex items-center justify-center text-gray-400 text-sm`}>
-            Aucune image
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className={`p-3 rounded border ${theme.border} text-center`}>
-            <p className={`text-xs ${theme.textSecondary} uppercase`}>Prix</p>
-            <p className={`text-lg font-bold ${theme.textMain}`}>{formData.price || 0}€</p>
-            <p className="text-xs text-gray-500">{formData.priceType === 'par_heure' ? '/heure' : 'forfait'}</p>
-          </div>
-          <div className={`p-3 rounded border ${theme.border} text-center`}>
-            <p className={`text-xs ${theme.textSecondary} uppercase`}>Durée</p>
-            <p className={`text-lg font-bold ${theme.textMain}`}>{formData.duration || 0}h</p>
-          </div>
         </div>
 
         <div>
@@ -246,7 +198,6 @@ const PublierService = () => {
         
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <button 
-            // CORRECTION : Utilisation d'un chemin absolu vérifié pour éviter la page blanche
             onClick={() => navigate('gestion-services-freelancer')} 
             className={`flex items-center gap-2 ${theme.textSecondary} hover:${theme.textMain} transition`}
           >
@@ -287,7 +238,7 @@ const PublierService = () => {
               <div className="mt-2 text-center">
                 <span className={`text-sm font-medium ${theme.textMain}`}>
                   {currentStep === 1 && 'Informations Générales'}
-                  {currentStep === 2 && 'Prix & Durée'}
+                  {currentStep === 2 && 'Éléments inclus'}
                   {currentStep === 3 && 'Zones & Disponibilités'}
                   {currentStep === 4 && 'Validation'}
                 </span>
@@ -315,47 +266,12 @@ const PublierService = () => {
                       <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Description courte *</label>
                       <textarea value={formData.description} onChange={(e) => handleInputChange('description', e.target.value)} rows="3" className={`w-full px-4 py-2 rounded-lg border ${theme.inputBg} focus:ring-2 focus:ring-green-500 outline-none`} required maxLength={150}/>
                     </div>
-                    <div>
-                      <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Photos (Max 5)</label>
-                      <div onClick={() => imageUploadRef.current.click()} className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-green-500 ${theme.border} ${isDarkMode ? 'bg-gray-700/30' : 'bg-slate-50'}`}>
-                        <Camera className="mx-auto text-gray-400 mb-2" />
-                        <p className={`text-sm ${theme.textMain}`}>Ajouter des photos</p>
-                      </div>
-                      <input ref={imageUploadRef} type="file" multiple accept="image/*" className="hidden" onChange={handleImageUpload} />
-                      {formData.images.length > 0 && (
-                        <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
-                          {formData.images.map((img, idx) => (
-                            <div key={idx} className="relative flex-shrink-0">
-                              <img src={img.preview} alt="" className="w-16 h-16 object-cover rounded" />
-                              <button type="button" onClick={() => removeImage(idx)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"><X size={10}/></button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
                   </div>
                 )}
 
                 {/* ETAPE 2 */}
                 {currentStep === 2 && (
                   <div className="space-y-5">
-                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                           <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Type de prix</label>
-                           <div className={`flex rounded-lg border ${theme.border} overflow-hidden`}>
-                              <button type="button" onClick={() => handleInputChange('priceType', 'par_heure')} className={`flex-1 py-2 text-sm ${formData.priceType === 'par_heure' ? 'bg-green-600 text-white' : isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-slate-100 text-slate-700'}`}>Par heure</button>
-                              <button type="button" onClick={() => handleInputChange('priceType', 'forfait')} className={`flex-1 py-2 text-sm ${formData.priceType === 'forfait' ? 'bg-green-600 text-white' : isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-slate-100 text-slate-700'}`}>Forfait</button>
-                           </div>
-                        </div>
-                        <div>
-                           <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Prix ({formData.priceType === 'par_heure' ? '€/h' : '€'}) *</label>
-                           <input type="number" value={formData.price} onChange={(e) => handleInputChange('price', e.target.value)} className={`w-full px-4 py-2 rounded-lg border ${theme.inputBg} focus:ring-2 focus:ring-green-500 outline-none`} required min="0" />
-                        </div>
-                     </div>
-                     <div>
-                        <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Durée estimée (Heures) *</label>
-                        <input type="number" value={formData.duration} onChange={(e) => handleInputChange('duration', e.target.value)} className={`w-full px-4 py-2 rounded-lg border ${theme.inputBg} focus:ring-2 focus:ring-green-500 outline-none`} required min="0.5" step="0.5" />
-                     </div>
                      <div>
                         <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Éléments inclus</label>
                         <div className="flex flex-wrap gap-2 mb-2">
@@ -506,7 +422,6 @@ const PublierService = () => {
                         Suivant <ChevronRight size={16} />
                      </button>
                   ) : (
-                     // BOUTON DÉSACTIVÉ TANT QUE LES CASES NE SONT PAS COCHÉES
                      <button 
                         type="submit" 
                         disabled={isSubmitting || !formData.termsAccepted || !formData.pricingAccepted} 

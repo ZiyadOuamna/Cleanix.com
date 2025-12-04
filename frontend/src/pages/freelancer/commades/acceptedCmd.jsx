@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { Camera, Upload, X, Check, MapPin, Phone, Mail, Calendar, Clock, AlertCircle, Shield, ShieldCheck, ShieldOff, MessageCircle } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 const CommandesAcceptees = () => {
   const { isDarkMode } = useOutletContext();
@@ -86,7 +87,7 @@ const CommandesAcceptees = () => {
     tableBorder: isDarkMode ? 'border-gray-700' : 'border-gray-200',
   };
 
-  // Données simulées des commandes acceptées
+  // Données simulées - UNE SEULE COMMANDE
   const [orders, setOrders] = useState([
     {
       id: 'CMD-2024-001',
@@ -113,32 +114,6 @@ const CommandesAcceptees = () => {
       clientValidation: false,
       rating: 4.8,
       completedOrders: 15
-    },
-    {
-      id: 'CMD-2024-002',
-      clientName: 'Ahmed El Amrani',
-      clientPhone: '+212 6 45 67 89 01',
-      clientEmail: 'ahmed.elamrani@email.com',
-      service: 'Nettoyage de bureau',
-      date: '2024-01-16',
-      time: '08:00 - 11:00',
-      address: '12 Rue des Entrepreneurs, Casablanca',
-      amount: 520.00,
-      status: 'en_cours',
-      paymentStatus: 'payé',
-      specialInstructions: 'Bureau au 3ème étage. Code d\'accès: 1234',
-      createdAt: '2024-01-16 16:45',
-      acceptedAt: '2024-01-16 17:30',
-      beforePhotos: [],
-      afterPhotos: [],
-      photoPermission: 'pending',
-      permissionRequestedAt: null,
-      permissionResponseAt: null,
-      permissionReason: '',
-      submitted: false,
-      clientValidation: false,
-      rating: 4.5,
-      completedOrders: 8
     }
   ]);
 
@@ -147,13 +122,35 @@ const CommandesAcceptees = () => {
     setExpandedOrder(expandedOrder === orderId ? null : orderId);
   };
 
-  // Fonction pour annuler une commande
-  const cancelOrder = (orderId) => {
-    if (window.confirm('Êtes-vous sûr de vouloir annuler cette commande ? Cette action est irréversible.')) {
+  // Fonction pour annuler une commande - AVEC SweetAlert2
+  const cancelOrder = async (orderId) => {
+    const result = await Swal.fire({
+      title: 'Annuler la commande',
+      text: 'Êtes-vous sûr de vouloir annuler cette commande ? Cette action est irréversible.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Oui, annuler',
+      cancelButtonText: 'Non, garder',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      background: isDarkMode ? '#1f2937' : '#ffffff',
+      color: isDarkMode ? '#ffffff' : '#000000',
+    });
+
+    if (result.isConfirmed) {
       setOrders(prev => prev.map(order => 
         order.id === orderId ? { ...order, status: 'annulée' } : order
       ));
-      alert(`Commande ${orderId} annulée.`);
+      
+      await Swal.fire({
+        title: 'Commande annulée',
+        text: `La commande ${orderId} a été annulée avec succès.`,
+        icon: 'success',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#10B981',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#000000',
+      });
     }
   };
 
@@ -163,8 +160,8 @@ const CommandesAcceptees = () => {
     setShowPermissionModal(true);
   };
 
-  // Fonction pour envoyer la demande de permission
-  const sendPermissionRequest = () => {
+  // Fonction pour envoyer la demande de permission - AVEC SweetAlert2
+  const sendPermissionRequest = async () => {
     if (!selectedOrderForPermission) return;
     
     const reason = document.getElementById('permission-reason')?.value || 
@@ -179,14 +176,22 @@ const CommandesAcceptees = () => {
       } : order
     ));
     
-    alert(`📩 Demande de permission envoyée au client ${selectedOrderForPermission} !\nLe client recevra une notification pour autoriser les photos.`);
-    
     setShowPermissionModal(false);
     setSelectedOrderForPermission(null);
+    
+    await Swal.fire({
+      title: 'Demande envoyée !',
+      html: `📩 Demande de permission envoyée au client ${selectedOrderForPermission} !<br>Le client recevra une notification pour autoriser les photos.`,
+      icon: 'success',
+      confirmButtonText: 'OK',
+      confirmButtonColor: '#3b82f6',
+      background: isDarkMode ? '#1f2937' : '#ffffff',
+      color: isDarkMode ? '#ffffff' : '#000000',
+    });
   };
 
-  // Fonction pour simuler la réponse du client
-  const simulateClientResponse = (orderId, response) => {
+  // Fonction pour simuler la réponse du client - AVEC SweetAlert2
+  const simulateClientResponse = async (orderId, response) => {
     setOrders(prev => prev.map(order => 
       order.id === orderId ? { 
         ...order, 
@@ -196,9 +201,26 @@ const CommandesAcceptees = () => {
     ));
     
     if (response === 'granted') {
-      alert(`✅ Le client a accepté la prise de photos pour la commande ${orderId}`);
+      await Swal.fire({
+        title: 'Permission accordée !',
+        text: `Le client a accepté la prise de photos pour la commande ${orderId}`,
+        icon: 'success',
+        iconColor: '#10B981',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#10B981',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#000000',
+      });
     } else {
-      alert(`❌ Le client a refusé la prise de photos pour la commande ${orderId}`);
+      await Swal.fire({
+        title: 'Permission refusée',
+        text: `Le client a refusé la prise de photos pour la commande ${orderId}`,
+        icon: 'info',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#6b7280',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#000000',
+      });
     }
   };
 
@@ -206,7 +228,15 @@ const CommandesAcceptees = () => {
   const handlePhotoUpload = (orderId, type, files) => {
     const order = orders.find(o => o.id === orderId);
     if (order.photoPermission !== 'granted') {
-      alert('Vous devez avoir la permission du client pour ajouter des photos');
+      Swal.fire({
+        title: 'Permission requise',
+        text: 'Vous devez avoir la permission du client pour ajouter des photos',
+        icon: 'warning',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#f59e0b',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#000000',
+      });
       return;
     }
     
@@ -245,12 +275,25 @@ const CommandesAcceptees = () => {
     }));
   };
 
-  // Fonction pour soumettre une commande terminée
-  const submitCompletedOrder = (orderId) => {
+  // Fonction pour soumettre une commande terminée - AVEC SweetAlert2
+  const submitCompletedOrder = async (orderId) => {
     const order = orders.find(o => o.id === orderId);
     
     if (order.photoPermission === 'granted' && order.afterPhotos.length === 0) {
-      if (!window.confirm("Le client a autorisé les photos mais vous n'avez pas ajouté de photos 'après'. Voulez-vous quand même soumettre la commande ?")) {
+      const result = await Swal.fire({
+        title: 'Aucune photo "après"',
+        text: "Le client a autorisé les photos mais vous n'avez pas ajouté de photos 'après'. Voulez-vous quand même soumettre la commande ?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Oui, soumettre',
+        cancelButtonText: 'Non, annuler',
+        confirmButtonColor: '#10B981',
+        cancelButtonColor: '#ef4444',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#000000',
+      });
+
+      if (!result.isConfirmed) {
         return;
       }
     }
@@ -259,14 +302,47 @@ const CommandesAcceptees = () => {
       order.id === orderId ? { ...order, status: 'soumis', submitted: true } : order
     ));
     
-    alert(`🎉 Commande ${orderId} terminée et soumise !\nLe client a reçu une notification pour validation.`);
+    await Swal.fire({
+      title: 'Commande terminée !',
+      html: `🎉 Commande ${orderId} terminée et soumise !<br>Le client a reçu une notification pour validation.`,
+      icon: 'success',
+      confirmButtonText: 'OK',
+      confirmButtonColor: '#10B981',
+      background: isDarkMode ? '#1f2937' : '#ffffff',
+      color: isDarkMode ? '#ffffff' : '#000000',
+    });
   };
 
-  // Fonction pour soumettre une réclamation
-  const submitComplaint = (orderId) => {
-    const complaintReason = prompt('Veuillez décrire la raison de votre réclamation :');
+  // Fonction pour soumettre une réclamation - AVEC SweetAlert2
+  const submitComplaint = async (orderId) => {
+    const { value: complaintReason } = await Swal.fire({
+      title: 'Soumettre une réclamation',
+      input: 'textarea',
+      inputLabel: 'Veuillez décrire la raison de votre réclamation :',
+      inputPlaceholder: 'Décrivez le problème rencontré...',
+      showCancelButton: true,
+      confirmButtonText: 'Envoyer',
+      cancelButtonText: 'Annuler',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      background: isDarkMode ? '#1f2937' : '#ffffff',
+      color: isDarkMode ? '#ffffff' : '#000000',
+      inputAttributes: {
+        'aria-label': 'Décrivez la raison de votre réclamation'
+      },
+      validationMessage: 'Veuillez fournir une description'
+    });
+
     if (complaintReason) {
-      alert(`🚨 Réclamation pour la commande ${orderId} envoyée au superviseur et au support.\n\nRaison: ${complaintReason}`);
+      await Swal.fire({
+        title: 'Réclamation envoyée !',
+        html: `🚨 Réclamation pour la commande ${orderId} envoyée au superviseur et au support.<br><br><strong>Raison:</strong> ${complaintReason}`,
+        icon: 'warning',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#f59e0b',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#000000',
+      });
     }
   };
 
@@ -555,7 +631,7 @@ const CommandesAcceptees = () => {
     );
   };
 
-  // Filtres disponibles
+  // Filtres disponibles - ajustés pour une seule commande
   const filters = [
     { id: 'en_cours', label: 'En cours', count: orders.filter(o => o.status === 'en_cours').length },
     { id: 'soumis', label: 'En validation', count: orders.filter(o => o.status === 'soumis').length },
@@ -584,12 +660,12 @@ const CommandesAcceptees = () => {
             <div className="mt-4 md:mt-0">
               <div className={`inline-flex items-center px-4 py-2 rounded-lg ${theme.bgSecondary} border ${theme.borderPrimary} ${theme.cardShadow}`}>
                 <div className="mr-3">
-                  <div className={`text-sm ${theme.textMuted}`}>Commandes actives</div>
+                  <div className={`text-sm ${theme.textMuted}`}>Commande active</div>
                   <div className={`text-xl font-bold ${theme.textPrimary}`}>{orders.filter(o => o.status === 'en_cours').length}</div>
                 </div>
                 <div className={`w-px h-10 ${theme.borderPrimary}`}></div>
                 <div className="ml-3">
-                  <div className={`text-sm ${theme.textMuted}`}>Permissions</div>
+                  <div className={`text-sm ${theme.textMuted}`}>Permission</div>
                   <div className={`text-xl font-bold ${theme.textPrimary}`}>
                     {orders.filter(o => o.photoPermission === 'granted').length}/{orders.length}
                   </div>
@@ -640,7 +716,7 @@ const CommandesAcceptees = () => {
                 }
               </p>
               <Link 
-                to="/freelancer/commandes" 
+                to="../" 
                 className="inline-block mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Voir les nouvelles commandes
@@ -838,7 +914,15 @@ const CommandesAcceptees = () => {
                             
                             {order.photoPermission === 'pending' && order.permissionRequestedAt && (
                               <button
-                                onClick={() => alert('La demande a déjà été envoyée. En attente de réponse du client.')}
+                                onClick={() => Swal.fire({
+                                  title: 'Demande déjà envoyée',
+                                  text: 'En attente de réponse du client.',
+                                  icon: 'info',
+                                  confirmButtonText: 'OK',
+                                  confirmButtonColor: '#3b82f6',
+                                  background: isDarkMode ? '#1f2937' : '#ffffff',
+                                  color: isDarkMode ? '#ffffff' : '#000000',
+                                })}
                                 className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg"
                               >
                                 <MessageCircle size={16} />
@@ -902,7 +986,17 @@ const CommandesAcceptees = () => {
                             
                             <div className="flex flex-wrap gap-3">
                               <button
-                                onClick={() => alert(`Contacter ${order.clientName}`)}
+                                onClick={() => {
+                                  Swal.fire({
+                                    title: 'Contacter le client',
+                                    html: `📞 <strong>${order.clientName}</strong><br>📱 ${order.clientPhone}<br>📧 ${order.clientEmail}`,
+                                    icon: 'info',
+                                    confirmButtonText: 'OK',
+                                    confirmButtonColor: '#3b82f6',
+                                    background: isDarkMode ? '#1f2937' : '#ffffff',
+                                    color: isDarkMode ? '#ffffff' : '#000000',
+                                  });
+                                }}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${theme.borderPrimary} ${
                                   isDarkMode 
                                     ? 'text-gray-300 hover:bg-gray-700' 
