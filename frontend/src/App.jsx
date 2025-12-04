@@ -26,8 +26,9 @@ import DashboardFreelancers  from './pages/superviseur/gestionDashboard/dashboar
 
 //----------------------------------------------------------------------//
 // ( 2 ) les imports des pages après la connexion de la page de freelancer
-import DashboardFreelancer    from './pages/freelancer/freelancer';
-
+import PageFreelancer    from './pages/freelancer/freelancer';
+import ProfileFreelancer from './pages/freelancer/profileFreelancer';
+import DashboardFreelancer from './pages/freelancer/freelancerDashboard';
 // les imports des pages de la partie : portefeuille , settings et support chez freelancer
 import PortefeuilleFreelancer from './pages/freelancer/portefeuille';
 import SettingsFreelancer     from './pages/freelancer/settings';
@@ -37,6 +38,10 @@ import SupportFreelancer      from './pages/freelancer/support';
 import CommandesAcceptees from './pages/freelancer/commades/acceptedCmd';
 import HistoriqueCommandes from './pages/freelancer/commades/historiqueCmd';
 import OrdersReceived from './pages/freelancer/commades/ordersReceived'; // NOUVEAU IMPORT
+
+// les imports des pages de la partie services chez freelancer 
+import GestionServices from './pages/freelancer/services/gestionService';
+import PublierService from './pages/freelancer/services/publierService';
 
 // ( 3 ) imports des pages après la connexion de la page de Client
 import DashboardClient from './pages/client/Client';
@@ -68,10 +73,19 @@ export default function App() {
         <Route path='' element={<div>Page d'accueil client</div>} />
       </Route>
 
-      <Route path='/dev-freelancer-page' element={<DashboardFreelancer />}>
+      <Route path='/dev-freelancer-page' element={<PageFreelancer />}>
+      
+        <Route path='profile-freelancer' element={<ProfileFreelancer />} />
+        <Route path='dashboard-freelancer' element={<DashboardFreelancer/>} />
+        {/* les routes de partie commandes */}
         <Route index element={<OrdersReceived />} /> {/* PAGE PAR DÉFAUT */}
         <Route path='historique-commandes-freelancer' element={<HistoriqueCommandes />}/>
         <Route path='accepted-cmd-freelancer' element={<CommandesAcceptees />}/>
+
+        {/* les routes de partie services */}
+        <Route path='gestion-services-freelancer' element={<GestionServices />} />
+        <Route path='publier-service-freelancer' element={<PublierService />} />
+
         <Route path='portefeuille-freelancer' element={<PortefeuilleFreelancer />}/>
         <Route path='settings-freelancer' element={<SettingsFreelancer />}/>
         <Route path='support-freelancer' element={<SupportFreelancer />}/>
