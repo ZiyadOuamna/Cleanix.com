@@ -2,8 +2,9 @@
 import React, { useRef, useEffect, useContext, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 
-import { ChevronRight, X, Sun, Moon, User, Briefcase, HelpCircle, DollarSign, Users, BarChart3, Phone, Settings, Bell, Menu } from 'lucide-react';
+import { ChevronRight, X, Sun, Moon, User, Briefcase, HelpCircle, DollarSign, Users, BarChart3, Phone, Settings, Bell, Menu, LogOut } from 'lucide-react';
 import { SuperviseurProvider, SuperviseurContext } from './superviseurContext';
+import { logoutUser } from '../../services/authService';
 
 // constants (icons/colors trimmed to essentials)
 const ICONS = {
@@ -31,6 +32,27 @@ function InnerLayout() {
   const [activePage, setActivePage] = useState('');
   const navigate = useNavigate();
   const notificationRef = useRef(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+  const [isUsersOpen, setIsUsersOpen] = useState(false);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  // Vérifier l'authentification au montage du composant
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    const userType = localStorage.getItem('user_type');
+
+    if (!token || userType !== 'Superviseur') {
+      navigate('/login');
+      setIsAuthenticated(false);
+    } else {
+      setIsAuthenticated(true);
+    }
+    setIsLoading(false);
+  }, [navigate]);
+
   // consume shared state (for header / sidebar controls)
   const {
     notifications,
@@ -39,14 +61,6 @@ function InnerLayout() {
     isMenuOpen, setIsMenuOpen,
     isDarkMode, setIsDarkMode,
   } = useContext(SuperviseurContext);
-  const unreadCount = notifications.filter(n => !n.read).length;
-
-  // États pour gérer l'ouverture des sous-menus
-  const [isDashboardOpen, setIsDashboardOpen] = useState(false);
-  const [isUsersOpen, setIsUsersOpen] = useState(false);
-
-  // État pour contrôler la visibilité de la sidebar
-  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -56,13 +70,36 @@ function InnerLayout() {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [notificationRef]);
+  }, []);
 
-  // local dropdown state for header notifications
-  const [showNotifications, setShowNotifications] = React.useState(false);
+  const unreadCount = notifications.filter(n => !n.read).length;
+
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
   };
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Even if logout fails on server, redirect to login
+      navigate('/login');
+    }
+  };
+
+  // Conditional check AFTER all hooks are declared
+  if (isLoading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={`min-h-screen flex transition-colors duration-300 font-sans ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-[#f0fafe] text-gray-800'}`}>
       {/* SIDEBAR (responsive: overlay on mobile, push on desktop) */}
@@ -195,10 +232,11 @@ function InnerLayout() {
         <div className={`p-4 mt-auto border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
           <div className="text-center">
             <button 
-              onClick={() => { /* Ajouter logique de déconnexion ici, e.g., navigate('/login') ou clear session */ setIsSidebarVisible(false); }} 
-              className="text-red-500 font-bold hover:opacity-80 transition-all"
+              onClick={handleLogout}
+              className="text-red-500 font-bold hover:opacity-80 transition-all flex items-center justify-center gap-2 w-full"
               style={{ textShadow: '3px 3px 6px rgba(255, 0, 0, 0.8)' }}
             >
+              <LogOut size={16} />
               Logout
             </button>
           </div>
