@@ -1,29 +1,33 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { registerUser } from '../services/authService';
 
 // Liste des principales villes du Maroc pour la liste déroulante
 const MAROC_VILLES = [
   "Agadir", "Casablanca", "Rabat", "Marrakech", "Fès", "Tanger", 
-  "Meknès", "Oujda", "Kénitra", "Tétouan", "Salé", "Mohammedia"
+  "Meknès", "Oujda", "Kénitra", "Tétouan", "Salé", "Mohammadia"
 ];
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   
-  // Mise à jour du State pour inclure le GENRE
+  // État du formulaire avec les champs corrects
   const [formData, setFormData] = useState({
-    cin: '',
-    name: '',
+    nom: '',
     prenom: '',
-    tel: '',
-    genre: 'homme', // Valeur par défaut
-    type_compte: 'client',
-    ville: MAROC_VILLES[0],
     email: '',
+    telephone: '',
+    genre: '', // Pas de valeur par défaut - doit être choisi
+    user_type: '', // IMPORTANT: Pas de valeur par défaut - l'utilisateur DOIT choisir
     password: '',
     password_confirmation: '',
     acceptTerms: false,
-    acceptNotifications: false,
+    // Champs Client (optionnels, affichés si user_type === 'Client')
+    adresse: '',
+    ville: MAROC_VILLES[0],
+    code_postal: '',
+    // Champs Freelancer (optionnels, affichés si user_type === 'Freelancer')
+    details_compte_bancaire: '',
   });
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -41,27 +45,77 @@ export default function RegisterPage() {
     setMessage('');
     setIsLoading(true);
 
+    // Validation: user_type doit être choisi
+    if (!formData.user_type) {
+      setMessage('❌ Veuillez choisir votre rôle (Client ou Freelancer).');
+      setIsLoading(false);
+      return;
+    }
+
+    // Validation: genre doit être choisi
+    if (!formData.genre) {
+      setMessage('❌ Veuillez choisir votre genre (Homme ou Femme).');
+      setIsLoading(false);
+      return;
+    }
+
     if (!formData.acceptTerms) {
-      setMessage('❌ Vous devez accepter les Conditions d’Utilisation et la Politique de Confidentialité pour continuer.');
+      setMessage('❌ Vous devez accepter les Conditions d\'Utilisation et la Politique de Confidentialité pour continuer.');
+      setIsLoading(false);
+      return;
+    }
+
+    // Validation: passwords doivent être identiques
+    if (formData.password !== formData.password_confirmation) {
+      setMessage('❌ Les mots de passe ne correspondent pas.');
       setIsLoading(false);
       return;
     }
 
     try {
-      console.log("Données envoyées à l'API:", formData); 
-      setMessage(`✅ Inscription envoyée! Bienvenue ${formData.prenom} (${formData.genre}).`);
-      setTimeout(() => navigate('/login'), 2000); 
+      // Construire l'objet de données à envoyer
+      const userData = {
+        nom: formData.nom,
+        prenom: formData.prenom,
+        email: formData.email,
+        telephone: formData.telephone,
+        genre: formData.genre,
+        user_type: formData.user_type,
+        password: formData.password,
+        password_confirmation: formData.password_confirmation,
+      };
+
+      // Ajouter les champs Client si user_type === 'Client'
+      if (formData.user_type === 'Client') {
+        userData.adresse = formData.adresse;
+        userData.ville = formData.ville;
+        userData.code_postal = formData.code_postal;
+      }
+
+      // Ajouter les champs Freelancer si user_type === 'Freelancer'
+      if (formData.user_type === 'Freelancer') {
+        userData.details_compte_bancaire = formData.details_compte_bancaire;
+      }
+
+      console.log("Données envoyées à l'API:", userData);
+
+      // Appel à l'API d'inscription
+      const response = await registerUser(userData);
+      
+      setMessage(`✅ Inscription réussie! Bienvenue ${formData.prenom}.`);
+      // Redirection après 2 secondes
+      setTimeout(() => navigate('/login'), 2000);
     } catch (error) {
-      console.error("Erreur lors de l'inscription:", error.response?.data);
-      setMessage(`❌ Erreur: ${error.response?.data?.message || 'Problème de connexion'}`);
+      console.error("Erreur lors de l'inscription:", error);
+      setMessage(`❌ Erreur: ${error.response?.data?.message || error.message || 'Problème de connexion'}`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Contenu marketing (inchangé)
+  // Contenu marketing dynamique selon le type de compte
   const getMarketingContent = () => {
-    if (formData.type_compte === 'client') {
+    if (formData.user_type === 'Client') {
       return {
         title: 'Rejoignez Cleanix en tant que Client !',
         description: 'Inscrivez-vous pour accéder à nos services de nettoyage premium. Réservez des professionnels vérifiés, bénéficiez de tarifs avantageux et profitez d\'une tranquillité d\'esprit totale pour votre maison.',
@@ -72,7 +126,7 @@ export default function RegisterPage() {
         ],
         testimonial: '"S\'inscrire chez Cleanix a changé ma vie ! Tout est si simple et propre." - Ahmed, Nouveau Client à Casablanca',
       };
-    } else if (formData.type_compte === 'freelancer') {
+    } else if (formData.user_type === 'Freelancer') {
       return {
         title: 'Devenez Freelancer chez Cleanix !',
         description: 'Inscrivez-vous pour travailler à votre rythme, accepter des missions flexibles et booster vos revenus. Rejoignez notre réseau et développez votre business de nettoyage avec des clients réguliers.',
@@ -145,7 +199,7 @@ export default function RegisterPage() {
             <div className="flex space-x-4">
               <div className="w-1/2">
                 <label className="block text-sm font-medium text-gray-700">Nom</label>
-                <input type="text" name="name" value={formData.name} onChange={handleChange} required className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Votre nom" />
+                <input type="text" name="nom" value={formData.nom} onChange={handleChange} required className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Votre nom" />
               </div>
               <div className="w-1/2">
                 <label className="block text-sm font-medium text-gray-700">Prénom</label>
@@ -153,67 +207,92 @@ export default function RegisterPage() {
               </div>
             </div>
             
-            {/* Ligne 2: CIN et Téléphone */}
+            {/* Ligne 2: Email et Téléphone */}
             <div className="flex space-x-4">
               <div className="w-1/2">
-                <label className="block text-sm font-medium text-gray-700">CIN</label>
-                <input type="text" name="cin" value={formData.cin} onChange={handleChange} required className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Votre CIN" />
+                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" name="email" value={formData.email} onChange={handleChange} required className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition" placeholder="votre.email@exemple.com" />
               </div>
               <div className="w-1/2">
                 <label className="block text-sm font-medium text-gray-700">Téléphone</label>
-                <input type="tel" name="tel" value={formData.tel} onChange={handleChange} required className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Votre téléphone" />
+                <input type="tel" name="telephone" value={formData.telephone} onChange={handleChange} required className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Votre téléphone" />
               </div>
             </div>
 
-            {/* Ligne 3: Ville et Genre (MODIFIÉE) */}
-            <div className="flex space-x-4 items-start">
-              <div className="w-1/2">
-                <label className="block text-sm font-medium text-gray-700">Ville</label>
-                <select name="ville" value={formData.ville} onChange={handleChange} required className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm bg-white focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
-                  {MAROC_VILLES.map((ville, index) => (
-                    <option key={index} value={ville}>{ville}</option>
-                  ))}
-                </select>
-              </div>
-              
-              {/* NOUVEAU: Champ Genre */}
-              <div className="w-1/2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Genre</label>
-                <div className="flex space-x-4 mt-2">
+            {/* Ligne 3: Genre et Rôle (IMPORTANT: Choix obligatoire) */}
+            <div className="space-y-4">
+              {/* Genre */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Genre *</label>
+                <div className="flex space-x-4">
                   <label className="flex items-center cursor-pointer">
-                    <input type="radio" name="genre" value="homme" checked={formData.genre === 'homme'} onChange={handleChange} className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500" />
+                    <input type="radio" name="genre" value="Homme" checked={formData.genre === 'Homme'} onChange={handleChange} className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500" />
                     <span className="ml-2 text-gray-700">Homme</span>
                   </label>
                   <label className="flex items-center cursor-pointer">
-                    <input type="radio" name="genre" value="femme" checked={formData.genre === 'femme'} onChange={handleChange} className="h-4 w-4 text-pink-600 border-gray-300 focus:ring-pink-500" />
+                    <input type="radio" name="genre" value="Femme" checked={formData.genre === 'Femme'} onChange={handleChange} className="h-4 w-4 text-pink-600 border-gray-300 focus:ring-pink-500" />
                     <span className="ml-2 text-gray-700">Femme</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Choix du Type de Compte - OBLIGATOIRE */}
+              <div>
+                <label className="block text-base font-semibold text-gray-700 mb-2">Quel est votre rôle ? *</label>
+                <div className="flex space-x-4">
+                  <label className={`flex items-center space-x-2 cursor-pointer p-3 border rounded-lg w-full transition ${formData.user_type === 'Client' ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-gray-50 hover:border-blue-400'}`}>
+                    <input type="radio" name="user_type" value="Client" checked={formData.user_type === 'Client'} onChange={handleChange} className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500" />
+                    <span className="font-medium text-gray-900">Je suis un Client</span>
+                  </label>
+                  <label className={`flex items-center space-x-2 cursor-pointer p-3 border rounded-lg w-full transition ${formData.user_type === 'Freelancer' ? 'border-green-500 bg-green-50' : 'border-gray-300 bg-gray-50 hover:border-green-400'}`}>
+                    <input type="radio" name="user_type" value="Freelancer" checked={formData.user_type === 'Freelancer'} onChange={handleChange} className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500" />
+                    <span className="font-medium text-gray-900">Je suis Freelancer</span>
                   </label>
                 </div>
               </div>
             </div>
 
-            {/* Ligne 4: Choix du Type de Compte */}
-            <div className="pt-2">
-              <label className="block text-base font-semibold text-gray-700 mb-2">Quel est votre rôle ?</label>
-              <div className="flex space-x-6">
-                <label className={`flex items-center space-x-2 cursor-pointer p-3 border rounded-lg w-full transition ${formData.type_compte === 'client' ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-gray-50 hover:border-blue-400'}`}>
-                  <input type="radio" name="type_compte" value="client" checked={formData.type_compte === 'client'} onChange={handleChange} className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500" />
-                  <span className="font-medium text-gray-900">Je suis un Client</span>
-                </label>
-                <label className={`flex items-center space-x-2 cursor-pointer p-3 border rounded-lg w-full transition ${formData.type_compte === 'freelancer' ? 'border-green-500 bg-green-50' : 'border-gray-300 bg-gray-50 hover:border-green-400'}`}>
-                  <input type="radio" name="type_compte" value="freelancer" checked={formData.type_compte === 'freelancer'} onChange={handleChange} className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500" />
-                  <span className="font-medium text-gray-900">Je suis Freelancer</span>
-                </label>
-              </div>
-            </div>
-            
-            {/* Ligne 5: Email */}
-            <div className="pt-2">
-              <label className="block text-sm font-medium text-gray-700">Email</label>
-              <input type="email" name="email" value={formData.email} onChange={handleChange} required className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition" placeholder="votre.email@exemple.com" />
-            </div>
+            {/* Champs Client - Affichés si user_type === 'Client' */}
+            {formData.user_type === 'Client' && (
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 space-y-4">
+                <h3 className="font-semibold text-gray-900">Informations Client</h3>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Adresse</label>
+                  <input type="text" name="adresse" value={formData.adresse} onChange={handleChange} required className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Votre adresse" />
+                </div>
 
-            {/* Ligne 6: Mots de passe */}
+                <div className="flex space-x-4">
+                  <div className="w-2/3">
+                    <label className="block text-sm font-medium text-gray-700">Ville</label>
+                    <select name="ville" value={formData.ville} onChange={handleChange} required className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm bg-white focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+                      {MAROC_VILLES.map((ville, index) => (
+                        <option key={index} value={ville}>{ville}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="w-1/3">
+                    <label className="block text-sm font-medium text-gray-700">Code Postal</label>
+                    <input type="text" name="code_postal" value={formData.code_postal} onChange={handleChange} required className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Ex: 20000" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Champs Freelancer - Affichés si user_type === 'Freelancer' */}
+            {formData.user_type === 'Freelancer' && (
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200 space-y-4">
+                <h3 className="font-semibold text-gray-900">Informations Freelancer</h3>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Détails du Compte Bancaire</label>
+                  <textarea name="details_compte_bancaire" value={formData.details_compte_bancaire} onChange={handleChange} required className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 transition" placeholder="IBAN, numéro de compte, titulaire, etc." rows="3" />
+                </div>
+                <p className="text-xs text-gray-600">Note: Nombre de missions, note moyenne, et nombre d'avis seront initialisés automatiquement.</p>
+              </div>
+            )}
+
+            {/* Mots de passe */}
             <div className="flex space-x-4">
               <div className="w-1/2">
                 <label className="block text-sm font-medium text-gray-700">Mot de passe</label>
@@ -226,23 +305,19 @@ export default function RegisterPage() {
             </div>
 
             {/* Checkboxes Termes */}
-            <div className="space-y-2 pt-4">
+            <div className="space-y-2 pt-2">
               <label className="flex items-start space-x-2 cursor-pointer">
                 <input type="checkbox" name="acceptTerms" checked={formData.acceptTerms} onChange={handleChange} required className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500 mt-1" />
-                <span className="text-sm text-gray-700 leading-relaxed">J’accepte les <a href="#" className="text-blue-600 hover:underline">Conditions d’Utilisation</a> et la <a href="#" className="text-blue-600 hover:underline">Politique de Confidentialité</a>.</span>
-              </label>
-              <label className="flex items-start space-x-2 cursor-pointer">
-                <input type="checkbox" name="acceptNotifications" checked={formData.acceptNotifications} onChange={handleChange} className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500 mt-1" />
-                <span className="text-sm text-gray-700 leading-relaxed">J’accepte de recevoir des notifications.</span>
+                <span className="text-sm text-gray-700 leading-relaxed">J'accepte les <a href="#" className="text-blue-600 hover:underline">Conditions d'Utilisation</a> et la <a href="#" className="text-blue-600 hover:underline">Politique de Confidentialité</a>.</span>
               </label>
             </div>
             
-            <button type="submit" disabled={isLoading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150">
+            <button type="submit" disabled={isLoading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 disabled:bg-gray-400">
               {isLoading ? 'Inscription en cours...' : 'S\'inscrire'}
             </button>
           </form>
           
-          {message && <p className="mt-4 text-center text-sm text-green-600">{message}</p>}
+          {message && <p className={`mt-4 text-center text-sm ${message.includes('✅') ? 'text-green-600' : 'text-red-600'}`}>{message}</p>}
           
           <p className="mt-4 text-center text-sm">
             Déjà un compte ? <a onClick={() => navigate('/login')} className="font-medium text-blue-600 hover:text-blue-700 cursor-pointer">Connectez-vous</a>

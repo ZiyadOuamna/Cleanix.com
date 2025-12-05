@@ -18,6 +18,11 @@ class Client extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function portefeuille()
+    {
+        return $this->hasOne(Portefeuille::class);
+    }
+
     // public function commandes()
     // {
     //     return $this->hasMany(Commande::class); // À créer plus tard

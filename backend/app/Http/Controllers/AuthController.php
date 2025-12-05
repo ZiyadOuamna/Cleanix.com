@@ -3,18 +3,26 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Client;
+use App\Models\Freelancer;
+use App\Models\Support;
+use App\Models\Superviseur;
+use App\Models\Portefeuille;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Exception;
 
 class AuthController extends Controller
 {
     /**
-     * Register a new user
+     * Register a new user (Client or Freelancer only)
      */
     public function register(Request $request)
     {
@@ -25,38 +33,73 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
             'genre' => 'required|in:Homme,Femme',
             'telephone' => 'required|string|unique:users',
-            'user_type' => 'required|in:Client,Freelancer,Support,Superviseur',
+            'user_type' => 'required|in:Client,Freelancer', // Only Client and Freelancer can register
+            'photo_profil' => 'nullable|image|max:2048',
+            
+            // Optional fields for Client
+            'adresse' => 'nullable|string|max:255',
+            'ville' => 'nullable|string|max:100',
+            'code_postal' => 'nullable|string|max:10',
+            
+            // Optional fields for Freelancer
+            'details_compte_bancaire' => 'nullable|string|max:255',
         ]);
 
-        // Create user in users table
-        $user = User::create([
-            'nom' => $validated['nom'],
-            'prenom' => $validated['prenom'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'genre' => $validated['genre'],
-            'telephone' => $validated['telephone'],
-            'user_type' => $validated['user_type'],
-        ]);
+        DB::beginTransaction();
+        
+        try {
+            // Handle photo upload
+            $photoPath = null;
+            if ($request->hasFile('photo_profil')) {
+                $photoPath = $request->file('photo_profil')->store('photos_profil', 'public');
+            }
 
-        // Create profile in corresponding table based on user_type
-        $this->createUserProfile($user, $validated['user_type']);
+            // Create user in users table
+            $user = User::create([
+                'name' => $validated['prenom'] . ' ' . $validated['nom'],
+                'nom' => $validated['nom'],
+                'prenom' => $validated['prenom'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'genre' => $validated['genre'],
+                'telephone' => $validated['telephone'],
+                'user_type' => $validated['user_type'],
+                'photo_profil' => $photoPath,
+            ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+            // Create profile in corresponding table based on user_type
+            $this->createUserProfile($user, $validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'User registered successfully',
-            'data' => [
-                'user' => $user,
-                'token' => $token,
-                'token_type' => 'Bearer',
-            ]
-        ], 201);
+            DB::commit();
+
+            // Generate token
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            // Load the specific profile
+            $user->load($this->getProfileRelation($user->user_type));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User registered successfully',
+                'data' => [
+                    'user' => $user,
+                    'token' => $token,
+                    'token_type' => 'Bearer',
+                ]
+            ], 201);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Registration failed: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
-     * Login user
+     * Login user (all types)
      */
     public function login(Request $request)
     {
@@ -73,7 +116,18 @@ class AuthController extends Controller
         }
 
         $user = Auth::user();
+        
+        // Update connection status for Freelancers
+        if ($user->isFreelancer() && $user->freelancer) {
+            $user->freelancer->setConnecte(true);
+            $user->freelancer->setStatut('Available');
+        }
+
+        // Generate token
         $token = $user->createToken('auth_token')->plainTextToken;
+
+        // Load the specific profile
+        $user->load($this->getProfileRelation($user->user_type));
 
         return response()->json([
             'success' => true,
@@ -91,9 +145,14 @@ class AuthController extends Controller
      */
     public function user(Request $request)
     {
+        $user = $request->user();
+        
+        // Load the specific profile
+        $user->load($this->getProfileRelation($user->user_type));
+
         return response()->json([
             'success' => true,
-            'data' => $request->user()
+            'data' => $user
         ], 200);
     }
 
@@ -102,7 +161,16 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+        
+        // Update connection status for Freelancers
+        if ($user->isFreelancer() && $user->freelancer) {
+            $user->freelancer->setConnecte(false);
+            $user->freelancer->setStatut('Offline');
+        }
+
+        // Delete current token
+        $user->currentAccessToken()->delete();
 
         return response()->json([
             'success' => true,
@@ -146,20 +214,59 @@ class AuthController extends Controller
             'telephone' => 'sometimes|string|unique:users,telephone,' . $user->id,
             'genre' => 'sometimes|in:Homme,Femme',
             'photo_profil' => 'sometimes|image|max:2048',
+            
+            // Client specific fields
+            'adresse' => 'sometimes|string|max:255',
+            'ville' => 'sometimes|string|max:100',
+            'code_postal' => 'sometimes|string|max:10',
+            
+            // Freelancer specific fields
+            'details_compte_bancaire' => 'sometimes|string|max:255',
         ]);
 
-        if ($request->hasFile('photo_profil')) {
-            $path = $request->file('photo_profil')->store('photos_profil', 'public');
-            $validated['photo_profil'] = $path;
+        DB::beginTransaction();
+        
+        try {
+            // Handle photo upload
+            if ($request->hasFile('photo_profil')) {
+                $validated['photo_profil'] = $request->file('photo_profil')->store('photos_profil', 'public');
+            }
+
+            // Update user table
+            $user->update(array_intersect_key($validated, array_flip([
+                'nom', 'prenom', 'telephone', 'genre', 'photo_profil'
+            ])));
+
+            // Update profile specific table
+            if ($user->isClient() && $user->client) {
+                $user->client->update(array_intersect_key($validated, array_flip([
+                    'adresse', 'ville', 'code_postal'
+                ])));
+            } elseif ($user->isFreelancer() && $user->freelancer) {
+                $user->freelancer->update(array_intersect_key($validated, array_flip([
+                    'details_compte_bancaire'
+                ])));
+            }
+
+            DB::commit();
+
+            // Reload the profile
+            $user->load($this->getProfileRelation($user->user_type));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile updated successfully',
+                'data' => $user
+            ], 200);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Update failed: ' . $e->getMessage()
+            ], 500);
         }
-
-        $user->update($validated);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Profile updated successfully',
-            'data' => $user
-        ], 200);
     }
 
     /**
@@ -212,21 +319,29 @@ class AuthController extends Controller
         // Generate reset token
         $token = Str::random(60);
         
-        DB::table('password_resets')->insert([
-            'email' => $validated['email'],
-            'token' => Hash::make($token),
-            'created_at' => now(),
-        ]);
+        DB::table('password_resets')->updateOrInsert(
+            ['email' => $validated['email']],
+            [
+                'token' => Hash::make($token),
+                'created_at' => now(),
+            ]
+        );
 
-        // TODO: Send email with reset link
-        // Mail::send('emails.reset-password', ['token' => $token, 'user' => $user], function($message) use ($user) {
-        //     $message->to($user->email)->subject('Reset Password');
-        // });
+        // Send email with reset link
+        try {
+            Mail::to($user->email)->send(new \App\Mail\ResetPasswordMail(
+                $user->email,
+                $token,
+                $user->nom . ' ' . $user->prenom
+            ));
+        } catch (\Exception $e) {
+            // If email fails, still return success but log the error
+            Log::error('Reset password email failed: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Password reset link sent to your email',
-            'token' => $token // In production, don't return token
+            'message' => 'Password reset link sent to your email'
         ], 200);
     }
 
@@ -246,10 +361,26 @@ class AuthController extends Controller
             ->latest('created_at')
             ->first();
 
-        if (!$passwordReset || Carbon::parse($passwordReset->created_at)->addMinutes(60)->isPast()) {
+        if (!$passwordReset) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid or expired password reset token'
+                'message' => 'Invalid password reset token'
+            ], 422);
+        }
+
+        // Check if token is expired (60 minutes)
+        if (Carbon::parse($passwordReset->created_at)->addMinutes(60)->isPast()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Password reset token has expired'
+            ], 422);
+        }
+
+        // Verify token
+        if (!Hash::check($validated['token'], $passwordReset->token)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid password reset token'
             ], 422);
         }
 
@@ -266,50 +397,100 @@ class AuthController extends Controller
     }
 
     /**
+     * Change freelancer status (Freelancers only)
+     */
+    public function changeStatut(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user->isFreelancer()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This action is only available for freelancers'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'statut' => 'required|in:Available,Busy,Offline',
+        ]);
+
+        $user->freelancer->setStatut($validated['statut']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status updated successfully',
+            'data' => [
+                'statut' => $user->freelancer->statut_disponibilite
+            ]
+        ], 200);
+    }
+
+    /**
      * Create user profile in corresponding table
      */
-    private function createUserProfile(User $user, string $userType)
+    private function createUserProfile(User $user, array $validated)
     {
-        switch ($userType) {
+        switch ($user->user_type) {
             case 'Client':
-                DB::table('clients')->insert([
+                $client = Client::create([
                     'user_id' => $user->id,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'adresse' => $validated['adresse'] ?? null,
+                    'ville' => $validated['ville'] ?? null,
+                    'code_postal' => $validated['code_postal'] ?? null,
+                ]);
+                
+                // Create portefeuille for client
+                Portefeuille::create([
+                    'client_id' => $client->id,
+                    'solde' => 0,
                 ]);
                 break;
 
             case 'Freelancer':
-                DB::table('freelancers')->insert([
+                $freelancer = Freelancer::create([
                     'user_id' => $user->id,
                     'statut_disponibilite' => 'Offline',
-                    'note_moyenne' => 0,
+                    'details_compte_bancaire' => $validated['details_compte_bancaire'] ?? null,
                     'est_connecte' => false,
                     'nombre_missions' => 0,
                     'nombre_avis' => 0,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                ]);
+                
+                // Create portefeuille for freelancer
+                Portefeuille::create([
+                    'freelancer_id' => $freelancer->id,
+                    'solde' => 0,
                 ]);
                 break;
 
             case 'Support':
-                DB::table('supports')->insert([
+                Support::create([
                     'user_id' => $user->id,
                     'est_disponible' => true,
                     'tickets_traites' => 0,
-                    'created_at' => now(),
-                    'updated_at' => now(),
                 ]);
                 break;
 
             case 'Superviseur':
-                DB::table('superviseurs')->insert([
+                Superviseur::create([
                     'user_id' => $user->id,
                     'niveau_acces' => 'Superviseur',
-                    'created_at' => now(),
-                    'updated_at' => now(),
                 ]);
                 break;
         }
+    }
+
+    /**
+     * Get profile relation name based on user type
+     */
+    private function getProfileRelation(string $userType): string
+    {
+        return match($userType) {
+            'Client' => 'client.portefeuille',
+            'Freelancer' => 'freelancer.portefeuille',
+            'Support' => 'support',
+            'Superviseur' => 'superviseur',
+            default => '',
+        };
     }
 }

@@ -1,13 +1,13 @@
 // src/pages/freelancer/freelancer.jsx
 import React, { useRef, useEffect, useContext, useState } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
-
 import { 
   Sun, Moon, User, Briefcase, HelpCircle, DollarSign, 
   Home, Clock, Star, MessageCircle, Settings, Bell, Menu, Package, 
-  History, TrendingUp, FileText, Users, MapPin, Filter, RefreshCw, X
+  History, TrendingUp, FileText, Users, MapPin, Filter, RefreshCw, X, LogOut
 } from 'lucide-react';
 import { FreelancerProvider, FreelancerContext } from './freelancerContext';
+import { logoutUser } from '../../services/authService';
 
 // Constants Icons
 const ICONS = {
@@ -49,29 +49,49 @@ const ACCENT_COLORS = {
 };
 
 function InnerLayout() { 
+  // Déclarer tous les hooks en premier
   const [activePage, setActivePage] = useState('orders-received');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [openSubmenu, setOpenSubmenu] = useState(null);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [selectedService, setSelectedService] = useState('all');
+  const [orders, setOrders] = useState([]);
+  
   const navigate = useNavigate();
   const location = useLocation();
   const notificationRef = useRef(null);
   const profileRef = useRef(null);
   const sidebarRef = useRef(null);
   
+  // Consommer l'état partagé du contexte
   const {
     notifications,
     markAsRead,
     markAllAsRead,
-    isDarkMode, setIsDarkMode,
+    isDarkMode, 
+    setIsDarkMode,
     user,
     pendingOrders,
     rating,
     isOnline
   } = useContext(FreelancerContext);
-  
-  const unreadCount = notifications.filter(n => !n.read).length;
 
-  const [openSubmenu, setOpenSubmenu] = useState(null);
-  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
+  // Vérifier l'authentification au montage
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    const userType = localStorage.getItem('user_type');
+
+    if (!token || userType !== 'Freelancer') {
+      navigate('/login');
+      setIsAuthenticated(false);
+    } else {
+      setIsAuthenticated(true);
+    }
+    setIsLoading(false);
+  }, [navigate]);
 
   // Synchronisation page active
   useEffect(() => {
@@ -89,12 +109,47 @@ function InnerLayout() {
   // Click outside
   useEffect(() => {
     function handleClickOutside(event) {
-      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) setIsSidebarVisible(false);
-      if (notificationRef.current && !notificationRef.current.contains(event.target)) setShowNotifications(false);
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        setIsSidebarVisible(false);
+      }
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Services disponibles pour le filtre
+  const availableServices = [
+    { id: 'all', name: 'Tous les services' },
+    { id: 'nettoyage-complet', name: 'Nettoyage complet' },
+    { id: 'nettoyage-printemps', name: 'Nettoyage de printemps' },
+    { id: 'nettoyage-bureau', name: 'Nettoyage bureau' },
+    { id: 'nettoyage-vitres', name: 'Nettoyage de vitres' },
+    { id: 'nettoyage-apres-travaux', name: 'Nettoyage après travaux' }
+  ];
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Conditional return AFTER all hooks are declared
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // Redirection déjà gérée dans useEffect
+  }
 
   const toggleDarkMode = () => {
     const newDarkMode = !isDarkMode;
@@ -102,7 +157,37 @@ function InnerLayout() {
     localStorage.setItem('freelancerDarkMode', JSON.stringify(newDarkMode));
   };
 
-  const toggleSubmenu = (menuName) => setOpenSubmenu(openSubmenu === menuName ? null : menuName);
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Même en cas d'erreur, rediriger vers login
+      navigate('/login');
+    }
+  };
+
+  const acceptOrder = (orderId) => {
+    setOrders(orders.map(order => 
+      order.id === orderId ? { ...order, status: 'acceptée' } : order
+    ));
+    alert(`Commande #${orderId} acceptée avec succès!`);
+  };
+
+  const rejectOrder = (orderId) => {
+    setOrders(orders.filter(order => order.id !== orderId));
+    alert(`Commande #${orderId} refusée`);
+  };
+
+  const refreshOrders = () => {
+    // À remplacer par un appel API réel
+    alert('Actualisation des commandes...');
+  };
+
+  const toggleSubmenu = (menuName) => {
+    setOpenSubmenu(openSubmenu === menuName ? null : menuName);
+  };
 
   const handleNavigation = (page, path = null) => {
     setActivePage(page);
@@ -114,15 +199,11 @@ function InnerLayout() {
   // --- CONFIGURATION DU DESIGN "SOFT GRADIENT" ---
   
   // 1. Fond Global (Body)
-  // Mode Clair : Dégradé du Bleu Ciel très pâle vers le Gris Perle (Très doux pour les yeux)
-  // Mode Sombre : Gris foncé classique
   const containerClasses = isDarkMode 
     ? 'bg-gray-900 text-white' 
     : 'bg-gradient-to-br from-slate-100 via-blue-50 to-slate-200 text-slate-700';
 
   // 2. Sidebar & Header (Glassmorphism)
-  // Mode Clair : Blanc avec 70% d'opacité + Flou (Backdrop Blur). On voit le dégradé derrière.
-  // Ce n'est pas du blanc pur agressif.
   const glassClasses = isDarkMode
     ? 'bg-gray-800 border-gray-700'
     : 'bg-white/70 backdrop-blur-xl border-white/50 border-r shadow-sm';
@@ -145,7 +226,6 @@ function InnerLayout() {
     
     if (isActive) {
       return {
-        // En mode clair : Fond blanc pur pour ressortir du menu "verre", avec texte coloré
         className: isDarkMode 
           ? `bg-gray-700 text-white border-l-4 font-semibold`
           : `bg-white shadow-sm text-slate-800 border-l-4 font-semibold`,
@@ -157,9 +237,9 @@ function InnerLayout() {
     return {
       className: isDarkMode 
         ? `text-gray-400 hover:bg-gray-700` 
-        : `text-slate-600 hover:bg-white/60 hover:text-slate-900`, // Hover très doux
+        : `text-slate-600 hover:bg-white/60 hover:text-slate-900`,
       style: {},
-      iconColor: isDarkMode ? '#9CA3AF' : '#64748b', // Slate-500
+      iconColor: isDarkMode ? '#9CA3AF' : '#64748b',
     };
   };
 
@@ -176,7 +256,7 @@ function InnerLayout() {
         ref={sidebarRef}
         className={`fixed md:relative z-40 h-screen transition-transform duration-300 ease-in-out flex flex-col w-72 
         ${isSidebarVisible ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        ${glassClasses}`} // Application de l'effet verre
+        ${glassClasses}`}
       >
 
         {/* Header Sidebar */}
@@ -339,7 +419,7 @@ function InnerLayout() {
         {/* Footer Sidebar */}
         <div className={`p-6 border-t ${isDarkMode ? 'border-gray-700' : 'border-slate-200/50'}`}>
           <button 
-            onClick={() => setIsSidebarVisible(false)} 
+            onClick={handleLogout}
             className="text-red-500 font-bold hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 px-4 py-2 rounded-lg transition-all w-full"
           >
             Déconnexion
@@ -350,7 +430,7 @@ function InnerLayout() {
       {/* --- MAIN CONTENT --- */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
         
-        {/* Header (Effet Verre aussi en mode clair) */}
+        {/* Header */}
         <header className={`h-16 flex items-center justify-between px-4 md:px-6 z-20 border-b ${glassClasses} ${isDarkMode ? '' : 'border-white/40'}`}>
           
           <div className="flex items-center md:hidden">
@@ -415,9 +495,10 @@ function InnerLayout() {
               )}
             </div>
 
-            {/* Profile Link */}
-            <Link 
-                to="profile-freelancer"
+            {/* Profile Menu */}
+            <div className="relative" ref={profileRef}>
+              <button 
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
                 className={`group relative flex items-center gap-2 p-1 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-white/60'}`}
               >
                 <div className="relative">
@@ -428,17 +509,46 @@ function InnerLayout() {
                     isOnline ? 'bg-green-500' : 'bg-gray-300'
                   }`} />
                 </div>
-                <span className={`hidden md:block text-sm font-medium transition-colors ${isDarkMode ? 'text-white' : 'text-slate-700'}`}>
-                  {user?.name}
-                </span>
-            </Link>
+                <span className="hidden md:block text-sm font-medium dark:text-white">{user?.name}</span>
+              </button>
+
+              {showProfileMenu && (
+                <div className={`absolute right-0 mt-2 w-48 rounded-xl shadow-xl border py-2 z-50 ${
+                  isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                }`}>
+                  <Link 
+                    to="profile-freelancer"
+                    onClick={() => setShowProfileMenu(false)}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 dark:text-white block"
+                  >
+                    <ICONS.profile size={16} />
+                    Mon Profil
+                  </Link>
+                  <Link 
+                    to="settings-freelancer"
+                    onClick={() => setShowProfileMenu(false)}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 dark:text-white block"
+                  >
+                    <ICONS.settings size={16} />
+                    Paramètres
+                  </Link>
+                  <div className="border-t my-1 dark:border-gray-700"></div>
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900 flex items-center gap-3"
+                  >
+                    <LogOut size={16} />
+                    Déconnexion
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
         {/* Contenu principal */}
-        {/* En mode clair : Le fond est transparent car le dégradé est sur le conteneur parent */}
         <main className={`flex-1 overflow-y-auto p-4 md:p-6`}>
-          <Outlet context={{ isDarkMode }} />
+          <Outlet context={{ isDarkMode, acceptOrder, rejectOrder, refreshOrders, orders, selectedService }} />
         </main>
       </div>
     </div>
