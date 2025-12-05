@@ -7,7 +7,7 @@ import CleanixLandingPage from './pages/homePage';
 import RegisterPage from './pages/registerPage';
 import LoginPage from './pages/loginPage';
 import ForgotPasswordPage from './pages/forgotPasswordPage';
-//import ResetPasswordPage from './pages/ResetPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 // ( 1 ) les import des pages après la connexion de la page de superviseur 
 import DashboardSuperviseur from './pages/superviseur/superviseur';
@@ -55,7 +55,7 @@ export default function App() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      {/*<Route path="/reset-password/:token" element={<ResetPasswordPage />} />*/}
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       
       {/* Routes pour Superviseur */}
       <Route path="/superviseur/dashboard" element={<DashboardSuperviseur />}>
