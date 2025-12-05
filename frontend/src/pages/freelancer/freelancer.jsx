@@ -5,9 +5,10 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { 
   ChevronRight, Sun, Moon, User, Briefcase, HelpCircle, DollarSign, 
   Home, Clock, Star, MessageCircle, Settings, Bell, Menu, Package, 
-  History, TrendingUp, FileText, Users, MapPin, Filter, RefreshCw, X
+  History, TrendingUp, FileText, Users, MapPin, Filter, RefreshCw, X, LogOut
 } from 'lucide-react';
 import { FreelancerProvider, FreelancerContext } from './freelancerContext';
+import { logoutUser } from '../../services/authService';
 
 // Constants
 const ICONS = {
@@ -53,13 +54,23 @@ const COLORS = {
 
 // Layout principal de la page freelancer
 function InnerLayout() { 
+  // Déclarer tous les hooks en premier, AVANT toute condition
   const [activePage, setActivePage] = useState('orders-received');
   const navigate = useNavigate();
   const notificationRef = useRef(null);
   const profileRef = useRef(null);
   const sidebarRef = useRef(null);
   
-  // Consommer l'état partagé
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [openSubmenu, setOpenSubmenu] = useState('orders');
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [selectedService, setSelectedService] = useState('all');
+  const [orders, setOrders] = useState([]);
+
+  // Consommer l'état partagé du contexte
   const {
     notifications,
     markAsRead,
@@ -72,30 +83,20 @@ function InnerLayout() {
     rating,
     isOnline
   } = useContext(FreelancerContext);
-  
-  const unreadCount = notifications.filter(n => !n.read).length;
 
-  // États pour les sous-menus - maintenant un seul peut être ouvert à la fois
-  const [openSubmenu, setOpenSubmenu] = useState('orders');
-  
-  // États pour la visibilité
-  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
+  // Vérifier l'authentification au montage
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    const userType = localStorage.getItem('user_type');
 
-  // États pour les filtres
-  const [selectedService, setSelectedService] = useState('all');
-  const [orders, setOrders] = useState([]);
-
-  // Services disponibles pour le filtre
-  const availableServices = [
-    { id: 'all', name: 'Tous les services' },
-    { id: 'nettoyage-complet', name: 'Nettoyage complet' },
-    { id: 'nettoyage-printemps', name: 'Nettoyage de printemps' },
-    { id: 'nettoyage-bureau', name: 'Nettoyage bureau' },
-    { id: 'nettoyage-vitres', name: 'Nettoyage de vitres' },
-    { id: 'nettoyage-apres-travaux', name: 'Nettoyage après travaux' }
-  ];
+    if (!token || userType !== 'Freelancer') {
+      navigate('/login');
+      setIsAuthenticated(false);
+    } else {
+      setIsAuthenticated(true);
+    }
+    setIsLoading(false);
+  }, [navigate]);
 
   // Données simulées pour les commandes
   useEffect(() => {
@@ -173,10 +174,45 @@ function InnerLayout() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Services disponibles pour le filtre
+  const availableServices = [
+    { id: 'all', name: 'Tous les services' },
+    { id: 'nettoyage-complet', name: 'Nettoyage complet' },
+    { id: 'nettoyage-printemps', name: 'Nettoyage de printemps' },
+    { id: 'nettoyage-bureau', name: 'Nettoyage bureau' },
+    { id: 'nettoyage-vitres', name: 'Nettoyage de vitres' },
+    { id: 'nettoyage-apres-travaux', name: 'Nettoyage après travaux' }
+  ];
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Conditional return AFTER all hooks are declared
+  if (isLoading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
   const toggleDarkMode = () => {
     const newDarkMode = !isDarkMode;
     setIsDarkMode(newDarkMode);
     localStorage.setItem('freelancerDarkMode', JSON.stringify(newDarkMode));
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Even if logout fails on server, redirect to login
+      navigate('/login');
+    }
   };
 
   const acceptOrder = (orderId) => {
@@ -711,9 +747,10 @@ function InnerLayout() {
                   </button>
                   <div className="border-t my-1 dark:border-gray-700"></div>
                   <button 
-                    onClick={() => { /* Logique déconnexion */ }}
+                    onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900 flex items-center gap-3"
                   >
+                    <LogOut size={16} />
                     Déconnexion
                   </button>
                 </div>
