@@ -2,8 +2,9 @@
 import React, { useRef, useEffect, useContext, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 
-import { ChevronRight, X, Sun, Moon, User, ShoppingCart, HelpCircle, DollarSign, Home, Clock, Star, MessageCircle, Settings, Bell, Menu, Package, History, Wallet } from 'lucide-react';
+import { ChevronRight, X, Sun, Moon, User, ShoppingCart, HelpCircle, DollarSign, Home, Clock, Star, MessageCircle, Settings, Bell, Menu, Package, History, Wallet, LogOut } from 'lucide-react';
 import { ClientProvider, ClientContext } from './clientContext';
+import { logoutUser } from '../../services/authService';
 
 // Constants
 const ICONS = {
@@ -34,6 +35,25 @@ function InnerLayout() {
   const [activePage, setActivePage] = useState('dashboard');
   const navigate = useNavigate();
   const notificationRef = useRef(null);
+  const profileRef = useRef(null);
+  
+  // Tous les hooks DOIVENT être déclarés en premier, avant toute condition
+  // Vérifier l'authentification
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    const userType = localStorage.getItem('user_type');
+
+    if (!token || userType !== 'Client') {
+      navigate('/login');
+      setIsAuthenticated(false);
+    } else {
+      setIsAuthenticated(true);
+    }
+    setIsLoading(false);
+  }, [navigate]);
   
   // Consommer l'état partagé
   const {
@@ -55,21 +75,47 @@ function InnerLayout() {
   // État pour la visibilité de la sidebar
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
 
+  // État local pour les notifications
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (notificationRef.current && !notificationRef.current.contains(event.target)) {
         setShowNotifications(false);
       }
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [notificationRef]);
+  }, []);
 
-  // État local pour les notifications
-  const [showNotifications, setShowNotifications] = React.useState(false);
+  if (isLoading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
   
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Even if logout fails on server, redirect to login
+      navigate('/login');
+    }
   };
 
   return (
@@ -239,7 +285,7 @@ function InnerLayout() {
         <div className={`p-4 mt-auto border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
           <div className="text-center">
             <button 
-              onClick={() => { /* Logique de déconnexion */ setIsSidebarVisible(false); }} 
+              onClick={handleLogout}
               className="text-red-500 font-bold hover:opacity-80 transition-all"
               style={{ textShadow: '3px 3px 6px rgba(255, 0, 0, 0.8)' }}
             >
@@ -331,10 +377,57 @@ function InnerLayout() {
                 </div>
               )}
             </div>
-            {/* Mon Profile Client 
-            <button onClick={() => {navigate('client-profile')}} className="p-2 rounded-full border-2 hover:bg-gray-500">
+            {/* Menu Profil */}
+            <div className="relative" ref={profileRef}>
+              <button 
+                onClick={() => setShowProfileMenu(s => !s)} 
+                className="p-2 rounded-full border-2 hover:bg-gray-500 transition"
+                title="Menu profil"
+              >
                 <User size={18} />
-            </button>*/}
+              </button>
+              {showProfileMenu && (
+                <div className={`absolute right-0 mt-2 w-48 rounded-xl shadow-xl border z-50 ${
+                  isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                }`}>
+                  <button
+                    onClick={() => {
+                      navigate('client-profile');
+                      setShowProfileMenu(false);
+                      setActivePage('profile');
+                    }}
+                    className={`w-full text-left px-4 py-2 hover:bg-opacity-50 flex items-center gap-2 border-b ${
+                      isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-gray-100 hover:bg-gray-50'
+                    }`}
+                  >
+                    <User size={16} />
+                    Mon Profil
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigate('settings');
+                      setShowProfileMenu(false);
+                      setActivePage('settings');
+                    }}
+                    className={`w-full text-left px-4 py-2 hover:bg-opacity-50 flex items-center gap-2 border-b ${
+                      isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-gray-100 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Settings size={16} />
+                    Paramètres
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className={`w-full text-left px-4 py-2 hover:bg-opacity-50 flex items-center gap-2 text-red-600 ${
+                      isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-red-50'
+                    }`}
+                  >
+                    <LogOut size={16} />
+                    Déconnexion
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
