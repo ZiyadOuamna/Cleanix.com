@@ -43,6 +43,10 @@ import SupportFreelancer      from './pages/freelancer/support';
 // ( 3 ) imports des pages après la connexion de la page de Client
 import DashboardClient from './pages/client/Client';
 
+//----------------------------------------------------------------------//
+// ( 4 ) imports des pages après la connexion de la page de Support
+import DashboardSupportAgent from './pages/support/supportDashboard';
+
 
 export default function App() {
   return (
@@ -53,7 +57,8 @@ export default function App() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       {/*<Route path="/reset-password/:token" element={<ResetPasswordPage />} />*/}
       
-      <Route path="/dev-superviseur-page" element={<DashboardSuperviseur />}>
+      {/* Routes pour Superviseur */}
+      <Route path="/superviseur/dashboard" element={<DashboardSuperviseur />}>
         {/* les routes des partie : réclamations , rembourssement et settings */}
         <Route path="gestion-reclamations"    element={<Reclamations />}/>
         <Route path="gestion-rembourssements" element={<RembourssementsPage />}/>
@@ -68,17 +73,22 @@ export default function App() {
         <Route path="gestion-freelancers"   element={<GestionFreelancersPage />} />
       </Route>
 
-      <Route path='/dev-client-page' element={<DashboardClient />}>
+      {/* Routes pour Client */}
+      <Route path='/client/dashboard' element={<DashboardClient />}>
         <Route path='' element={<div>Page d'accueil client</div>} />
         <Route path='' element={<div>Page d'accueil client</div>} />
         <Route path='' element={<div>Page d'accueil client</div>} />
       </Route>
 
-      <Route path='/dev-freelancer-page'      element={<DashboardFreelancer />}>
+      {/* Routes pour Freelancer */}
+      <Route path='/freelancer/dashboard'      element={<DashboardFreelancer />}>
         <Route path='portefeuille-freelancer' element={<PortefeuilleFreelancer />}/>
         <Route path='settings-freelancer'     element={<SettingsFreelancer />}/>
         <Route path='support-freelancer'      element={<SupportFreelancer />}/>
       </Route>
+
+      {/* Routes pour Support */}
+      <Route path='/support/dashboard' element={<DashboardSupportAgent />} />
       
     </Routes>
   );
