@@ -1,6 +1,6 @@
 import './App.css';
 import { Routes, Route } from 'react-router-dom';
-
+import "@fontsource/material-icons-two-tone";
 // les import des pages avant la connexion 
 import CleanixLandingPage from './pages/homePage';
 import RegisterPage from './pages/registerPage';
@@ -46,6 +46,7 @@ import PublierService from './pages/freelancer/services/publierService';
 // ( 3 ) imports des pages après la connexion de la page de Client
 import DashboardClient from './pages/client/Client';
 
+
 export default function App() {
   return (
     <Routes>
@@ -70,7 +71,7 @@ export default function App() {
       </Route>
 
       <Route path='/dev-client-page' element={<DashboardClient />}>
-        <Route path='' element={<div>Page d'accueil client</div>} />
+        <Route index element={<DashboardClient />} /> {/*par default*/}
       </Route>
 
       <Route path='/dev-freelancer-page' element={<PageFreelancer />}>
