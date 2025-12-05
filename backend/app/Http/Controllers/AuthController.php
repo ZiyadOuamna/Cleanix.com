@@ -13,6 +13,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Exception;
@@ -325,15 +327,21 @@ class AuthController extends Controller
             ]
         );
 
-        // TODO: Send email with reset link
-        // Mail::send('emails.reset-password', ['token' => $token, 'user' => $user], function($message) use ($user) {
-        //     $message->to($user->email)->subject('Reset Password');
-        // });
+        // Send email with reset link
+        try {
+            Mail::to($user->email)->send(new \App\Mail\ResetPasswordMail(
+                $user->email,
+                $token,
+                $user->nom . ' ' . $user->prenom
+            ));
+        } catch (\Exception $e) {
+            // If email fails, still return success but log the error
+            Log::error('Reset password email failed: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Password reset link sent to your email',
-            'token' => $token // In production, don't return token
+            'message' => 'Password reset link sent to your email'
         ], 200);
     }
 
