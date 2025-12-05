@@ -14,8 +14,22 @@ const apiClient = axios.create({
   },
 });
 
+// Interceptor pour ajouter le token d'authentification à chaque requête
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 /**
- * Envoie les données d'inscription au backend Laravel (Route /api/register)
+ * Envoie les données d'inscription au backend Laravel (Route /api/auth/register)
  * @param {object} userData - Données du formulaire (name, email, password, password_confirmation, type_compte, etc.)
  * @returns {Promise<object>} La réponse du serveur (généralement l'utilisateur créé)
  */
@@ -30,17 +44,38 @@ export const registerUser = async (userData) => {
 };
 
 /**
- * Envoie les identifiants pour la connexion (Route /api/login ou équivalent)
+ * Envoie les identifiants pour la connexion (Route /api/login)
  * @param {object} credentials - {email, password}
  * @returns {Promise<object>} La réponse du serveur (token ou succès)
  */
 export const loginUser = async (credentials) => {
     try {
-        // NOTE: Si Laravel utilise un endpoint différent de /login, changez-le ici
         const response = await apiClient.post('/login', credentials);
         return response.data;
     } catch (error) {
         // Renvoie l'erreur pour que le composant (LoginPage) puisse l'afficher
+        throw error;
+    }
+};
+
+/**
+ * Déconnecte l'utilisateur (Route /api/logout)
+ * Supprime le token du serveur et du localStorage
+ * @returns {Promise<object>} La réponse du serveur
+ */
+export const logoutUser = async () => {
+    try {
+        const response = await apiClient.post('/logout');
+        // Nettoyer le localStorage
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('user_type');
+        return response.data;
+    } catch (error) {
+        // Même en cas d'erreur, nettoyer le localStorage
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('user_type');
         throw error;
     }
 };
