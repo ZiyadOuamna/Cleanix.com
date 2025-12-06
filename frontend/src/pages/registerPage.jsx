@@ -286,7 +286,7 @@ export default function RegisterPage() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Détails du Compte Bancaire</label>
-                  <textarea name="details_compte_bancaire" value={formData.details_compte_bancaire} onChange={handleChange} required className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 transition" placeholder="IBAN, numéro de compte, titulaire, etc." rows="3" />
+                  <textarea name="details_compte_bancaire" value={formData.details_compte_bancaire} onChange={handleChange} className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 transition" placeholder="IBAN, numéro de compte, titulaire, etc." rows="3" />
                 </div>
                 <p className="text-xs text-gray-600">Note: Nombre de missions, note moyenne, et nombre d'avis seront initialisés automatiquement.</p>
               </div>

@@ -7,7 +7,7 @@ import CleanixLandingPage from './pages/homePage';
 import RegisterPage from './pages/registerPage';
 import LoginPage from './pages/loginPage';
 import ForgotPasswordPage from './pages/forgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
+import ResetPasswordPage from './pages/resetPasswordPage';
 
 // ( 1 ) les import des pages après la connexion de la page de superviseur 
 import DashboardSuperviseur from './pages/superviseur/superviseur';
@@ -45,7 +45,7 @@ import DashboardClient from './pages/client/Client';
 
 //----------------------------------------------------------------------//
 // ( 4 ) imports des pages après la connexion de la page de Support
-import DashboardSupportAgent from './pages/support/supportDashboard';
+//import DashboardSupportAgent from './pages/support/supportDashboard';
 
 
 export default function App() {
@@ -87,8 +87,8 @@ export default function App() {
         <Route path='support-freelancer'      element={<SupportFreelancer />}/>
       </Route>
 
-      {/* Routes pour Support */}
-      <Route path='/support/dashboard' element={<DashboardSupportAgent />} />
+      {/* Routes pour Support 
+      <Route path='/support/dashboard' element={<DashboardSupportAgent />} />*/}
       
     </Routes>
   );
