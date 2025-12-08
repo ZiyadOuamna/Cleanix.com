@@ -11,6 +11,9 @@ const apiClient = axios.create({
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
   },
 });
 
@@ -21,6 +24,9 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Ajouter un timestamp pour éviter le cache du navigateur
+    config.headers['X-Requested-With'] = 'XMLHttpRequest';
+    config.headers['X-Timestamp'] = Date.now();
     return config;
   },
   (error) => {
@@ -60,22 +66,35 @@ export const loginUser = async (credentials) => {
 
 /**
  * Déconnecte l'utilisateur (Route /api/logout)
- * Supprime le token du serveur et du localStorage
+ * Supprime le token du serveur, du localStorage, et du sessionStorage
+ * Vide également le cache du navigateur pour cette session
  * @returns {Promise<object>} La réponse du serveur
  */
 export const logoutUser = async () => {
     try {
         const response = await apiClient.post('/logout');
-        // Nettoyer le localStorage
+        // Nettoyer COMPLÈTEMENT le stockage
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user');
         localStorage.removeItem('user_type');
+        localStorage.removeItem('remembered_email');
+        sessionStorage.clear();
+        
+        // Empêcher la mise en cache de cette requête
+        window.history.replaceState(null, null, window.location.href);
+        
         return response.data;
     } catch (error) {
         // Même en cas d'erreur, nettoyer le localStorage
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user');
         localStorage.removeItem('user_type');
+        localStorage.removeItem('remembered_email');
+        sessionStorage.clear();
+        
+        // Empêcher la mise en cache
+        window.history.replaceState(null, null, window.location.href);
+        
         throw error;
     }
 };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../context/ThemeContext';
  
 // Import des composants
 import Header from '../../src/landing/header';
@@ -13,7 +14,7 @@ import Footer from '../../src/landing/footer';
 import TestimonialsSection from '../landing/temoins';
 const LandingPage = () => {
   const navigate = useNavigate();
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { isDarkMode, toggleDarkMode } = useTheme();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState([
@@ -27,11 +28,6 @@ const LandingPage = () => {
   const paymentRef = useRef(null);
   const testimonialsRef = useRef(null);
   const contactRef = useRef(null);
-
-  // Fonction pour basculer le mode sombre
-  const toggleDarkMode = () => {
-    setIsDarkMode(prev => !prev);
-  };
 
   // Effet pour le scroll
   useEffect(() => {

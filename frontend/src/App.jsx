@@ -1,13 +1,16 @@
 import './App.css';
 import { Routes, Route } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import "@fontsource/material-icons-two-tone";
+import { ProtectedRoute, PublicRoute, validateToken } from './services/ProtectedRoute';
+import { ThemeProvider } from './context/ThemeContext';
 
 // les import des pages avant la connexion 
 import CleanixLandingPage from './pages/homePage';
 import RegisterPage from './pages/registerPage';
 import LoginPage from './pages/loginPage';
 import ForgotPasswordPage from './pages/forgotPasswordPage';
-import ResetPasswordPage from './pages/resetPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 // ( 1 ) les import des pages après la connexion de la page de superviseur 
 import DashboardSuperviseur from './pages/superviseur/superviseur';
 
@@ -47,6 +50,13 @@ import PublierService from './pages/freelancer/services/publierService';
 
 // ( 3 ) imports des pages après la connexion de la page de Client
 import DashboardClient from './pages/client/Client';
+import ClientDashboard from './pages/client/clientDashboard';
+import ProfileClient from './pages/client/profileClient';
+import SupportClient from './pages/client/support';
+import SettingsClient from './pages/client/settings';
+import MyBookings from './pages/client/myBookings';
+import BookingHistory from './pages/client/bookingHistory';
+import WalletClient from './pages/client/walletClient';
 
 //----------------------------------------------------------------------//
 // ( 4 ) imports des pages après la connexion de la page de Support
@@ -55,17 +65,38 @@ import DashboardClient from './pages/client/Client';
 //import DashboardSupportAgent from './pages/support';
 
 export default function App() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Valider le token au chargement de l'app
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        // Vérifier que le token est valide avec le backend
+        const isValid = await validateToken();
+        if (!isValid) {
+          // Token expiré ou invalide, rediriger vers login
+          window.location.href = '/login';
+        }
+      }
+      setIsLoading(false);
+    };
+
+    checkAuth();
+  }, []);
+
   return (
-    <Routes>
-      {/* Routes publiques */}
-      <Route path="/" element={<CleanixLandingPage />} /> 
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
+    <ThemeProvider>
+      <Routes>
+      {/* Routes publiques - redirige vers dashboard si déjà connecté */}
+      <Route path="/" element={<PublicRoute element={<CleanixLandingPage />} isLoading={isLoading} />} /> 
+      <Route path="/register" element={<PublicRoute element={<RegisterPage />} isLoading={isLoading} />} />
+      <Route path="/login" element={<PublicRoute element={<LoginPage />} isLoading={isLoading} />} />
+      <Route path="/forgot-password" element={<PublicRoute element={<ForgotPasswordPage />} isLoading={isLoading} />} />
+      <Route path="/reset-password" element={<PublicRoute element={<ResetPasswordPage />} isLoading={isLoading} />} />
       
-      {/* Routes pour Superviseur */}
-      <Route path="/superviseur/dashboard" element={<DashboardSuperviseur />}>
+      {/* Routes pour Superviseur - Protégées */}
+      <Route path="/superviseur/dashboard" element={<ProtectedRoute element={<DashboardSuperviseur />} requiredUserType="superviseur" isLoading={isLoading} />}>
         {/* les routes des partie : réclamations , rembourssement et settings */}
         <Route path="gestion-reclamations"    element={<Reclamations />}/>
         <Route path="gestion-rembourssements" element={<RembourssementsPage />}/>
@@ -81,14 +112,35 @@ export default function App() {
         <Route path="gestion-support"       element={<GestionSupportPage />} />
       </Route>
 
-      {/* Routes pour Client - À COMPLÉTER */}
-      <Route path='/client/dashboard' element={<DashboardClient />}>
-        <Route index element={<div>Page d'accueil client</div>} />
-        {/* Vous pourrez ajouter les sous-routes ici plus tard */}
+      {/* Routes pour Client - Protégées */}
+      <Route path='/client/dashboard' element={<ProtectedRoute element={<DashboardClient />} requiredUserType="client" isLoading={isLoading} />}>
+        {/* Dashboard */}
+        <Route path='dashboard-client' element={<ClientDashboard />} />
+        
+        {/* Mes Réservations */}
+        <Route path='my-bookings' element={<MyBookings />} />
+        
+        {/* Historique */}
+        <Route path='booking-history' element={<BookingHistory />} />
+        
+        {/* Portefeuille */}
+        <Route path='wallet-client' element={<WalletClient />} />
+        
+        {/* Profil */}
+        <Route path='profile-client' element={<ProfileClient />} />
+        
+        {/* Support */}
+        <Route path='support-client' element={<SupportClient />} />
+        
+        {/* Paramètres */}
+        <Route path='settings-client' element={<SettingsClient />} />
+        
+        {/* Page par défaut */}
+        <Route index element={<MyBookings />} />
       </Route>
 
-      {/* Routes pour Freelancer */}
-      <Route path='/freelancer/dashboard' element={<PageFreelancer />}>
+      {/* Routes pour Freelancer - Protégées */}
+      <Route path='/freelancer/dashboard' element={<ProtectedRoute element={<PageFreelancer />} requiredUserType="freelancer" isLoading={isLoading} />}>
         {/* Dashboard Freelancer */}
         <Route path='dashboard-freelancer' element={<DashboardFreelancer />} />
         
@@ -111,22 +163,7 @@ export default function App() {
         <Route path='support-freelancer' element={<SupportFreelancer />} />
       </Route>
 
-      {/* Routes pour Support 
-      <Route path='/support/dashboard' element={<DashboardSupportAgent />} />*/}
-
-      {/* Route de compatibilité pour anciens liens - À SUPPRIMER PLUS TARD */}
-      <Route path='/dev-freelancer-page' element={<PageFreelancer />}>
-        <Route index element={<OrdersReceived />} />
-        <Route path='dashboard-freelancer' element={<DashboardFreelancer />} />
-        <Route path='profile-freelancer' element={<ProfileFreelancer />} />
-        <Route path='accepted-cmd-freelancer' element={<CommandesAcceptees />} />
-        <Route path='historique-commandes-freelancer' element={<HistoriqueCommandes />} />
-        <Route path='gestion-services-freelancer' element={<GestionServices />} />
-        <Route path='publier-service-freelancer' element={<PublierService />} />
-        <Route path='portefeuille-freelancer' element={<PortefeuilleFreelancer />} />
-        <Route path='settings-freelancer' element={<SettingsFreelancer />} />
-        <Route path='support-freelancer' element={<SupportFreelancer />} />
-      </Route>
     </Routes>
+    </ThemeProvider>
   );
 }

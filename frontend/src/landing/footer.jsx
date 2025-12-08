@@ -1,115 +1,235 @@
 import React from 'react';
+import { Facebook, Instagram, Linkedin, Twitter, Mail, Phone, MapPin, ArrowRight } from 'lucide-react';
 
 const Footer = ({ isDarkMode }) => {
   const socialLinks = [
-    {
-      name: "Facebook",
-      icon: (
-        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-        </svg>
-      ),
-      url: "#"
-    },
-    {
-      name: "Instagram",
-      icon: (
-        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 6.62 5.367 11.987 11.988 11.987c6.62 0 11.987-5.367 11.987-11.987C24.014 5.367 18.637.001 12.017.001zM8.449 16.988c-1.297 0-2.448-.49-3.323-1.297C4.22 14.815 3.73 13.664 3.73 12.367s.49-2.448 1.396-3.323c.875-.807 2.026-1.297 3.323-1.297s2.448.49 3.323 1.297c.906.875 1.396 2.026 1.396 3.323s-.49 2.448-1.396 3.323c-.875.807-2.026 1.297-3.323 1.297z"/>
-        </svg>
-      ),
-      url: "#"
-    },
-    {
-      name: "Twitter",
-      icon: (
-        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723 10.016 10.016 0 01-3.127 1.184 4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
-        </svg>
-      ),
-      url: "#"
-    },
-    {
-      name: "LinkedIn",
-      icon: (
-        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-        </svg>
-      ),
-      url: "#"
-    }
+    { name: "Facebook", icon: Facebook, url: "#" },
+    { name: "Instagram", icon: Instagram, url: "#" },
+    { name: "Twitter", icon: Twitter, url: "#" },
+    { name: "LinkedIn", icon: Linkedin, url: "#" }
   ];
 
   const quickLinks = [
     { name: "Services", url: "#services" },
     { name: "À propos", url: "#about" },
     { name: "Contact", url: "#contact" },
-    { name: "CGU", url: "#terms" }
+    { name: "CGU", url: "#terms" },
+    { name: "Politique de confidentialité", url: "#privacy" }
+  ];
+
+  const legalLinks = [
+    { name: "Conditions d'utilisation", url: "#terms" },
+    { name: "Politique de confidentialité", url: "#privacy" },
+    { name: "Cookies", url: "#cookies" }
   ];
 
   return (
-    <footer className={`py-12 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-800'}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <footer className={`${isDarkMode 
+      ? 'bg-gray-950 border-t border-gray-800' 
+      : 'bg-gradient-to-br from-gray-900 to-gray-800'
+    }`}>
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         
-        <div className="flex flex-col md:flex-row justify-between items-center">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 mb-12">
           
-          {/* Logo et description */}
-          <div className="mb-8 md:mb-0 text-center md:text-left">
-            <h3 className={`text-2xl font-bold mb-4 text-white`}>
-              Cleanix
-            </h3>
-            <p className={`max-w-md text-gray-300`}>
-              Votre partenaire de confiance pour des services de nettoyage professionnels.
+          {/* Brand Section */}
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-cyan-500 to-blue-600 bg-clip-text text-transparent mb-2">
+                Cleanix
+              </h3>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Votre partenaire de confiance pour des services de nettoyage professionnels et sécurisés.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Phone size={18} className="text-cyan-500" />
+                <a href="tel:+2126123456" className="text-gray-400 hover:text-cyan-500 transition-colors text-sm">
+                  +212 6 12 34 56 78
+                </a>
+              </div>
+              <div className="flex items-center gap-3">
+                <Mail size={18} className="text-cyan-500" />
+                <a href="mailto:contact@cleanix.ma" className="text-gray-400 hover:text-cyan-500 transition-colors text-sm">
+                  contact@cleanix.ma
+                </a>
+              </div>
+              <div className="flex items-start gap-3">
+                <MapPin size={18} className="text-cyan-500 flex-shrink-0 mt-1" />
+                <span className="text-gray-400 text-sm">
+                  Casablanca, Maroc
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Services */}
+          <div>
+            <h4 className="font-bold text-white mb-6 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600"></span>
+              Services
+            </h4>
+            <ul className="space-y-3">
+              {[
+                'Nettoyage Résidentiel',
+                'Nettoyage Commercial',
+                'Nettoyage Profond',
+                'Gestion des Clés'
+              ].map((item, idx) => (
+                <li key={idx}>
+                  <a href="#" className="text-gray-400 hover:text-cyan-500 transition-colors text-sm flex items-center gap-2 group">
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ArrowRight size={14} />
+                    </span>
+                    {item}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Company */}
+          <div>
+            <h4 className="font-bold text-white mb-6 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-600"></span>
+              Entreprise
+            </h4>
+            <ul className="space-y-3">
+              {[
+                'À propos',
+                'Blog',
+                'Carrières',
+                'Partenaires'
+              ].map((item, idx) => (
+                <li key={idx}>
+                  <a href="#" className="text-gray-400 hover:text-cyan-500 transition-colors text-sm flex items-center gap-2 group">
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ArrowRight size={14} />
+                    </span>
+                    {item}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Support */}
+          <div>
+            <h4 className="font-bold text-white mb-6 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-violet-500 to-purple-600"></span>
+              Support
+            </h4>
+            <ul className="space-y-3">
+              {[
+                'Centre d\'aide',
+                'Contact',
+                'FAQ',
+                'Signaler un problème'
+              ].map((item, idx) => (
+                <li key={idx}>
+                  <a href="#" className="text-gray-400 hover:text-cyan-500 transition-colors text-sm flex items-center gap-2 group">
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ArrowRight size={14} />
+                    </span>
+                    {item}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+        </div>
+
+        {/* Newsletter CTA */}
+        <div className={`p-8 rounded-xl border mb-12 ${
+          isDarkMode
+            ? 'bg-gray-900 border-gray-800'
+            : 'bg-gray-800 border-gray-700'
+        }`}>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <h4 className="font-bold text-white mb-2">Restez informé</h4>
+              <p className="text-gray-400 text-sm">
+                Recevez les dernières actualités et offres spéciales
+              </p>
+            </div>
+            <div className="flex gap-2 w-full md:w-auto">
+              <input
+                type="email"
+                placeholder="votre@email.com"
+                className={`px-4 py-3 rounded-lg flex-1 md:flex-auto border-2 ${
+                  isDarkMode
+                    ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500'
+                    : 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                } focus:border-cyan-500 outline-none transition-colors`}
+              />
+              <button className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all font-semibold flex items-center gap-2 whitespace-nowrap">
+                S'abonner
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className={`border-t ${isDarkMode ? 'border-gray-800' : 'border-gray-700'} my-12`}></div>
+
+        {/* Bottom Section */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+          
+          {/* Copyright */}
+          <div className="text-gray-400 text-sm text-center md:text-left">
+            <p>
+              © {new Date().getFullYear()} <span className="font-bold text-white">Cleanix</span>. Tous droits réservés.
             </p>
           </div>
 
-          {/* Liens rapides */}
-          <div className="mb-8 md:mb-0">
-            <h4 className={`font-semibold mb-4 text-white`}>
-              Liens Rapides
-            </h4>
-            <div className="flex flex-wrap justify-center gap-4">
-              {quickLinks.map((link, index) => (
-                <a 
-                  key={index}
-                  href={link.url}
-                  className={`text-sm hover:text-blue-400 transition-colors text-gray-300`}
-                >
-                  {link.name}
-                </a>
-              ))}
+          {/* Social Links */}
+          <div className="flex items-center gap-6">
+            <span className="text-gray-400 text-sm font-medium">Suivez-nous</span>
+            <div className="flex gap-4">
+              {socialLinks.map((social, idx) => {
+                const Icon = social.icon;
+                return (
+                  <a
+                    key={idx}
+                    href={social.url}
+                    title={social.name}
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
+                      isDarkMode
+                        ? 'bg-gray-800 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-600'
+                        : 'bg-gray-700 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-600'
+                    } text-gray-400 hover:text-white`}
+                  >
+                    <Icon size={20} />
+                  </a>
+                );
+              })}
             </div>
           </div>
 
-          {/* Réseaux sociaux */}
-          <div>
-            <h4 className={`font-semibold mb-4 text-center text-white`}>
-              Suivez-nous
-            </h4>
-            <div className="flex justify-center space-x-4">
-              {socialLinks.map((social, index) => (
-                <a
-                  key={index}
-                  href={social.url}
-                  className={`text-gray-300 hover:text-white transition-colors`}
-                  title={social.name}
-                >
-                  {social.icon}
-                </a>
-              ))}
-            </div>
+          {/* Legal Links */}
+          <div className="flex gap-6 text-gray-400 text-sm">
+            {legalLinks.map((link, idx) => (
+              <a 
+                key={idx}
+                href={link.url}
+                className="hover:text-cyan-500 transition-colors"
+              >
+                {link.name}
+              </a>
+            ))}
           </div>
 
-        </div>
-
-        {/* Copyright */}
-        <div className={`border-t border-gray-700 mt-8 pt-8 text-center text-gray-300`}>
-          <p className="text-sm">
-            © {new Date().getFullYear()} Cleanix. Tous droits réservés.
-          </p>
         </div>
 
       </div>
+
+      {/* Bottom Gradient Bar */}
+      <div className="h-1 bg-gradient-to-r from-cyan-500 via-blue-600 to-violet-600"></div>
+
     </footer>
   );
 };
