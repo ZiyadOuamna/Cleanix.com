@@ -44,7 +44,7 @@ const HeroSection = ({ isDarkMode, navigate, scrollToSection, servicesRef }) => 
                 className="w-full h-64 object-cover rounded-lg"
               />
               <div className="mt-6 text-center">
-                <h3 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={` material-icons-two-tone text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                   Service de Nettoyage Professionnel
                 </h3>
                 <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>

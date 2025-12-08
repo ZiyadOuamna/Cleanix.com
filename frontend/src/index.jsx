@@ -1,4 +1,5 @@
 import React from 'react';
+import "@fontsource/material-icons-two-tone";// la biblio de font-family de jumia 
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
