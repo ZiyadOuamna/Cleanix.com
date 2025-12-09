@@ -397,6 +397,78 @@ class AuthController extends Controller
     }
 
     /**
+     * Create a new Superviseur (Superviseur only)
+     */
+    public function createSuperviseur(Request $request)
+    {
+        $currentUser = $request->user();
+
+        // Check if current user is Superviseur
+        if (!$currentUser->isSuperviseur()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This action is only available for superviseurs'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'nom' => 'required|string|max:255',
+            'prenom' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8',
+            'genre' => 'required|in:Homme,Femme',
+            'telephone' => 'required|string|unique:users',
+            'niveau_acces' => 'required|in:Admin,Manager,Superviseur',
+            'permissions' => 'nullable|array',
+        ]);
+
+        DB::beginTransaction();
+        
+        try {
+            // Create user
+            $user = User::create([
+                'name' => $validated['prenom'] . ' ' . $validated['nom'],
+                'nom' => $validated['nom'],
+                'prenom' => $validated['prenom'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'genre' => $validated['genre'],
+                'telephone' => $validated['telephone'],
+                'user_type' => 'Superviseur',
+                'photo_profil' => null,
+            ]);
+
+            // Create superviseur profile
+            Superviseur::create([
+                'user_id' => $user->id,
+                'niveau_acces' => $validated['niveau_acces'],
+                'permissions' => $validated['permissions'] ?? null,
+            ]);
+
+            DB::commit();
+
+            // Load the superviseur profile
+            $user->load('superviseur');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Superviseur created successfully',
+                'data' => [
+                    'user' => $user,
+                ]
+            ], 201);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Creation failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Change freelancer status (Freelancers only)
      */
     public function changeStatut(Request $request)
