@@ -9,6 +9,7 @@ import { ClientProvider, ClientContext } from './clientContext';
 import RequestService from './requestService';
 import { logoutUser } from '../../services/authService';
 import { useLogout } from '../../services/useLogout';
+import logoCleanix from '../../imgs/logoCleanix.png';
 
 // Constants Icons
 const ICONS = {
@@ -366,6 +367,11 @@ function InnerLayout() {
             >
               {ICONS.menu && <ICONS.menu size={24} />}
             </button>
+            {/* Logo Cleanix */}
+            <div className="hidden sm:flex items-center gap-2 cursor-pointer hover:opacity-80" onClick={() => navigate('/')}>
+              <img src={logoCleanix} alt="Cleanix" className="w-8 h-8 rounded-md" />
+              <span className="font-bold text-lg">Cleanix</span>
+            </div>
             <h1 className="hidden md:block text-xl font-semibold">Tableau de bord Client</h1>
           </div>
 

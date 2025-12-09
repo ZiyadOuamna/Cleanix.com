@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
+import logoCleanix from '../imgs/logoCleanix.png';
 
 const Header = ({ 
   isDarkMode, 
@@ -61,9 +62,7 @@ const Header = ({
           
           {/* Logo */}
           <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition" onClick={() => window.scrollTo(0, 0)}>
-            <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">C</span>
-            </div>
+            <img src={logoCleanix} alt="Cleanix Logo" className="w-10 h-10 rounded-lg" />
             <span className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               Cleanix
             </span>
