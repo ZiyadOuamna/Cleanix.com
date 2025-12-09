@@ -3,15 +3,17 @@ import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import { 
   Sun, Moon, User, Briefcase, HelpCircle, DollarSign, 
   Home, Clock, Star, MessageCircle, Settings, Bell, Menu, Package, 
-  MapPin, Filter, RefreshCw, X, LogOut, CreditCard, History
+  MapPin, Filter, RefreshCw, X, LogOut, CreditCard, History, Plus
 } from 'lucide-react';
 import { ClientProvider, ClientContext } from './clientContext';
+import RequestService from './requestService';
 import { logoutUser } from '../../services/authService';
 import { useLogout } from '../../services/useLogout';
 
 // Constants Icons
 const ICONS = {
   dashboard: Home,
+  request: Plus,
   bookings: Package,
   history: History,
   wallet: CreditCard,
@@ -36,7 +38,8 @@ const STRING_ICONS = {
 
 // Couleurs pour les icônes (indépendant du mode)
 const ACCENT_COLORS = { 
-  primary: '#0891b2', 
+  primary: '#0891b2',
+  request: '#10B981',
   bookings: '#8B5CF6', 
   history: '#06B6D4',
   wallet: '#10B981',
@@ -46,13 +49,14 @@ const ACCENT_COLORS = {
 
 function InnerLayout() { 
   // Déclarer tous les hooks en premier
-  const [activePage, setActivePage] = useState('bookings');
+  const [activePage, setActivePage] = useState('request-service');
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [openSubmenu, setOpenSubmenu] = useState(null);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showRequestService, setShowRequestService] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -97,7 +101,7 @@ function InnerLayout() {
     else if (path.includes('wallet-client')) setActivePage('wallet-client');
     else if (path.includes('settings-client')) setActivePage('settings-client');
     else if (path.includes('support-client')) setActivePage('support-client');
-    else if (path === '/dev-client-page' || path === '/dev-client-page/') setActivePage('bookings');
+    else if (path === '/dev-client-page' || path === '/dev-client-page/') setActivePage('request-service');
   }, [location.pathname]);
 
   // Click outside
@@ -138,7 +142,7 @@ function InnerLayout() {
   const toggleDarkMode = () => {
     const newDarkMode = !isDarkMode;
     setIsDarkMode(newDarkMode);
-    localStorage.setItem('clientDarkMode', JSON.stringify(newDarkMode));
+    localStorage.setItem('theme_mode', JSON.stringify(newDarkMode));
   };
   
   const handleLogout = async () => {
@@ -162,8 +166,9 @@ function InnerLayout() {
   const handleNavigation = (page, path = null) => {
     setActivePage(page);
     setIsSidebarVisible(false);
+    setShowRequestService(false);
     if (path) navigate(path);
-    else if (page === 'bookings') navigate('/dev-client-page');
+    else if (page === 'request-service') setActivePage('request-service');
   };
 
   // --- CONFIGURATION DU DESIGN "SOFT GRADIENT" ---
@@ -178,6 +183,7 @@ function InnerLayout() {
   const getMenuItemStyle = (pageName) => {
     const isActive = activePage === pageName;
     const colorMap = {
+      'request-service': ACCENT_COLORS.request,
       'bookings': ACCENT_COLORS.bookings,
       'my-bookings': ACCENT_COLORS.bookings,
       'dashboard-client': ACCENT_COLORS.primary,
@@ -224,19 +230,48 @@ function InnerLayout() {
         ref={sidebarRef}
         className={`fixed md:relative z-40 h-screen flex flex-col transition-transform duration-300 ${glassClasses} w-72 ${isSidebarVisible ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       >
-        {/* Logo */}
-        <div className={`h-20 flex items-center justify-between px-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-slate-200'}`}>
-          <span className="text-2xl font-extrabold" style={{ color: ACCENT_COLORS.primary }}>Cleanix</span>
+        {/* Header Sidebar avec Photo de Profil */}
+        <div className={`flex flex-col items-center justify-center py-8 px-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-slate-200/50'} relative`}>
           <button 
-            onClick={() => setIsSidebarVisible(false)} 
-            className="text-gray-400 hover:text-cyan-600 md:hidden"
+            onClick={() => setIsSidebarVisible(false)}
+            className="absolute top-4 right-4 text-slate-400 hover:text-cyan-600 md:hidden"
           >
-            {ICONS.close && <ICONS.close size={20} />}
+            <ICONS.close size={20} />
           </button>
+          
+          <div className="relative mb-4">
+            <div className="w-16 h-16 bg-gradient-to-tr from-cyan-400 to-cyan-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg ring-4 ring-white/30">
+              {user?.name?.charAt(0) || 'C'}
+            </div>
+          </div>
+          
+          <div className="text-center">
+            <Link to="profile-client" className="group inline-block hover:opacity-80 transition">
+              <p className={`font-semibold text-lg transition-all duration-300 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                {user?.name || 'Client'}
+              </p>
+              <div className="flex items-center justify-center gap-1 mt-1">
+                <ICONS.star className="w-4 h-4 text-yellow-400 fill-current" />
+                <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-slate-500'}`}>
+                  4.8/5
+                </span>
+              </div>
+            </Link>
+          </div>
         </div>
 
         {/* Navigation Menu */}
         <nav className="flex-1 px-4 py-6 overflow-y-auto space-y-2">
+          {/* Demander un Service - Premier Item */}
+          <button
+            onClick={() => handleNavigation('request-service')}
+            className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all ${getMenuItemStyle('request-service').className}`}
+            style={getMenuItemStyle('request-service').style}
+          >
+            {ICONS.request && <ICONS.request size={20} color={getMenuItemStyle('request-service').iconColor} />}
+            <span>Demander un Service</span>
+          </button>
+
           {/* Mes Réservations */}
           <button
             onClick={() => handleNavigation('my-bookings', 'my-bookings')}
@@ -254,7 +289,7 @@ function InnerLayout() {
             style={getMenuItemStyle('dashboard-client').style}
           >
             {ICONS.dashboard && <ICONS.dashboard size={20} color={getMenuItemStyle('dashboard-client').iconColor} />}
-            <span>Dashboard</span>
+            <span>Tableau de Bord</span>
           </button>
 
           {/* Historique */}
@@ -418,8 +453,15 @@ function InnerLayout() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto">
+          {activePage === 'request-service' || showRequestService ? (
+            <RequestService onBack={() => {
+              setShowRequestService(false);
+              setActivePage('request-service');
+            }} />
+          ) : (
+            <Outlet />
+          )}
         </main>
       </div>
     </div>
