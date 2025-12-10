@@ -1,7 +1,34 @@
 // src/pages/GestionClients.jsx
 import React, { useState, useContext } from 'react';
 import { SuperviseurContext } from '../superviseurContext';
-import { Search, Filter, Plus, Edit, Trash2, User, Mail, Phone, MapPin, Calendar } from 'lucide-react';
+import { Search, Filter, Plus, Edit, Trash2, User, Mail, Phone, MapPin, Calendar, Copy, Check } from 'lucide-react';
+import Swal from 'sweetalert2';
+
+const MAROC_VILLES = [
+  "Agadir", "Casablanca", "Rabat", "Marrakech", "Fès", "Tanger", 
+  "Meknès", "Oujda", "Kénitra", "Tétouan", "Salé", "Mohammadia"
+];
+
+// Fonction pour générer un mot de passe sécurisé aléatoire
+const generateSecurePassword = () => {
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+  const numbers = '0123456789';
+  const symbols = '!@#$%^&*-_=+';
+  const allChars = uppercase + lowercase + numbers + symbols;
+  
+  let password = '';
+  password += uppercase[Math.floor(Math.random() * uppercase.length)];
+  password += lowercase[Math.floor(Math.random() * lowercase.length)];
+  password += numbers[Math.floor(Math.random() * numbers.length)];
+  password += symbols[Math.floor(Math.random() * symbols.length)];
+  
+  for (let i = password.length; i < 12; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)];
+  }
+  
+  return password.split('').sort(() => Math.random() - 0.5).join('');
+};
 
 export default function GestionClients() {
   const { isDarkMode } = useContext(SuperviseurContext);
@@ -47,12 +74,16 @@ export default function GestionClients() {
 
   const [showModal, setShowModal] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
+  const [generatedPassword, setGeneratedPassword] = useState('');
   const [formData, setFormData] = useState({
+    prenom: '',
     nom: '',
     email: '',
     telephone: '',
-    adresse: '',
-    statut: 'actif'
+    genre: '',
+    ville: MAROC_VILLES[0],
+    statut: 'actif',
+    password: ''
   });
 
   // Filtrer les clients
@@ -66,12 +97,17 @@ export default function GestionClients() {
   // Ouvrir modal d'ajout
   const handleAddClient = () => {
     setEditingClient(null);
+    const newPassword = generateSecurePassword();
+    setGeneratedPassword(newPassword);
     setFormData({
+      prenom: '',
       nom: '',
       email: '',
       telephone: '',
-      adresse: '',
-      statut: 'actif'
+      genre: '',
+      ville: MAROC_VILLES[0],
+      statut: 'actif',
+      password: newPassword
     });
     setShowModal(true);
   };
@@ -287,8 +323,8 @@ export default function GestionClients() {
 
       {/* Modal d'ajout/modification */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className={`w-full max-w-md rounded-2xl shadow-xl ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className={`w-full max-w-2xl rounded-2xl shadow-xl ${isDarkMode ? 'bg-gray-800' : 'bg-white'} my-8`}>
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-xl font-bold">
                 {editingClient ? 'Modifier le Client' : 'Ajouter un Client'}
@@ -296,76 +332,181 @@ export default function GestionClients() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Nom complet</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.nom}
-                  onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                  className={`w-full px-4 py-3 rounded-xl border ${
-                    isDarkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white' 
-                      : 'bg-white border-gray-300 text-gray-800'
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                />
+              {/* Prénom et Nom */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium mb-1">Prénom *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.prenom}
+                    onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
+                    className={`w-full px-3 py-2.5 text-xs border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
+                      isDarkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                    placeholder="Prénom"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1">Nom *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.nom}
+                    onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+                    className={`w-full px-3 py-2.5 text-xs border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
+                      isDarkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                    placeholder="Nom"
+                  />
+                </div>
               </div>
 
+              {/* Email */}
               <div>
-                <label className="block text-sm font-medium mb-2">Email</label>
+                <label className="block text-xs font-medium mb-1">Email *</label>
                 <input
                   type="email"
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className={`w-full px-4 py-3 rounded-xl border ${
+                  className={`w-full px-3 py-2.5 text-xs border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
                     isDarkMode 
                       ? 'bg-gray-700 border-gray-600 text-white' 
                       : 'bg-white border-gray-300 text-gray-800'
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  }`}
+                  placeholder="exemple@email.com"
                 />
               </div>
 
+              {/* Téléphone */}
               <div>
-                <label className="block text-sm font-medium mb-2">Téléphone</label>
+                <label className="block text-xs font-medium mb-1">Téléphone *</label>
                 <input
                   type="tel"
                   required
                   value={formData.telephone}
                   onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
-                  className={`w-full px-4 py-3 rounded-xl border ${
+                  className={`w-full px-3 py-2.5 text-xs border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
                     isDarkMode 
                       ? 'bg-gray-700 border-gray-600 text-white' 
                       : 'bg-white border-gray-300 text-gray-800'
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  }`}
+                  placeholder="06 XX XX XX XX"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Adresse</label>
-                <textarea
-                  required
-                  value={formData.adresse}
-                  onChange={(e) => setFormData({ ...formData, adresse: e.target.value })}
-                  rows={3}
-                  className={`w-full px-4 py-3 rounded-xl border ${
-                    isDarkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white' 
-                      : 'bg-white border-gray-300 text-gray-800'
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                />
+              {/* Genre et Ville */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium mb-1">Genre *</label>
+                  <div className="flex space-x-2">
+                    <label className="flex items-center cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="genre" 
+                        value="Homme" 
+                        checked={formData.genre === 'Homme'} 
+                        onChange={(e) => setFormData({ ...formData, genre: e.target.value })} 
+                        className="h-3.5 w-3.5"
+                      />
+                      <span className="ml-2 text-xs">Homme</span>
+                    </label>
+                    <label className="flex items-center cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="genre" 
+                        value="Femme" 
+                        checked={formData.genre === 'Femme'} 
+                        onChange={(e) => setFormData({ ...formData, genre: e.target.value })} 
+                        className="h-3.5 w-3.5"
+                      />
+                      <span className="ml-2 text-xs">Femme</span>
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1">Ville *</label>
+                  <select
+                    value={formData.ville}
+                    onChange={(e) => setFormData({ ...formData, ville: e.target.value })}
+                    className={`w-full px-3 py-2.5 text-xs border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
+                      isDarkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                  >
+                    {MAROC_VILLES.map((ville) => (
+                      <option key={ville} value={ville}>{ville}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
+              {/* Mot de passe généré automatiquement */}
+              {!editingClient && (
+                <div>
+                  <label className="block text-xs font-medium mb-1">Mot de passe généré *</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={formData.password}
+                      className={`flex-1 px-3 py-2.5 text-xs border rounded-lg font-mono ${
+                        isDarkMode 
+                          ? 'bg-gray-700 border-gray-600 text-white' 
+                          : 'bg-gray-50 border-gray-300 text-gray-800'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(formData.password);
+                        Swal.fire({
+                          icon: 'success',
+                          title: 'Copié!',
+                          text: 'Mot de passe copié dans le presse-papiers',
+                          timer: 1500,
+                          showConfirmButton: false,
+                          background: isDarkMode ? '#1f2937' : '#ffffff',
+                          color: isDarkMode ? '#ffffff' : '#1f2937',
+                        });
+                      }}
+                      className="p-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      title="Copier le mot de passe"
+                    >
+                      <Copy size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newPassword = generateSecurePassword();
+                        setGeneratedPassword(newPassword);
+                        setFormData({ ...formData, password: newPassword });
+                      }}
+                      className="px-3 py-2.5 bg-gray-600 text-white text-xs rounded-lg hover:bg-gray-700 transition-colors whitespace-nowrap"
+                    >
+                      Régénérer
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Statut */}
               <div>
-                <label className="block text-sm font-medium mb-2">Statut</label>
+                <label className="block text-xs font-medium mb-1">Statut *</label>
                 <select
                   value={formData.statut}
                   onChange={(e) => setFormData({ ...formData, statut: e.target.value })}
-                  className={`w-full px-4 py-3 rounded-xl border ${
+                  className={`w-full px-3 py-2.5 text-xs border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
                     isDarkMode 
                       ? 'bg-gray-700 border-gray-600 text-white' 
                       : 'bg-white border-gray-300 text-gray-800'
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  }`}
                 >
                   <option value="actif">Actif</option>
                   <option value="inactif">Inactif</option>
@@ -376,7 +517,7 @@ export default function GestionClients() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className={`flex-1 px-6 py-3 rounded-xl border ${
+                  className={`flex-1 px-6 py-2.5 rounded-lg border text-sm ${
                     isDarkMode 
                       ? 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600' 
                       : 'bg-white border-gray-300 text-gray-800 hover:bg-gray-50'
@@ -386,7 +527,7 @@ export default function GestionClients() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+                  className="flex-1 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
                 >
                   {editingClient ? 'Modifier' : 'Ajouter'}
                 </button>

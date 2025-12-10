@@ -177,7 +177,7 @@ function InnerLayout() {
     if (path) {
       navigate(path);
     } else if (page === 'request-service') {
-      navigate('/client/dashboard/request-service');
+      navigate('request-cleaning');
     }
   };
 
@@ -276,8 +276,8 @@ function InnerLayout() {
             
             {/* Items Simples */}
             {[
-              { id: 'dashboard-client', label: 'Tableau de Bord', icon: ICONS.dashboard, path: '/client/dashboard/dashboard-client' },
-              { id: 'request-service', label: 'Demander un Service', icon: ICONS.request, path: '/client/dashboard/request-service' },
+              { id: 'dashboard-client', label: 'Tableau de Bord', icon: ICONS.dashboard, path: 'dashboard-client' },
+              { id: 'request-service', label: 'Demander un Service', icon: ICONS.request, path: 'request-cleaning' },
             ].map((item) => {
               const style = getMenuItemStyle(item.id);
               return (
@@ -315,8 +315,8 @@ function InnerLayout() {
               <div className={`overflow-hidden transition-all duration-300 ${openSubmenu === 'bookings' ? 'max-h-40 opacity-100 mt-2' : 'max-h-0 opacity-0'}`}>
                 <ul className={`ml-4 space-y-1 border-l-2 pl-4 ${isDarkMode ? 'border-gray-700' : 'border-slate-300'}`}>
                   {[
-                    { id: 'my-bookings', label: 'Réservations Actives', icon: ICONS.clock, path: '/client/dashboard/my-bookings' },
-                    { id: 'booking-history', label: 'Historique', icon: ICONS.history, path: '/client/dashboard/booking-history' },
+                    { id: 'my-bookings', label: 'Réservations Actives', icon: ICONS.clock, path: 'my-bookings' },
+                    { id: 'booking-history', label: 'Historique', icon: ICONS.history, path: 'booking-history' },
                   ].map(sub => {
                     const style = getMenuItemStyle(sub.id);
                     return (
@@ -338,10 +338,10 @@ function InnerLayout() {
 
             {/* Autres Items */}
             {[
-              { id: 'wallet-client', label: 'Portefeuille', icon: ICONS.wallet, path: '/client/dashboard/wallet-client' },
-              { id: 'support-client', label: 'Support', icon: ICONS.support, path: '/client/dashboard/support-client' },
-              { id: 'profile-client', label: 'Profil', icon: ICONS.profile, path: '/client/dashboard/profile-client' },
-              { id: 'settings-client', label: 'Paramètres', icon: ICONS.settings, path: '/client/dashboard/settings-client' },
+              { id: 'wallet-client', label: 'Portefeuille', icon: ICONS.wallet, path: 'wallet-client' },
+              { id: 'support-client', label: 'Support', icon: ICONS.support, path: 'support-client' },
+              { id: 'profile-client', label: 'Profil', icon: ICONS.profile, path: 'profile-client' },
+              { id: 'settings-client', label: 'Paramètres', icon: ICONS.settings, path: 'settings-client' },
             ].map((item) => {
               const style = getMenuItemStyle(item.id);
               return (

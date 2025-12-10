@@ -1,8 +1,8 @@
 import React, { useState, useContext } from 'react';
 import { 
-  ArrowLeft, MapPin, Calendar, Clock, Users, Check, AlertCircle,
-  ChevronRight, Home, Briefcase, Zap, Building, Truck, Package,
-  Wind, Droplets, Scissors, Brush, Sparkles, WindIcon as Fan
+  ArrowLeft, MapPin, Clock, Users, Check, AlertCircle,
+  ChevronRight, Home, KeyRound, Wind, Package,
+  DoorOpen, Truck, Calendar, Zap
 } from 'lucide-react';
 import { ClientContext } from './clientContext';
 import Swal from 'sweetalert2';
@@ -23,105 +23,108 @@ const RequestService = ({ onBack }) => {
   };
 
   const [step, setStep] = useState(1);
-  const [selectedService, setSelectedService] = useState(null);
+  const [selectedServiceType, setSelectedServiceType] = useState('');
   const [formData, setFormData] = useState({
-    serviceType: '',
-    address: user?.address || '',
-    squareMeters: '',
-    numberOfRooms: '',
-    preferredDate: '',
-    preferredTime: '',
-    duration: '2',
-    frequency: 'once',
-    specialRequests: '',
-    paymentMethod: 'wallet'
+    nom: '',
+    description: '',
+    adresse: '',
+    
+    // Champs spécifiques NettoyageResidential
+    nombrePieces: '',
+    nombreSallesBain: '',
+    superficieTotale: '',
+    options: [],
+    
+    // Champs spécifiques NettoyageSuperficie
+    surfaceM2: '',
+    typeSurface: 'moquette',
+    
+    // Champs spécifiques NettoyageUnitaire
+    nombreUnites: '',
+    typeObject: 'fenetre',
+    
+    // Champs spécifiques ServiceGestionCies
+    chiLocataire: '',
+    nomLocataire: '',
+    typeOperation: 'remise',
+    idCle: '',
+    departement: '',
+    adresseAppartement: '',
   });
 
   const [quote, setQuote] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const services = [
+  const serviceTypes = [
     { 
-      id: 'move', 
-      name: 'Nettoyage de déménagement', 
-      icon: Truck, 
-      baseRate: 60, 
-      description: 'Nettoyage après un déménagement', 
-      color: 'from-orange-500 to-red-500',
-      ratePerMeter: 3,
-      ratePerRoom: 50
-    },
-    { 
-      id: 'office', 
-      name: 'Nettoyage bureau', 
-      icon: Briefcase, 
-      baseRate: 50, 
-      description: 'Nettoyage d\'espaces professionnels', 
-      color: 'from-blue-500 to-cyan-500',
-      ratePerMeter: 2.5,
-      ratePerRoom: 40
-    },
-    { 
-      id: 'postwork', 
-      name: 'Nettoyage post-travaux', 
-      icon: Building, 
-      baseRate: 70, 
-      description: 'Nettoyage après rénovation/construction', 
-      color: 'from-gray-500 to-gray-700',
-      ratePerMeter: 4,
-      ratePerRoom: 60
-    },
-    { 
-      id: 'residential', 
-      name: 'Nettoyage résidentiel', 
+      id: 'nettoyage_residential', 
+      name: 'Nettoyage Résidentiel', 
       icon: Home, 
-      baseRate: 45, 
-      description: 'Nettoyage régulier de votre domicile', 
-      color: 'from-green-500 to-emerald-500',
-      ratePerMeter: 2,
-      ratePerRoom: 30
+      description: 'Nettoyage complet de votre domicile',
+      color: 'from-blue-500 to-cyan-500',
+      category: 'nettoyage'
     },
     { 
-      id: 'windows', 
-      name: 'Nettoyage vitres', 
+      id: 'nettoyage_superficie', 
+      name: 'Nettoyage par Surface', 
       icon: Wind, 
-      baseRate: 40, 
-      description: 'Nettoyage de vitres et baies vitrées', 
-      color: 'from-cyan-500 to-blue-500',
-      ratePerMeter: 3,
-      ratePerRoom: 35
+      description: 'Nettoyage spécifique par type de surface',
+      color: 'from-green-500 to-emerald-500',
+      category: 'nettoyage'
     },
     { 
-      id: 'deep', 
-      name: 'Nettoyage approfondi', 
-      icon: Sparkles, 
-      baseRate: 80, 
-      description: 'Nettoyage en profondeur complet', 
+      id: 'nettoyage_unitaire', 
+      name: 'Nettoyage Unitaire', 
+      icon: Package, 
+      description: 'Nettoyage d\'objets spécifiques',
       color: 'from-purple-500 to-pink-500',
-      ratePerMeter: 5,
-      ratePerRoom: 70
+      category: 'nettoyage'
+    },
+    { 
+      id: 'gestion_cles', 
+      name: 'Gestion de Clés', 
+      icon: KeyRound, 
+      description: 'Service de gestion de clés',
+      color: 'from-orange-500 to-red-500',
+      category: 'cles'
     }
   ];
 
-  const frequencies = [
-    { id: 'once', name: 'Ponctuel', discount: 0 },
-    { id: 'weekly', name: 'Hebdomadaire', discount: 10 },
-    { id: 'biweekly', name: 'Bi-hebdomadaire', discount: 15 },
-    { id: 'monthly', name: 'Mensuel', discount: 20 }
+  const cleaningOptions = [
+    { id: 'vitres', label: 'Nettoyage vitres', price: 25 },
+    { id: 'moquette', label: 'Shampouineuse', price: 40 },
+    { id: 'frigo', label: 'Réfrigérateur', price: 30 },
+    { id: 'four', label: 'Four', price: 35 },
+    { id: 'sdb_prof', label: 'Désinfection salle de bain', price: 45 }
   ];
 
-  const durations = [
-    { id: '2', name: '2 heures', hours: 2 },
-    { id: '3', name: '3 heures', hours: 3 },
-    { id: '4', name: '4 heures', hours: 4 },
-    { id: '5', name: '5 heures', hours: 5 },
-    { id: '6', name: '6 heures', hours: 6 },
-    { id: 'custom', name: 'Personnalisée', hours: 0 }
+  const surfaceTypes = [
+    { id: 'moquette', label: 'Moquette', rate: 12 },
+    { id: 'parquet', label: 'Parquet', rate: 15 },
+    { id: 'carrelage', label: 'Carrelage', rate: 8 },
+    { id: 'marbre', label: 'Marbre', rate: 20 }
+  ];
+
+  const objectTypes = [
+    { id: 'fenetre', label: 'Fenêtre', rate: 25 },
+    { id: 'meuble', label: 'Meuble', rate: 40 },
+    { id: 'appareil', label: 'Appareil électroménager', rate: 30 },
+    { id: 'lumiere', label: 'Lustre/Lumière', rate: 35 }
+  ];
+
+  const operationTypes = [
+    { id: 'remise', label: 'Remise de clés', rate: 30 },
+    { id: 'recuperation', label: 'Récupération', rate: 35 },
+    { id: 'depannage', label: 'Dépannage serrure', rate: 80 }
   ];
 
   const handleServiceSelect = (service) => {
-    setSelectedService(service);
-    setFormData(prev => ({ ...prev, serviceType: service.name }));
+    setSelectedServiceType(service.id);
+    setFormData(prev => ({ 
+      ...prev, 
+      nom: service.name,
+      description: service.description
+    }));
     setStep(2);
   };
 
@@ -130,46 +133,91 @@ const RequestService = ({ onBack }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleOptionToggle = (optionId) => {
+    setFormData(prev => {
+      const newOptions = prev.options.includes(optionId)
+        ? prev.options.filter(id => id !== optionId)
+        : [...prev.options, optionId];
+      return { ...prev, options: newOptions };
+    });
+  };
+
   const calculateQuote = () => {
-    // Validation
-    if (!formData.squareMeters || !formData.numberOfRooms) {
-      showAlert('warning', 'Informations manquantes', 'Veuillez remplir la surface et le nombre de pièces');
-      return;
+    let basePrice = 0;
+    let details = [];
+
+    switch(selectedServiceType) {
+      case 'nettoyage_residential':
+        const prixBaseResidential = 100;
+        const prixParPiece = 25 * (parseFloat(formData.nombrePieces) || 0);
+        const prixParSalleBain = 35 * (parseFloat(formData.nombreSallesBain) || 0);
+        
+        let prixOptions = 0;
+        formData.options.forEach(optionId => {
+          const option = cleaningOptions.find(o => o.id === optionId);
+          if (option) prixOptions += option.price;
+        });
+
+        basePrice = prixBaseResidential + prixParPiece + prixParSalleBain + prixOptions;
+        
+        details = [
+          { label: 'Prix de base', value: prixBaseResidential },
+          { label: `${formData.nombrePieces || 0} pièces`, value: prixParPiece },
+          { label: `${formData.nombreSallesBain || 0} salles de bain`, value: prixParSalleBain }
+        ];
+        if (prixOptions > 0) {
+          details.push({ label: 'Options additionnelles', value: prixOptions });
+        }
+        break;
+
+      case 'nettoyage_superficie':
+        const surface = parseFloat(formData.surfaceM2) || 0;
+        const surfaceType = surfaceTypes.find(t => t.id === formData.typeSurface);
+        const tauxM2 = surfaceType ? surfaceType.rate : 10;
+        
+        basePrice = surface * tauxM2;
+        if (basePrice < 50) basePrice = 50; // Prix minimum
+        
+        details = [
+          { label: `${surface} m² de ${surfaceType?.label || 'surface'}`, value: basePrice }
+        ];
+        break;
+
+      case 'nettoyage_unitaire':
+        const unites = parseInt(formData.nombreUnites) || 0;
+        const objectType = objectTypes.find(t => t.id === formData.typeObject);
+        const tauxUnitaire = objectType ? objectType.rate : 25;
+        
+        basePrice = unites * tauxUnitaire;
+        
+        details = [
+          { label: `${unites} ${objectType?.label || 'objet'}(s)`, value: basePrice }
+        ];
+        break;
+
+      case 'gestion_cles':
+        const operationType = operationTypes.find(t => t.id === formData.typeOperation);
+        const prixBaseCles = operationType ? operationType.rate : 30;
+        
+        basePrice = prixBaseCles;
+        
+        details = [
+          { label: operationType?.label || 'Opération', value: basePrice }
+        ];
+        break;
+
+      default:
+        basePrice = 0;
     }
 
-    const baseRate = selectedService.baseRate;
-    const squareMeterPrice = parseFloat(formData.squareMeters) * selectedService.ratePerMeter;
-    const roomPrice = parseFloat(formData.numberOfRooms) * selectedService.ratePerRoom;
-    
-    // Calcul de la durée
-    const durationHours = formData.duration === 'custom' ? 
-      (parseFloat(formData.customDuration) || 2) : 
-      parseFloat(formData.duration);
-    
-    // Prix de base par heure
-    const hourlyRate = baseRate * 0.5; // 50% du taux de base par heure
-    
-    // Calcul du total
-    const baseSubtotal = squareMeterPrice + roomPrice + (hourlyRate * durationHours);
-    
-    // Appliquer réduction selon la fréquence
-    const frequency = frequencies.find(f => f.id === formData.frequency);
-    const discount = (baseSubtotal * frequency.discount) / 100;
-    const subtotal = baseSubtotal - discount;
-    
     // TVA 20%
-    const tax = subtotal * 0.20;
-    const total = subtotal + tax;
+    const tax = basePrice * 0.20;
+    const total = basePrice + tax;
 
     setQuote({
-      baseRate: selectedService.baseRate,
-      squareMeterPrice: parseFloat(squareMeterPrice.toFixed(2)),
-      roomPrice: parseFloat(roomPrice.toFixed(2)),
-      hourlyRate: parseFloat(hourlyRate.toFixed(2)),
-      durationHours,
-      frequencyDiscount: frequency.discount,
-      discountAmount: parseFloat(discount.toFixed(2)),
-      subtotal: parseFloat(subtotal.toFixed(2)),
+      serviceType: selectedServiceType,
+      basePrice: parseFloat(basePrice.toFixed(2)),
+      details,
       tax: parseFloat(tax.toFixed(2)),
       total: parseFloat(total.toFixed(2))
     });
@@ -191,84 +239,343 @@ const RequestService = ({ onBack }) => {
   const handleConfirmAndPay = async () => {
     setIsProcessing(true);
 
-    // Simulation de traitement
     setTimeout(() => {
       setIsProcessing(false);
       showAlert('success', 'Demande envoyée!', 
         'Votre demande a été envoyée aux freelancers disponibles. Vous serez notifié dès qu\'un freelancer l\'acceptera.');
       
-      // Réinitialiser et rediriger
       setStep(1);
-      setSelectedService(null);
+      setSelectedServiceType('');
       setQuote(null);
       
-      // Rediriger vers les réservations
       setTimeout(() => {
-        navigate('/my-bookings');
+        navigate('my-bookings');
       }, 2000);
     }, 2000);
   };
 
+  const renderServiceForm = () => {
+    switch(selectedServiceType) {
+      case 'nettoyage_residential':
+        return (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
+                  Nombre de pièces *
+                </label>
+                <input
+                  type="number"
+                  name="nombrePieces"
+                  value={formData.nombrePieces}
+                  onChange={handleInputChange}
+                  placeholder="Ex: 4"
+                  min="1"
+                  className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
+                  Salles de bain *
+                </label>
+                <input
+                  type="number"
+                  name="nombreSallesBain"
+                  value={formData.nombreSallesBain}
+                  onChange={handleInputChange}
+                  placeholder="Ex: 2"
+                  min="0"
+                  className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
+                  Superficie (m²)
+                </label>
+                <input
+                  type="number"
+                  name="superficieTotale"
+                  value={formData.superficieTotale}
+                  onChange={handleInputChange}
+                  placeholder="Ex: 120"
+                  min="10"
+                  className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className={`block text-sm font-medium ${theme.textMain} mb-3`}>
+                Options additionnelles
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {cleaningOptions.map(option => (
+                  <label key={option.id} className={`flex items-center gap-2 p-2 rounded-lg border ${theme.border} cursor-pointer hover:${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <input
+                      type="checkbox"
+                      checked={formData.options.includes(option.id)}
+                      onChange={() => handleOptionToggle(option.id)}
+                      className="rounded"
+                    />
+                    <div className="flex-1">
+                      <span className={`text-xs ${theme.textMain}`}>{option.label}</span>
+                      <span className={`text-xs ${theme.textMuted}`}>+{option.price}€</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'nettoyage_superficie':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
+                Surface à nettoyer (m²) *
+              </label>
+              <input
+                type="number"
+                name="surfaceM2"
+                value={formData.surfaceM2}
+                onChange={handleInputChange}
+                placeholder="Ex: 80"
+                min="1"
+                className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
+              />
+            </div>
+
+            <div>
+              <label className={`block text-sm font-medium ${theme.textMain} mb-3`}>
+                Type de surface *
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {surfaceTypes.map(type => (
+                  <button
+                    key={type.id}
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, typeSurface: type.id }))}
+                    className={`px-3 py-2 text-xs rounded-lg border transition ${
+                      formData.typeSurface === type.id
+                        ? 'border-cyan-600 bg-cyan-600 text-white'
+                        : `${theme.border} ${theme.textMain} ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`
+                    }`}
+                  >
+                    {type.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'nettoyage_unitaire':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
+                Nombre d'unités *
+              </label>
+              <input
+                type="number"
+                name="nombreUnites"
+                value={formData.nombreUnites}
+                onChange={handleInputChange}
+                placeholder="Ex: 3"
+                min="1"
+                className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
+              />
+            </div>
+
+            <div>
+              <label className={`block text-sm font-medium ${theme.textMain} mb-3`}>
+                Type d'objet *
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {objectTypes.map(type => (
+                  <button
+                    key={type.id}
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, typeObject: type.id }))}
+                    className={`px-3 py-2 text-xs rounded-lg border transition ${
+                      formData.typeObject === type.id
+                        ? 'border-cyan-600 bg-cyan-600 text-white'
+                        : `${theme.border} ${theme.textMain} ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`
+                    }`}
+                  >
+                    {type.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'gestion_cles':
+        return (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
+                  ID Locataire *
+                </label>
+                <input
+                  type="text"
+                  name="chiLocataire"
+                  value={formData.chiLocataire}
+                  onChange={handleInputChange}
+                  placeholder="LOC-2023-001"
+                  className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
+                  Nom Locataire *
+                </label>
+                <input
+                  type="text"
+                  name="nomLocataire"
+                  value={formData.nomLocataire}
+                  onChange={handleInputChange}
+                  placeholder="Nom complet"
+                  className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
+                Type d'opération *
+              </label>
+              <div className="flex gap-2">
+                {operationTypes.map(type => (
+                  <button
+                    key={type.id}
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, typeOperation: type.id }))}
+                    className={`px-3 py-2 text-xs flex-1 rounded-lg border transition ${
+                      formData.typeOperation === type.id
+                        ? 'border-cyan-600 bg-cyan-600 text-white'
+                        : `${theme.border} ${theme.textMain} ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`
+                    }`}
+                  >
+                    {type.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
+                  ID Clé
+                </label>
+                <input
+                  type="text"
+                  name="idCle"
+                  value={formData.idCle}
+                  onChange={handleInputChange}
+                  placeholder="CLE-001"
+                  className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
+                  Département *
+                </label>
+                <input
+                  type="text"
+                  name="departement"
+                  value={formData.departement}
+                  onChange={handleInputChange}
+                  placeholder="75"
+                  className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
+                  Adresse *
+                </label>
+                <input
+                  type="text"
+                  name="adresseAppartement"
+                  value={formData.adresseAppartement}
+                  onChange={handleInputChange}
+                  placeholder="Adresse"
+                  className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
+                />
+              </div>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className={`${theme.bgMain} min-h-screen py-4 sm:py-6`}>
-      <div className="max-w-4xl mx-auto px-4">
+    <div className={`${theme.bgMain} min-h-screen py-4`}>
+      <div className="max-w-3xl mx-auto px-3">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-3 mb-6">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-cyan-600 hover:text-cyan-700 transition"
+            className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'} transition`}
           >
-            <ArrowLeft size={20} />
-            <span className="hidden sm:inline">Retour</span>
+            <ArrowLeft size={20} className="text-cyan-600" />
           </button>
-          <h1 className={`text-2xl sm:text-3xl font-bold ${theme.textMain}`}>Demander un Service</h1>
+          <div>
+            <h1 className={`text-xl font-bold ${theme.textMain}`}>Demander un Service</h1>
+            <p className={`text-xs ${theme.textMuted}`}>Obtenez un service rapidement</p>
+          </div>
         </div>
 
         {/* Step Indicator */}
-        <div className="flex justify-between mb-8">
+        <div className="flex mb-6 ml-2">
           {[1, 2, 3].map((s) => (
-            <div key={s} className="flex-1 flex items-center">
-              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold transition ${
+            <div key={s} className="flex items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition ${
                 s <= step 
                   ? 'bg-cyan-600 text-white' 
                   : isDarkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-300 text-gray-600'
               }`}>
-                {s < step ? <Check size={20} /> : s}
+                {s < step ? <Check size={16} /> : s}
               </div>
-              {s < 3 && <div className={`flex-1 h-1 mx-2 rounded ${s < step ? 'bg-cyan-600' : isDarkMode ? 'bg-gray-700' : 'bg-gray-300'}`} />}
+              {s < 3 && (
+                <div className={`w-12 h-1 mx-1 rounded ${
+                  s < step ? 'bg-cyan-600' : isDarkMode ? 'bg-gray-700' : 'bg-gray-300'
+                }`} />
+              )}
             </div>
           ))}
         </div>
 
-        {/* Step 1: Service Selection */}
+        {/* Step 1: Service Type Selection */}
         {step === 1 && (
           <div>
-            <h2 className={`text-xl font-semibold ${theme.textMain} mb-6 text-center`}>
-              Choisissez un type de service
+            <h2 className={`text-lg font-semibold ${theme.textMain} mb-4 ml-2`}>
+              Sélectionnez un service
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {services.map((service) => {
+            <div className="grid grid-cols-1 gap-3">
+              {serviceTypes.map((service) => {
                 const IconComponent = service.icon;
                 return (
                   <button
                     key={service.id}
                     onClick={() => handleServiceSelect(service)}
-                    className={`${theme.bgCard} rounded-lg p-4 border ${theme.border} hover:border-cyan-500 transition cursor-pointer hover:shadow-md`}
+                    className={`${theme.bgCard} rounded-lg p-3 border ${theme.border} hover:border-cyan-500 transition text-left flex items-center gap-3`}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className={`bg-gradient-to-tr ${service.color} rounded-lg p-2 flex-shrink-0`}>
-                        <IconComponent size={24} className="text-white" />
+                    <div className={`bg-gradient-to-tr ${service.color} rounded-lg p-2`}>
+                      <IconComponent size={20} className="text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className={`font-bold text-sm ${theme.textMain}`}>{service.name}</h3>
+                        <ChevronRight size={16} className="text-cyan-600" />
                       </div>
-                      <div className="text-left flex-1">
-                        <h3 className={`font-bold ${theme.textMain} mb-1`}>{service.name}</h3>
-                        <p className={`${theme.textMuted} text-xs mb-2`}>{service.description}</p>
-                        <div className="flex items-center justify-between">
-                          <span className={`text-sm font-bold text-cyan-600`}>
-                            À partir de {service.baseRate}€
-                          </span>
-                          <ChevronRight size={16} className="text-cyan-600" />
-                        </div>
-                      </div>
+                      <p className={`${theme.textMuted} text-xs mt-1`}>{service.description}</p>
                     </div>
                   </button>
                 );
@@ -278,203 +585,83 @@ const RequestService = ({ onBack }) => {
         )}
 
         {/* Step 2: Service Details */}
-        {step === 2 && selectedService && (
-          <div className={`${theme.bgCard} rounded-xl p-4 sm:p-6 border ${theme.border}`}>
-            <h2 className={`text-xl font-bold ${theme.textMain} mb-4`}>Détails du Service</h2>
+        {step === 2 && selectedServiceType && (
+          <div className={`${theme.bgCard} rounded-xl p-4 border ${theme.border}`}>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-2 bg-cyan-100 text-cyan-800 rounded-lg">
+                <Zap size={16} />
+              </div>
+              <div>
+                <h2 className={`font-bold ${theme.textMain}`}>
+                  {serviceTypes.find(s => s.id === selectedServiceType)?.name}
+                </h2>
+                <p className={`text-xs ${theme.textMuted}`}>Service immédiat - Trouvé dans les 30 min</p>
+              </div>
+            </div>
             
             <div className="space-y-4">
               {/* Service Info */}
-              <div className={`p-3 ${isDarkMode ? 'bg-gray-700' : 'bg-blue-50'} rounded-lg border ${theme.border}`}>
-                <p className={`${theme.textMuted} text-xs mb-1`}>Service sélectionné</p>
-                <p className={`font-semibold ${theme.textMain}`}>{selectedService.name}</p>
+              <div className={`p-3 ${isDarkMode ? 'bg-gray-700' : 'bg-blue-50'} rounded-lg`}>
+                <p className={`${theme.textMuted} text-xs mb-1`}>Service urgent</p>
+                <p className={`text-sm ${theme.textMain}`}>
+                  <Clock size={12} className="inline mr-1" />
+                  Un freelancer sera assigné dans les 30 minutes
+                </p>
               </div>
 
               {/* Address */}
               <div>
                 <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
-                  <MapPin size={14} className="inline mr-1" />
-                  Adresse
+                  Adresse du service *
                 </label>
                 <textarea
-                  name="address"
-                  value={formData.address}
+                  name="adresse"
+                  value={formData.adresse}
                   onChange={handleInputChange}
-                  placeholder="Entrez l'adresse complète du service"
+                  placeholder="Entrez l'adresse complète"
                   rows="2"
                   className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain} resize-none`}
+                  required
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Square Meters */}
-                <div>
-                  <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
-                    Surface (m²) *
-                  </label>
-                  <input
-                    type="number"
-                    name="squareMeters"
-                    value={formData.squareMeters}
-                    onChange={handleInputChange}
-                    placeholder="Ex: 120"
-                    min="10"
-                    className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
-                  />
-                </div>
-
-                {/* Number of Rooms */}
-                <div>
-                  <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
-                    <Users size={14} className="inline mr-1" />
-                    Nombre de pièces *
-                  </label>
-                  <input
-                    type="number"
-                    name="numberOfRooms"
-                    value={formData.numberOfRooms}
-                    onChange={handleInputChange}
-                    placeholder="Ex: 4"
-                    min="1"
-                    className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
-                  />
-                </div>
+              {/* Service Specific Fields */}
+              <div className="border-t pt-3">
+                <h3 className={`font-semibold ${theme.textMain} mb-3`}>
+                  Détails du service
+                </h3>
+                {renderServiceForm()}
               </div>
 
-              {/* When do you need the service */}
-              <div>
-                <label className={`block text-sm font-medium ${theme.textMain} mb-3`}>
-                  Quand avez-vous besoin de ce service ?
-                </label>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                  {/* Preferred Date */}
-                  <div>
-                    <label className={`block text-xs ${theme.textMuted} mb-2`}>
-                      Date préférée
-                    </label>
-                    <input
-                      type="date"
-                      name="preferredDate"
-                      value={formData.preferredDate}
-                      onChange={handleInputChange}
-                      min={new Date().toISOString().split('T')[0]}
-                      className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
-                    />
-                  </div>
-
-                  {/* Preferred Time */}
-                  <div>
-                    <label className={`block text-xs ${theme.textMuted} mb-2`}>
-                      Heure préférée
-                    </label>
-                    <input
-                      type="time"
-                      name="preferredTime"
-                      value={formData.preferredTime}
-                      onChange={handleInputChange}
-                      className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
-                    />
-                  </div>
-                </div>
-
-                {/* Duration */}
-                <div className="mb-4">
-                  <label className={`block text-xs ${theme.textMuted} mb-2`}>
-                    Durée estimée
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {durations.map((duration) => (
-                      <button
-                        key={duration.id}
-                        type="button"
-                        onClick={() => {
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            duration: duration.id,
-                            customDuration: duration.id === 'custom' ? '2' : ''
-                          }));
-                        }}
-                        className={`px-3 py-2 text-sm rounded-lg border transition ${
-                          formData.duration === duration.id
-                            ? 'border-cyan-600 bg-cyan-600 text-white'
-                            : `${theme.border} ${theme.textMain} ${theme.hoverBg}`
-                        }`}
-                      >
-                        {duration.name}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  {formData.duration === 'custom' && (
-                    <div className="mt-3">
-                      <input
-                        type="number"
-                        name="customDuration"
-                        value={formData.customDuration || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, customDuration: e.target.value }))}
-                        placeholder="Nombre d'heures"
-                        min="1"
-                        max="24"
-                        className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Frequency */}
-                <div>
-                  <label className={`block text-xs ${theme.textMuted} mb-2`}>
-                    Fréquence
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {frequencies.map((frequency) => (
-                      <button
-                        key={frequency.id}
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, frequency: frequency.id }))}
-                        className={`px-3 py-2 text-sm rounded-lg border transition ${
-                          formData.frequency === frequency.id
-                            ? 'border-cyan-600 bg-cyan-600 text-white'
-                            : `${theme.border} ${theme.textMain} ${theme.hoverBg}`
-                        }`}
-                      >
-                        {frequency.name}
-                        {frequency.discount > 0 && ` (-${frequency.discount}%)`}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Special Requests */}
+              {/* Description */}
               <div>
                 <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
-                  Demandes spécifiques (optionnel)
+                  Instructions supplémentaires
                 </label>
                 <textarea
-                  name="specialRequests"
-                  value={formData.specialRequests}
+                  name="description"
+                  value={formData.description}
                   onChange={handleInputChange}
-                  placeholder="Décrivez vos besoins spécifiques..."
-                  rows="3"
+                  placeholder="Détails supplémentaires pour le freelancer..."
+                  rows="2"
                   className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain} resize-none`}
                 />
               </div>
             </div>
 
             {/* Buttons */}
-            <div className="flex gap-3 mt-6 pt-6 border-t ${theme.border}">
+            <div className="flex gap-2 mt-6 pt-4 border-t">
               <button
                 onClick={() => setStep(1)}
-                className={`flex-1 px-4 py-3 rounded-lg border ${theme.border} ${theme.textMain} hover:${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} transition text-sm font-medium`}
+                className={`flex-1 px-3 py-2 rounded-lg border ${theme.border} ${theme.textMain} hover:${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} transition text-sm`}
               >
                 Retour
               </button>
               <button
                 onClick={calculateQuote}
-                className="flex-1 px-4 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition font-medium text-sm"
+                className="flex-1 px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition text-sm font-medium"
               >
-                Voir le Devis
+                Continuer
               </button>
             </div>
           </div>
@@ -482,123 +669,70 @@ const RequestService = ({ onBack }) => {
 
         {/* Step 3: Quote Review */}
         {step === 3 && quote && (
-          <div className={`${theme.bgCard} rounded-xl p-4 sm:p-6 border ${theme.border}`}>
-            <h2 className={`text-xl font-bold ${theme.textMain} mb-4`}>Votre Devis</h2>
+          <div className={`${theme.bgCard} rounded-xl p-4 border ${theme.border}`}>
+            <h2 className={`font-bold ${theme.textMain} mb-3`}>Récapitulatif</h2>
 
-            <div className="space-y-3 mb-6">
+            <div className="space-y-2 mb-4">
               <div className="flex justify-between">
                 <span className={`text-sm ${theme.textMuted}`}>Service</span>
-                <span className={`text-sm ${theme.textMain}`}>{selectedService.name}</span>
+                <span className={`text-sm ${theme.textMain}`}>
+                  {serviceTypes.find(s => s.id === quote.serviceType)?.name}
+                </span>
               </div>
               
-              <div className="flex justify-between">
-                <span className={`text-sm ${theme.textMuted}`}>Surface ({formData.squareMeters} m² × {selectedService.ratePerMeter}€)</span>
-                <span className={`text-sm ${theme.textMain}`}>{quote.squareMeterPrice}€</span>
-              </div>
-              
-              <div className="flex justify-between">
-                <span className={`text-sm ${theme.textMuted}`}>Pièces ({formData.numberOfRooms} × {selectedService.ratePerRoom}€)</span>
-                <span className={`text-sm ${theme.textMain}`}>{quote.roomPrice}€</span>
-              </div>
-              
-              <div className="flex justify-between">
-                <span className={`text-sm ${theme.textMuted}`}>Durée ({quote.durationHours}h × {quote.hourlyRate}€/h)</span>
-                <span className={`text-sm ${theme.textMain}`}>{(quote.hourlyRate * quote.durationHours).toFixed(2)}€</span>
-              </div>
-              
-              {quote.frequencyDiscount > 0 && (
-                <div className="flex justify-between">
-                  <span className={`text-sm ${theme.textMuted}`}>Réduction {frequencies.find(f => f.id === formData.frequency)?.name} (-{quote.frequencyDiscount}%)</span>
-                  <span className={`text-sm text-green-600`}>-{quote.discountAmount}€</span>
+              {quote.details.map((detail, index) => (
+                <div key={index} className="flex justify-between">
+                  <span className={`text-xs ${theme.textMuted}`}>{detail.label}</span>
+                  <span className={`text-xs ${theme.textMain}`}>{detail.value}€</span>
                 </div>
-              )}
+              ))}
               
-              <div className={`border-t ${theme.border} pt-3 flex justify-between`}>
-                <span className={`font-medium ${theme.textMain}`}>Sous-total</span>
-                <span className={`font-medium ${theme.textMain}`}>{quote.subtotal}€</span>
+              <div className={`border-t pt-2 flex justify-between`}>
+                <span className={`text-sm font-medium ${theme.textMain}`}>Sous-total</span>
+                <span className={`text-sm font-medium ${theme.textMain}`}>{quote.basePrice}€</span>
               </div>
               
               <div className="flex justify-between">
-                <span className={`text-sm ${theme.textMuted}`}>TVA (20%)</span>
-                <span className={`text-sm ${theme.textMuted}`}>{quote.tax}€</span>
+                <span className={`text-xs ${theme.textMuted}`}>TVA (20%)</span>
+                <span className={`text-xs ${theme.textMuted}`}>{quote.tax}€</span>
               </div>
               
-              <div className={`border-t ${theme.border} pt-3 flex justify-between font-bold`}>
-                <span className={`${theme.textMain}`}>Total à payer</span>
+              <div className={`border-t pt-2 flex justify-between font-bold`}>
+                <span className={`${theme.textMain}`}>Total</span>
                 <span className="text-cyan-600">{quote.total}€</span>
               </div>
             </div>
 
-            {/* Payment Method */}
-            <div className="mb-6">
-              <label className={`block text-sm font-medium ${theme.textMain} mb-3`}>Méthode de paiement</label>
-              <div className="space-y-2">
-                {[
-                  { id: 'wallet', name: 'Portefeuille Cleanix', icon: '💰', description: `Solde disponible: ${user?.walletBalance || '0'}€` },
-                  { id: 'card', name: 'Carte Bancaire', icon: '💳', description: 'Paiement sécurisé' },
-                  { id: 'paypal', name: 'PayPal', icon: '🅿️', description: 'Paiement rapide' },
-                ].map(method => (
-                  <label 
-                    key={method.id} 
-                    className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition ${
-                      formData.paymentMethod === method.id 
-                        ? `border-cyan-600 ${isDarkMode ? 'bg-gray-700' : 'bg-blue-50'}` 
-                        : theme.border
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value={method.id}
-                      checked={formData.paymentMethod === method.id}
-                      onChange={handleInputChange}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{method.icon}</span>
-                        <span className={`font-medium ${theme.textMain}`}>{method.name}</span>
-                      </div>
-                      <p className={`text-xs ${theme.textMuted} mt-1`}>{method.description}</p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-
             {/* Terms */}
-            <div className={`p-3 ${isDarkMode ? 'bg-gray-700' : 'bg-yellow-50'} rounded-lg border ${isDarkMode ? 'border-gray-600' : 'border-yellow-200'} mb-6 flex gap-3`}>
-              <AlertCircle size={16} className="text-yellow-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className={`text-xs ${theme.textMuted}`}>
-                  En soumettant votre demande, vous acceptez que les freelancers disponibles puissent consulter et accepter votre demande. 
-                  Le paiement ne sera débité qu'après confirmation du freelancer et exécution du service.
-                </p>
-              </div>
+            <div className={`p-2 ${isDarkMode ? 'bg-gray-700' : 'bg-yellow-50'} rounded-lg mb-4 flex gap-2`}>
+              <AlertCircle size={14} className="text-yellow-600 flex-shrink-0 mt-0.5" />
+              <p className={`text-xs ${theme.textMuted}`}>
+                Le paiement sera effectué après la réalisation du service par le freelancer.
+              </p>
             </div>
 
             {/* Buttons */}
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <button
                 onClick={() => setStep(2)}
-                className={`flex-1 px-4 py-3 rounded-lg border ${theme.border} ${theme.textMain} hover:${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} transition text-sm font-medium`}
+                className={`flex-1 px-3 py-2 rounded-lg border ${theme.border} ${theme.textMain} hover:${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} transition text-sm`}
               >
                 Modifier
               </button>
               <button
                 onClick={handleConfirmAndPay}
                 disabled={isProcessing}
-                className="flex-1 px-4 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-1 px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {isProcessing ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Envoi en cours...
+                    Envoi...
                   </>
                 ) : (
                   <>
-                    <Check size={16} />
-                    Soumettre la demande
+                    <Check size={14} />
+                    Confirmer
                   </>
                 )}
               </button>

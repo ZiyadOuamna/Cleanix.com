@@ -34,6 +34,9 @@ import PageFreelancer    from './pages/freelancer/freelancer';
 import ProfileFreelancer from './pages/freelancer/profileFreelancer';
 import DashboardFreelancer from './pages/freelancer/freelancerDashboard';
 
+import SuperviseurFreelancerVerification from './pages/superviseur/verifications/verifierFreelancer';
+
+
 // les imports des pages de la partie : portefeuille , settings et support chez freelancer
 import PortefeuilleFreelancer from './pages/freelancer/portefeuille';
 import SettingsFreelancer     from './pages/freelancer/settings';
@@ -97,6 +100,7 @@ export default function App() {
       <Route path="/reset-password" element={<PublicRoute element={<ResetPasswordPage />} isLoading={isLoading} />} />
       
       {/* Routes pour Superviseur - Protégées */}
+      
       <Route path="/superviseur/dashboard" element={<ProtectedRoute element={<DashboardSuperviseur />} requiredUserType="superviseur" isLoading={isLoading} />}>
         {/* les routes des partie : réclamations , rembourssement et settings */}
         <Route path="gestion-reclamations"    element={<Reclamations />}/>
@@ -111,6 +115,9 @@ export default function App() {
         <Route path="gestion-clients"       element={<GestionClientsPage />} />
         <Route path="gestion-freelancers"   element={<GestionFreelancersPage />} />
         <Route path="gestion-support"       element={<GestionSupportPage />} />
+
+        {/* les routes de la partie vérification des freelancers */}
+        <Route path="superviseur-verification" element={<SuperviseurFreelancerVerification />} />
       </Route>
 
       {/* Routes pour Client - Protégées */}
