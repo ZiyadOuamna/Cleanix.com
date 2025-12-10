@@ -49,7 +49,7 @@ const MOCK_REFUNDS = [
         date: '15 Nov 2024', 
         statut: 'Validé',
         messages: [
-            { id: 1, auteur: 'Client', message: "J'ai été facturé 45€ de trop sur ma commande.", date: '2024-11-15 09:45' },
+            { id: 1, auteur: 'Client', message: "J'ai été facturé 450DH de trop sur ma commande.", date: '2024-11-15 09:45' },
             { id: 2, auteur: 'Superviseur', message: "Nous avons vérifié et effectué le remboursement. Désolé pour cet erreur.", date: '2024-11-15 10:30' }
         ]
     },

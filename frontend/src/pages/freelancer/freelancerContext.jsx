@@ -9,7 +9,7 @@ export const FreelancerProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([
     { id: 1, message: 'Nouvelle commande reçue', date: 'Il y a 5 min', read: false },
     { id: 2, message: 'Votre profil a été mis à jour', date: 'Il y a 1 heure', read: true },
-    { id: 3, message: 'Paiement reçu - 85€', date: 'Il y a 2 heures', read: true }
+    { id: 3, message: 'Paiement reçu - 850DH', date: 'Il y a 2 heures', read: true }
   ]);
   
   const [isMenuOpen, setIsMenuOpen] = useState(true);

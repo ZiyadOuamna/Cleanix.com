@@ -301,7 +301,7 @@ const GestionServices = () => {
               {/* Prix et Type */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Prix (€)</label>
+                  <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Prix (DH)</label>
                   <div className="relative">
                     <input 
                       type="number" 
@@ -511,7 +511,7 @@ const GestionServices = () => {
                           <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded text-xs">
                             <DollarSign size={12} className="text-blue-500" />
                             <span className={`font-bold ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
-                              {service.price}€ {service.priceType === 'par_heure' ? '/h' : 'forfait'}
+                              {service.price}DH {service.priceType === 'par_heure' ? '/h' : 'forfait'}
                             </span>
                           </div>
                           

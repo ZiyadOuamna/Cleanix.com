@@ -24,7 +24,7 @@ const BookingHistory = () => {
       freelancer: 'Ahmed M.',
       date: '15 Déc 2025',
       location: '123 Rue de Paris, 75000 Paris',
-      price: '85€',
+      price: '850DH',
       status: 'completed',
       rating: 4.8,
       review: 'Excellent travail, très professionnel!',
@@ -36,7 +36,7 @@ const BookingHistory = () => {
       freelancer: 'Fatima K.',
       date: '10 Déc 2025',
       location: '456 Avenue des Champs, 75008 Paris',
-      price: '45€',
+      price: '450DH',
       status: 'completed',
       rating: 4.5,
       review: 'Très satisfait du service',
@@ -48,7 +48,7 @@ const BookingHistory = () => {
       freelancer: 'Mohamed B.',
       date: '05 Déc 2025',
       location: '789 Boulevard Saint-Germain, 75005 Paris',
-      price: '150€',
+      price: '1500DH',
       status: 'completed',
       rating: 5,
       review: 'Parfait! Tout est impeccable',
@@ -60,7 +60,7 @@ const BookingHistory = () => {
       freelancer: 'Hassan D.',
       date: '28 Nov 2025',
       location: '321 Rue Rivoli, 75001 Paris',
-      price: '120€',
+      price: '1200DH',
       status: 'cancelled',
       rating: null,
       review: null,
@@ -72,7 +72,7 @@ const BookingHistory = () => {
       freelancer: 'Aïcha L.',
       date: '20 Nov 2025',
       location: '654 Rue de Turenne, 75003 Paris',
-      price: '90€',
+      price: '900DH',
       status: 'completed',
       rating: 4.7,
       review: 'Très bien, je recommande!',
@@ -147,7 +147,7 @@ const BookingHistory = () => {
         <div className={`${theme.cardBg} rounded-xl p-6 shadow-sm border ${theme.border}`}>
           <p className={`${theme.textMuted} text-sm mb-2`}>Montant total dépensé</p>
           <p className={`text-3xl font-bold text-cyan-600`}>
-            {filteredBookings.reduce((sum, b) => sum + parseInt(b.price), 0)}€
+            {filteredBookings.reduce((sum, b) => sum + parseInt(b.price), 0)}DH
           </p>
           <p className={`text-xs ${theme.textSecondary} mt-2`}>en services</p>
         </div>

@@ -445,7 +445,7 @@ const FreelancerDashboard = () => {
           <div className="flex items-center justify-center gap-6 mb-6">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-gradient-to-r from-green-400 to-green-500 rounded"></div>
-              <span className={`text-xs font-medium ${theme.textMuted}`}>Revenus (€)</span>
+              <span className={`text-xs font-medium ${theme.textMuted}`}>Revenus (DH)</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-gradient-to-r from-blue-400 to-blue-500 rounded"></div>
@@ -472,7 +472,7 @@ const FreelancerDashboard = () => {
                         />
                         {/* Tooltip au survol */}
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                          {item.revenue}€
+                          {item.revenue}DH
                         </div>
                       </div>
                     </div>
@@ -506,7 +506,7 @@ const FreelancerDashboard = () => {
         <div className={`grid grid-cols-2 gap-4 mt-8 pt-6 border-t ${theme.borderLight}`}>
           <div className={`text-center p-4 rounded-lg ${isDarkMode ? 'bg-gradient-to-r from-gray-800 to-gray-900' : 'bg-gradient-to-r from-green-50 to-emerald-50'}`}>
             <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-              {data.reduce((sum, item) => sum + item.revenue, 0).toLocaleString()}€
+              {data.reduce((sum, item) => sum + item.revenue, 0).toLocaleString()}DH
             </p>
             <p className={`text-sm ${theme.textMuted} mt-1`}>
               Revenu total
@@ -851,7 +851,7 @@ const FreelancerDashboard = () => {
                 title="Aujourd'hui"
                 subtitle="Revenus & commandes"
                 value={quickStats.todayEarnings}
-                unit="€"
+                unit="DH"
                 icon={Clock}
                 color="text-blue-600"
                 bgColor={isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'}

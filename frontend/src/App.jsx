@@ -40,9 +40,9 @@ import SettingsFreelancer     from './pages/freelancer/settings';
 import SupportFreelancer      from './pages/freelancer/support';
 
 // les imports des pages de la partie Mes Commandes chez freelancer
-import CommandesAcceptees from './pages/freelancer/commades/acceptedCmd';
-import HistoriqueCommandes from './pages/freelancer/commades/historiqueCmd';
-import OrdersReceived from './pages/freelancer/commades/ordersReceived';
+import CommandesAcceptees from './pages/freelancer/commandes/acceptedCmd';
+import HistoriqueCommandes from './pages/freelancer/commandes/historiqueCmd';
+import OrdersReceived from './pages/freelancer/commandes/ordersReceived';
 
 // les imports des pages de la partie services chez freelancer 
 import GestionServices from './pages/freelancer/services/gestionService';
@@ -57,6 +57,7 @@ import SettingsClient from './pages/client/settings';
 import MyBookings from './pages/client/myBookings';
 import BookingHistory from './pages/client/bookingHistory';
 import WalletClient from './pages/client/walletClient';
+import RequestCleaning from './pages/client/requestCleaning';
 
 //----------------------------------------------------------------------//
 // ( 4 ) imports des pages après la connexion de la page de Support
@@ -114,6 +115,10 @@ export default function App() {
 
       {/* Routes pour Client - Protégées */}
       <Route path='/client/dashboard' element={<ProtectedRoute element={<DashboardClient />} requiredUserType="client" isLoading={isLoading} />}>
+        {/* Demander un nettoyage - PAGE PAR DÉFAUT */}
+        <Route index element={<RequestCleaning />} />
+        <Route path='request-cleaning' element={<RequestCleaning />} />
+        
         {/* Dashboard */}
         <Route path='dashboard-client' element={<ClientDashboard />} />
         
@@ -134,9 +139,6 @@ export default function App() {
         
         {/* Paramètres */}
         <Route path='settings-client' element={<SettingsClient />} />
-        
-        {/* Page par défaut */}
-        <Route index element={<MyBookings />} />
       </Route>
 
       {/* Routes pour Freelancer - Protégées */}

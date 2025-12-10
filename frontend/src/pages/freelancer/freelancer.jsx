@@ -101,10 +101,12 @@ function InnerLayout() {
     else if (path.includes('dashboard-freelancer')) setActivePage('dashboard-freelancer');
     else if (path.includes('profile-freelancer')) setActivePage('profile-freelancer');
     else if (path.includes('historique-commandes-freelancer')) setActivePage('historique-commandes-freelancer');
-    else if (path.includes('portefeuille-freelancer')) setActivePage('earnings');
-    else if (path.includes('settings-freelancer')) setActivePage('settings');
-    else if (path.includes('support-freelancer')) setActivePage('support');
-    else if (path === '/dev-freelancer-page' || path === '/dev-freelancer-page/') setActivePage('orders-received');
+    else if (path.includes('portefeuille-freelancer')) setActivePage('portefeuille-freelancer');
+    else if (path.includes('settings-freelancer')) setActivePage('settings-freelancer');
+    else if (path.includes('support-freelancer')) setActivePage('support-freelancer');
+    else if (path.includes('gestion-services-freelancer')) setActivePage('gestion-services-freelancer');
+    else if (path.includes('publier-service-freelancer')) setActivePage('publier-service-freelancer');
+    else if (path.includes('orders-received')) setActivePage('orders-received');
   }, [location.pathname]);
 
   // Click outside
@@ -193,8 +195,11 @@ function InnerLayout() {
   const handleNavigation = (page, path = null) => {
     setActivePage(page);
     setIsSidebarVisible(false);
-    if (path) navigate(path);
-    else if (page === 'orders-received') navigate('/dev-freelancer-page');
+    if (path) {
+      navigate(path);
+    } else if (page === 'orders-received') {
+      navigate('/freelancer/dashboard/orders-received');
+    }
   };
 
   // --- CONFIGURATION DU DESIGN "SOFT GRADIENT" ---
@@ -271,7 +276,7 @@ function InnerLayout() {
           
           <div className="relative mb-4">
             <div className="w-16 h-16 bg-gradient-to-tr from-green-500 to-emerald-400 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg ring-4 ring-white/30">
-              {user?.name?.charAt(0) || 'F'}
+              {(user?.nom || user?.name)?.charAt(0) || 'F'}
             </div>
             <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 ${isDarkMode ? 'border-gray-800' : 'border-white'} ${isOnline ? 'bg-green-500' : 'bg-gray-300'}`} />
           </div>
@@ -279,7 +284,7 @@ function InnerLayout() {
           <div className="text-center">
             <Link to="profile-freelancer" className="group inline-block">
               <p className={`font-semibold text-lg transition-all duration-300 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                {user?.name}
+                {`${user?.prenom || ''} ${user?.nom || 'Freelancer'}`.trim()}
               </p>
               <div className="flex items-center justify-center gap-1 mt-1">
                 <ICONS.star className="w-4 h-4 text-yellow-400 fill-current" />
@@ -297,13 +302,13 @@ function InnerLayout() {
             
             {/* Items Simples */}
             {[
-              { id: 'dashboard-freelancer', label: 'Tableau de Bord', icon: ICONS.dashboard, path: 'dashboard-freelancer' },
+              { id: 'dashboard-freelancer', label: 'Tableau de Bord', icon: ICONS.dashboard, path: '/freelancer/dashboard/dashboard-freelancer' },
             ].map((item) => {
-              const style = getMenuItemStyle(item.path || item.id);
+              const style = getMenuItemStyle('dashboard-freelancer');
               return (
                 <li key={item.id}>
                   <button 
-                    onClick={() => handleNavigation(item.path || item.id, item.id)}
+                    onClick={() => handleNavigation('dashboard-freelancer', item.path)}
                     className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all text-left ${style.className}`}
                     style={style.style}
                   >
@@ -335,15 +340,15 @@ function InnerLayout() {
               <div className={`overflow-hidden transition-all duration-300 ${openSubmenu === 'orders' ? 'max-h-40 opacity-100 mt-2' : 'max-h-0 opacity-0'}`}>
                 <ul className={`ml-4 space-y-1 border-l-2 pl-4 ${isDarkMode ? 'border-gray-700' : 'border-slate-300'}`}>
                   {[
-                    { id: 'orders-received', label: 'Commandes Reçues', icon: ICONS.clock },
-                    { id: 'accepted-cmd-freelancer', label: 'Commandes Acceptées', icon: ICONS.trending },
-                    { id: 'historique-commandes-freelancer', label: 'Historique', icon: ICONS.history },
+                    { id: 'orders-received', label: 'Commandes Reçues', icon: ICONS.clock, path: '/freelancer/dashboard/orders-received' },
+                    { id: 'accepted-cmd-freelancer', label: 'Commandes Acceptées', icon: ICONS.trending, path: '/freelancer/dashboard/accepted-cmd-freelancer' },
+                    { id: 'historique-commandes-freelancer', label: 'Historique', icon: ICONS.history, path: '/freelancer/dashboard/historique-commandes-freelancer' },
                   ].map(sub => {
                     const style = getMenuItemStyle(sub.id);
                     return (
                       <li key={sub.id}>
                         <button 
-                          onClick={() => handleNavigation(sub.id, sub.id === 'orders-received' ? null : sub.id)}
+                          onClick={() => handleNavigation(sub.id, sub.path)}
                           className={`w-full flex items-center gap-4 px-4 py-2 rounded-lg transition-all ${style.className}`}
                           style={style.style}
                         >
@@ -372,14 +377,14 @@ function InnerLayout() {
               <div className={`overflow-hidden transition-all duration-300 ${openSubmenu === 'services' ? 'max-h-40 opacity-100 mt-2' : 'max-h-0 opacity-0'}`}>
                 <ul className={`ml-4 space-y-1 border-l-2 pl-4 ${isDarkMode ? 'border-gray-700' : 'border-slate-300'}`}>
                   {[
-                    { id: 'gestion-services-freelancer', label: 'Gérer mes Services', icon: ICONS.file },
-                    { id: 'publier-service-freelancer', label: 'Publier un Service', icon: ICONS.services },
+                    { id: 'gestion-services-freelancer', label: 'Gérer mes Services', icon: ICONS.file, path: '/freelancer/dashboard/gestion-services-freelancer' },
+                    { id: 'publier-service-freelancer', label: 'Publier un Service', icon: ICONS.services, path: '/freelancer/dashboard/publier-service-freelancer' },
                   ].map(sub => {
                     const style = getMenuItemStyle(sub.id);
                     return (
                       <li key={sub.id}>
                         <button 
-                          onClick={() => handleNavigation(sub.id, sub.id)}
+                          onClick={() => handleNavigation(sub.id, sub.path)}
                           className={`w-full flex items-center gap-4 px-4 py-2 rounded-lg transition-all ${style.className}`}
                           style={style.style}
                         >
@@ -395,15 +400,15 @@ function InnerLayout() {
 
             {/* Autres Items */}
             {[
-              { id: 'portefeuille-freelancer', label: 'Portefeuille', icon: ICONS.earnings, path: 'earnings' },
-              { id: 'support-freelancer', label: 'Support', icon: ICONS.support, path: 'support' },
-              { id: 'settings-freelancer', label: 'Paramètres', icon: ICONS.settings, path: 'settings' },
+              { id: 'portefeuille-freelancer', label: 'Portefeuille', icon: ICONS.earnings, path: '/freelancer/dashboard/portefeuille-freelancer' },
+              { id: 'support-freelancer', label: 'Support', icon: ICONS.support, path: '/freelancer/dashboard/support-freelancer' },
+              { id: 'settings-freelancer', label: 'Paramètres', icon: ICONS.settings, path: '/freelancer/dashboard/settings-freelancer' },
             ].map((item) => {
-              const style = getMenuItemStyle(item.path || item.id);
+              const style = getMenuItemStyle(item.id);
               return (
                 <li key={item.id}>
                   <button 
-                    onClick={() => handleNavigation(item.path || item.id, item.id)}
+                    onClick={() => handleNavigation(item.id, item.path)}
                     className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all text-left ${style.className}`}
                     style={style.style}
                   >
@@ -509,7 +514,7 @@ function InnerLayout() {
                     isOnline ? 'bg-green-500' : 'bg-gray-300'
                   }`} />
                 </div>
-                <span className="hidden md:block text-sm font-medium dark:text-white">{user?.name}</span>
+                <span className="hidden md:block text-sm font-medium dark:text-white">{`${user?.prenom || ''} ${user?.nom || 'User'}`.trim()}</span>
               </button>
 
               {showProfileMenu && (

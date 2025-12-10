@@ -417,7 +417,7 @@ const generatePDF = (type, freelancer) => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className="font-semibold text-green-600">
-                                                {freelancer.revenuTotal.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}€
+                                                {freelancer.revenuTotal.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}DH
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
