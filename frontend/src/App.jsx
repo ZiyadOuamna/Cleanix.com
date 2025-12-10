@@ -22,7 +22,6 @@ import SettingsPage from './pages/superviseur/settings-Superviseur';
 // les imports des pages de la partie gestion des utilisateurs chez superviseur 
 import GestionClientsPage     from './pages/superviseur/gestionUsers/gestionClients';
 import GestionFreelancersPage from './pages/superviseur/gestionUsers/gestionFreelancers';
-import GestionSupportPage     from './pages/superviseur/gestionUsers/gestionSupport';
 
 // les imports des pages de la partie dashboard chez superviseur 
 import DashboardClients      from './pages/superviseur/gestionDashboard/dashboardClients-Superviseur';
@@ -114,7 +113,6 @@ export default function App() {
         {/* les routes de la partie gestion des utilisateurs */}
         <Route path="gestion-clients"       element={<GestionClientsPage />} />
         <Route path="gestion-freelancers"   element={<GestionFreelancersPage />} />
-        <Route path="gestion-support"       element={<GestionSupportPage />} />
 
         {/* les routes de la partie vérification des freelancers */}
         <Route path="superviseur-verification" element={<SuperviseurFreelancerVerification />} />

@@ -96,7 +96,6 @@ function InnerLayout() {
     else if (path.includes('dashboard-freelancers')) setActivePage('dashboard-freelancers');
     else if (path.includes('gestion-clients')) setActivePage('gestion-clients');
     else if (path.includes('gestion-freelancers')) setActivePage('gestion-freelancers');
-    else if (path.includes('gestion-support')) setActivePage('gestion-support');
     else if (path.includes('superviseur-verification')) setActivePage('superviseur-verification');
     else if (path.includes('gestion-rembourssements')) setActivePage('gestion-rembourssements');
     else if (path.includes('gestion-reclamations')) setActivePage('gestion-reclamations');
@@ -185,7 +184,6 @@ function InnerLayout() {
       'dashboard-freelancers': ACCENT_COLORS.dashboard,
       'gestion-clients': ACCENT_COLORS.users,
       'gestion-freelancers': ACCENT_COLORS.users,
-      'gestion-support': ACCENT_COLORS.users,
       'superviseur-verification': ACCENT_COLORS.verification,
       'gestion-rembourssements': ACCENT_COLORS.remboursement,
       'gestion-reclamations': ACCENT_COLORS.reclamations,
@@ -336,7 +334,6 @@ function InnerLayout() {
                   {[
                     { id: 'gestion-clients', label: 'Clients', icon: ICONS.users, path: 'gestion-clients' },
                     { id: 'gestion-freelancers', label: 'Freelancers', icon: ICONS.briefcase, path: 'gestion-freelancers' },
-                    { id: 'gestion-support', label: 'Support', icon: ICONS.support, path: 'gestion-support' },
                   ].map(sub => {
                     const style = getMenuItemStyle(sub.id);
                     return (

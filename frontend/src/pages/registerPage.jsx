@@ -34,6 +34,8 @@ const USER_TYPES_CONTENT = {
   },
 };
 
+// Note: Support users cannot self-register, they must be created by superviseur only
+
 export default function RegisterPage() {
   const navigate = useNavigate();
   
