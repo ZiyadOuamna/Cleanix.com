@@ -46,20 +46,20 @@ const Footer = ({ isDarkMode }) => {
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Phone size={18} className="text-cyan-500" />
-                <a href="tel:+2126123456" className="text-gray-400 hover:text-cyan-500 transition-colors text-sm">
-                  +212 6 12 34 56 78
+                <a href="tel:+212751818624" className="text-gray-400 hover:text-cyan-500 transition-colors text-sm">
+                  +212 7 51 81 86 24
                 </a>
               </div>
               <div className="flex items-center gap-3">
                 <Mail size={18} className="text-cyan-500" />
-                <a href="mailto:contact@cleanix.ma" className="text-gray-400 hover:text-cyan-500 transition-colors text-sm">
-                  contact@cleanix.ma
+                <a href="mailto:cleanix.ma.contact@gmail.com" className="text-gray-400 hover:text-cyan-500 transition-colors text-sm">
+                  cleanix.ma.contact@gmail.com
                 </a>
               </div>
               <div className="flex items-start gap-3">
                 <MapPin size={18} className="text-cyan-500 flex-shrink-0 mt-1" />
                 <span className="text-gray-400 text-sm">
-                  Casablanca, Maroc
+                  Agadir, Maroc
                 </span>
               </div>
             </div>

@@ -65,19 +65,19 @@ const ContactSection = ({ isDarkMode, contactRef }) => {
     { 
       icon: Phone, 
       title: 'Téléphone', 
-      value: '+212 6 12 34 56 78',
+      value: '+212 7 51 81 86 24',
       color: 'cyan'
     },
     { 
       icon: Mail, 
       title: 'Email', 
-      value: 'contact@cleanix.ma',
+      value: 'cleanix.ma.contact@gmail.com',
       color: 'emerald'
     },
     { 
       icon: MapPin, 
       title: 'Adresse', 
-      value: 'Casablanca, Maroc',
+      value: 'Agadir, Maroc',
       color: 'violet'
     }
   ];
