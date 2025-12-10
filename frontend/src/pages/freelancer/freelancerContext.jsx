@@ -1,8 +1,11 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useTheme } from '../../context/ThemeContext';
 
 const FreelancerContext = createContext();
 
 export const FreelancerProvider = ({ children }) => {
+  const { isDarkMode, setIsDarkMode } = useTheme(); // Use global theme
+  
   const [notifications, setNotifications] = useState([
     { id: 1, message: 'Nouvelle commande reçue', date: 'Il y a 5 min', read: false },
     { id: 2, message: 'Votre profil a été mis à jour', date: 'Il y a 1 heure', read: true },
@@ -10,7 +13,6 @@ export const FreelancerProvider = ({ children }) => {
   ]);
   
   const [isMenuOpen, setIsMenuOpen] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [isAccountActive, setIsAccountActive] = useState(false);
 
@@ -30,13 +32,6 @@ export const FreelancerProvider = ({ children }) => {
 
   const pendingOrders = 3;
   const rating = 4.8;
-
-  useEffect(() => {
-    const savedDarkMode = localStorage.getItem('freelancerDarkMode');
-    if (savedDarkMode) {
-      setIsDarkMode(JSON.parse(savedDarkMode));
-    }
-  }, []);
 
   const markAsRead = (id) => {
     setNotifications(notifications.map(notif => 

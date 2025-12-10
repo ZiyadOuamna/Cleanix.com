@@ -49,7 +49,7 @@ const ChatBot = ({
 
   return (
     <div className={`fixed bottom-6 right-6 w-80 h-96 rounded-2xl shadow-2xl z-50 flex flex-col ${
-      isDarkMode ? 'bg-gray-800' : 'bg-white'
+      isDarkMode ? 'bg-gray-800' : 'bg-gray-50'
     }`}>
       
       {/* En-tête du chat */}
@@ -95,7 +95,7 @@ const ChatBot = ({
             <div className={`inline-block p-3 rounded-2xl max-w-xs ${
               message.sender === 'user'
                 ? (isDarkMode ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white')
-                : (isDarkMode ? 'bg-gray-700 text-white' : 'bg-white text-gray-800 shadow')
+                : (isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-50 text-gray-800 shadow')
             }`}>
               {message.text}
             </div>
@@ -114,7 +114,7 @@ const ChatBot = ({
             className={`flex-1 px-3 py-2 rounded-lg border ${
               isDarkMode 
                 ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                : 'bg-white border-gray-300 text-gray-800'
+                : 'bg-gray-50 border-gray-300 text-gray-800'
             }`}
           />
           <button

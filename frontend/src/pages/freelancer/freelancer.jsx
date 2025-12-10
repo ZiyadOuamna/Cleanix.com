@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { FreelancerProvider, FreelancerContext } from './freelancerContext';
 import { logoutUser } from '../../services/authService';
+import logoCleanix from '../../imgs/logoCleanix.png';
 
 // Constants Icons
 const ICONS = {
@@ -433,14 +434,13 @@ function InnerLayout() {
         {/* Header */}
         <header className={`h-16 flex items-center justify-between px-4 md:px-6 z-20 border-b ${glassClasses} ${isDarkMode ? '' : 'border-white/40'}`}>
           
-          <div className="flex items-center md:hidden">
-            <button onClick={() => setIsSidebarVisible(true)} className="text-slate-500 hover:text-green-600 dark:text-gray-400 p-2">
+          <div className="flex items-center gap-3 flex-1 md:flex-none">
+            <button onClick={() => setIsSidebarVisible(true)} className="text-slate-500 hover:text-green-600 dark:text-gray-400 p-2 md:hidden">
               <ICONS.menu size={24} />
             </button>
-          </div>
-
-          <div className="flex-1 md:flex-none text-center md:text-left">
-            <span className="text-xl md:text-2xl font-extrabold" style={{ color: ACCENT_COLORS.primary }}>Cleanix</span>
+            {/* Logo */}
+            <img src={logoCleanix} alt="Cleanix" className="w-8 h-8 rounded-md hidden sm:block" />
+            <span className="text-lg md:text-xl font-extrabold" style={{ color: ACCENT_COLORS.primary }}>Cleanix</span>
           </div>
 
           <div className="flex items-center gap-2 md:gap-4">

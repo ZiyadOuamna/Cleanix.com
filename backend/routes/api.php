@@ -43,4 +43,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Changer le statut (Freelancers uniquement)
     Route::post('/change-statut', [AuthController::class, 'changeStatut']);
+    
+    // Créer un superviseur (Superviseurs uniquement)
+    Route::post('/create-superviseur', [AuthController::class, 'createSuperviseur']);
 });
