@@ -7,7 +7,7 @@ import CleanixLandingPage from './pages/homePage';
 import RegisterPage from './pages/registerPage';
 import LoginPage from './pages/loginPage';
 import ForgotPasswordPage from './pages/forgotPasswordPage';
-import ResetPasswordPage from '../src/pages/resetPasswordPage';
+import ResetPasswordPage from '../src/pages/ResetPasswordPage';
 
 // ( 1 ) les import des pages après la connexion de la page de superviseur 
 import DashboardSuperviseur from './pages/superviseur/superviseur';
