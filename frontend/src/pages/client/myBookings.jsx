@@ -38,7 +38,7 @@ const MyBookings = () => {
       date: '20 Déc 2025',
       time: '10:00 - 12:00',
       location: '123 Rue de Paris, 75000 Paris',
-      price: '85€',
+      price: '850DH',
       status: 'confirmed',
       rating: null,
       image: '🧹'
@@ -50,7 +50,7 @@ const MyBookings = () => {
       date: '22 Déc 2025',
       time: '14:00 - 15:30',
       location: '456 Avenue des Champs, 75008 Paris',
-      price: '45€',
+      price: '450DH',
       status: 'pending',
       rating: null,
       image: '🪟'
@@ -62,7 +62,7 @@ const MyBookings = () => {
       date: '15 Déc 2025',
       time: '09:00 - 11:00',
       location: '789 Boulevard Saint-Germain, 75005 Paris',
-      price: '120€',
+      price: '1200DH',
       status: 'completed',
       rating: 4.8,
       image: '🏢'

@@ -924,12 +924,6 @@ const ProfileFreelancer = () => {
                     color="text-green-600"
                   />
                   <StatCard
-                    icon={Users}
-                    value={stats.followers}
-                    label="Followers"
-                    color="text-blue-600"
-                  />
-                  <StatCard
                     icon={MessageCircle}
                     value={`${stats.responseRate}%`}
                     label="Taux de réponse"

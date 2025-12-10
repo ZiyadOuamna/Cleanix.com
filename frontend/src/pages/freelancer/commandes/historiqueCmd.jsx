@@ -300,17 +300,17 @@ const HistoriqueCommandes = () => {
     doc.setFont('helvetica', 'normal');
     doc.text(order.service, 25, detailsY + 10);
     doc.text('1', 120, detailsY + 10);
-    doc.text(`${order.price} €`, 150, detailsY + 10);
-    doc.text(`${order.price} €`, 180, detailsY + 10);
+    doc.text(`${order.price} DH`, 150, detailsY + 10);
+    doc.text(`${order.price} DH`, 180, detailsY + 10);
 
     const subtotalY = detailsY + 25;
     doc.setFont('helvetica', 'normal');
     doc.text('Sous-total:', 150, subtotalY);
-    doc.text(`${order.price} €`, 180, subtotalY);
+    doc.text(`${order.price} DH`, 180, subtotalY);
 
     const tva = order.price * 0.2;
     doc.text('TVA (20%):', 150, subtotalY + 10);
-    doc.text(`${tva.toFixed(2)} €`, 180, subtotalY + 10);
+    doc.text(`${tva.toFixed(2)} DH`, 180, subtotalY + 10);
 
     doc.setFont('helvetica', 'bold');
     const totalY = subtotalY + 25;
@@ -319,7 +319,7 @@ const HistoriqueCommandes = () => {
     
     doc.setTextColor(255, 255, 255);
     doc.text('TOTAL:', 150, totalY);
-    doc.text(`${(order.price + tva).toFixed(2)} €`, 180, totalY);
+    doc.text(`${(order.price + tva).toFixed(2)} DH`, 180, totalY);
 
     doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
     doc.setFont('helvetica', 'bold');
@@ -502,7 +502,7 @@ const HistoriqueCommandes = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between items-center">
                     <span className={theme.textMuted}>Prix</span>
-                    <span className="text-xl font-bold text-green-600">{order.price}€</span>
+                    <span className="text-xl font-bold text-green-600">{order.price}DH</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className={theme.textMuted}>Statut</span>
@@ -757,7 +757,7 @@ const HistoriqueCommandes = () => {
             <p className={`text-2xl font-bold ${theme.textPrimary}`}>
               {orderHistory
                 .filter(o => o.status === 'completed')
-                .reduce((sum, order) => sum + order.price, 0)}€
+                .reduce((sum, order) => sum + order.price, 0)}DH
             </p>
           </div>
           <div className={`${theme.bgSecondary} rounded-lg p-4 border ${theme.borderPrimary} ${theme.cardShadow}`}>
@@ -845,7 +845,7 @@ const HistoriqueCommandes = () => {
                         <p className={theme.textPrimary}>{order.date}</p>
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap border-r ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                        <p className="text-lg font-bold text-green-600">{order.price} €</p>
+                        <p className="text-lg font-bold text-green-600">{order.price} DH</p>
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap border-r ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                         <div className="flex flex-col gap-1">

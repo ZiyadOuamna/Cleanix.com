@@ -65,8 +65,8 @@ const RequestService = ({ onBack }) => {
     }
 
     const basePrice = selectedService.price;
-    const squareMeterPrice = parseFloat(formData.squareMeters) * 0.5; // 0.5€ par m²
-    const roomMultiplier = parseFloat(formData.numberOfRooms) * 10; // 10€ par pièce
+    const squareMeterPrice = parseFloat(formData.squareMeters) * 5; // 5DH par m²
+    const roomMultiplier = parseFloat(formData.numberOfRooms) * 100; // 100DH par pièce
     const subtotal = basePrice + squareMeterPrice + roomMultiplier;
     const tax = subtotal * 0.20; // 20% TVA
     const total = subtotal + tax;
@@ -153,7 +153,7 @@ const RequestService = ({ onBack }) => {
                 <h3 className={`text-xl font-bold ${theme.textMain} mb-2`}>{service.name}</h3>
                 <p className={`${theme.textMuted} text-sm mb-4`}>{service.description}</p>
                 <div className="flex items-center justify-between">
-                  <span className={`text-2xl font-bold text-cyan-600`}>{service.price}€</span>
+                  <span className={`text-2xl font-bold text-cyan-600`}>{service.price}DH</span>
                   <ChevronRight size={20} className="text-cyan-600" />
                 </div>
               </button>
@@ -293,27 +293,27 @@ const RequestService = ({ onBack }) => {
           <div className="space-y-4 mb-8">
             <div className="flex justify-between">
               <span className={theme.textMuted}>Prix de base ({selectedService.name})</span>
-              <span className={theme.textMain}>{quote.basePrice}€</span>
+              <span className={theme.textMain}>{quote.basePrice}DH</span>
             </div>
             <div className="flex justify-between">
-              <span className={theme.textMuted}>Surface ({formData.squareMeters} m² × 0.5€)</span>
-              <span className={theme.textMain}>{quote.squareMeterPrice}€</span>
+              <span className={theme.textMuted}>Surface ({formData.squareMeters} m² × 5DH)</span>
+              <span className={theme.textMain}>{quote.squareMeterPrice}DH</span>
             </div>
             <div className="flex justify-between">
-              <span className={theme.textMuted}>Pièces ({formData.numberOfRooms} × 10€)</span>
-              <span className={theme.textMain}>{quote.roomMultiplier}€</span>
+              <span className={theme.textMuted}>Pièces ({formData.numberOfRooms} × 100DH)</span>
+              <span className={theme.textMain}>{quote.roomMultiplier}DH</span>
             </div>
             <div className={`border-t ${theme.border} pt-4 flex justify-between`}>
               <span className={theme.textMuted}>Sous-total</span>
-              <span className={theme.textMain}>{quote.subtotal}€</span>
+              <span className={theme.textMain}>{quote.subtotal}DH</span>
             </div>
             <div className="flex justify-between">
               <span className={theme.textMuted}>TVA (20%)</span>
-              <span className={theme.textMain}>{quote.tax}€</span>
+              <span className={theme.textMain}>{quote.tax}DH</span>
             </div>
             <div className={`border-t ${theme.border} pt-4 flex justify-between font-bold text-lg`}>
               <span className={theme.textMain}>Total</span>
-              <span className="text-cyan-600">{quote.total}€</span>
+              <span className="text-cyan-600">{quote.total}DH</span>
             </div>
           </div>
 
@@ -377,7 +377,7 @@ const RequestService = ({ onBack }) => {
               ) : (
                 <>
                   <Check size={18} />
-                  Confirmer et Payer {quote.total}€
+                  Confirmer et Payer {quote.total}DH
                 </>
               )}
             </button>

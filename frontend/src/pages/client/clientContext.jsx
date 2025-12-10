@@ -1,31 +1,49 @@
+// src/pages/client/clientContext.js
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 
 const ClientContext = createContext();
 
 export const ClientProvider = ({ children }) => {
-  const { isDarkMode, setIsDarkMode } = useTheme(); // Use global theme
+  const { isDarkMode, setIsDarkMode } = useTheme();
   
   const [notifications, setNotifications] = useState([
     { id: 1, message: 'Votre service de nettoyage est confirmé', date: 'Il y a 5 min', read: false },
-    { id: 2, message: 'Freelancer accepté votre demande', date: 'Il y a 1 heure', read: true },
+    { id: 2, message: 'Freelancer a accepté votre demande', date: 'Il y a 1 heure', read: true },
     { id: 3, message: 'Service terminé avec succès', date: 'Il y a 2 heures', read: true }
   ]);
   
   const [isMenuOpen, setIsMenuOpen] = useState(true);
+  const [isOnline, setIsOnline] = useState(true);
+  const [isAccountActive, setIsAccountActive] = useState(false);
 
-  const user = {
-    name: 'Client Test',
+  // Charger les données du client depuis localStorage
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    }
+  }, []);
+
+  // Données utilisateur par défaut
+  const [user, setUser] = useState({
+    nom: 'Client',
+    prenom: 'Test',
     email: 'client@cleanix.com',
     phone: '+33 1 23 45 67 89',
-    address: '123 Rue de Paris, 75000 Paris',
-    avatar: '👤'
-  };
+    specialty: 'Services de nettoyage',
+    rating: 4.8
+  });
 
   const wallet = {
     balance: 250.50,
     totalSpent: 1250.00,
-    currency: 'EUR'
+    currency: 'MAD'
   };
 
   const bookings = {
@@ -33,6 +51,9 @@ export const ClientProvider = ({ children }) => {
     completed: 8,
     cancelled: 1
   };
+
+  const pendingOrders = 1;
+  const rating = 4.8;
 
   const markAsRead = (id) => {
     setNotifications(notifications.map(notif => 
@@ -54,7 +75,14 @@ export const ClientProvider = ({ children }) => {
     setIsDarkMode,
     user,
     wallet,
-    bookings
+    bookings,
+    pendingOrders,
+    rating,
+    isOnline,
+    setIsOnline,
+    isAccountActive,
+    setIsAccountActive,
+    setUser
   };
 
   return (

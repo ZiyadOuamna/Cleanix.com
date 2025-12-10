@@ -25,7 +25,7 @@ const WalletClient = () => {
       type: 'debit',
       description: 'Nettoyage complet',
       freelancer: 'Ahmed M.',
-      amount: '-85.00€',
+      amount: '-850.00DH',
       date: '15 Déc 2025',
       time: '10:30',
       status: 'completed'
@@ -35,7 +35,7 @@ const WalletClient = () => {
       type: 'debit',
       description: 'Nettoyage de vitres',
       freelancer: 'Fatima K.',
-      amount: '-45.00€',
+      amount: '-450.00DH',
       date: '10 Déc 2025',
       time: '15:00',
       status: 'completed'
@@ -45,7 +45,7 @@ const WalletClient = () => {
       type: 'credit',
       description: 'Remboursement',
       freelancer: 'Service annulé',
-      amount: '+30.00€',
+      amount: '+300.00DH',
       date: '05 Déc 2025',
       time: '11:20',
       status: 'completed'
@@ -55,7 +55,7 @@ const WalletClient = () => {
       type: 'debit',
       description: 'Nettoyage bureau',
       freelancer: 'Hassan D.',
-      amount: '-120.00€',
+      amount: '-1200.00DH',
       date: '01 Déc 2025',
       time: '09:00',
       status: 'completed'
@@ -65,7 +65,7 @@ const WalletClient = () => {
       type: 'credit',
       description: 'Crédit bonus',
       freelancer: 'Promotion',
-      amount: '+50.00€',
+      amount: '+500.00DH',
       date: '25 Nov 2025',
       time: '14:45',
       status: 'completed'
@@ -95,7 +95,7 @@ const WalletClient = () => {
             <p className="text-cyan-100">Solde disponible</p>
             <CreditCard size={32} className="text-cyan-200" />
           </div>
-          <h2 className="text-4xl font-bold mb-2">{wallet.balance.toFixed(2)}€</h2>
+          <h2 className="text-4xl font-bold mb-2">{wallet.balance.toFixed(2)}DH</h2>
           <p className="text-cyan-100 text-sm">Prêt à être dépensé</p>
         </div>
 
@@ -105,7 +105,7 @@ const WalletClient = () => {
             <p className={`${theme.textSecondary} text-sm`}>Total dépensé</p>
             <TrendingDown className="text-red-500" size={32} />
           </div>
-          <h2 className={`text-4xl font-bold ${theme.textMain} mb-2`}>{wallet.totalSpent.toFixed(2)}€</h2>
+          <h2 className={`text-4xl font-bold ${theme.textMain} mb-2`}>{wallet.totalSpent.toFixed(2)}DH</h2>
           <p className={`${theme.textSecondary} text-sm`}>Depuis la création du compte</p>
         </div>
       </div>
@@ -133,7 +133,7 @@ const WalletClient = () => {
             
             <form onSubmit={handleAddFunds} className="space-y-4">
               <div>
-                <label className={`block text-sm font-semibold ${theme.textMain} mb-2`}>Montant (€)</label>
+                <label className={`block text-sm font-semibold ${theme.textMain} mb-2`}>Montant (DH)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -154,7 +154,7 @@ const WalletClient = () => {
                     onClick={() => setAmount(val.toString())}
                     className={`py-2 rounded-lg font-semibold transition border ${isDarkMode ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' : 'bg-slate-100 border-slate-200 hover:bg-slate-200'}`}
                   >
-                    {val}€
+                    {val}DH
                   </button>
                 ))}
               </div>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\OrderController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -46,4 +47,42 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Créer un superviseur (Superviseurs uniquement)
     Route::post('/create-superviseur', [AuthController::class, 'createSuperviseur']);
+
+    // ========== ROUTES COMMANDES (Orders) ==========
+    
+    // Commandes reçues (Freelancer)
+    Route::get('/orders/received', [OrderController::class, 'getReceivedOrders']);
+    
+    // Commandes acceptées (Freelancer)
+    Route::get('/orders/accepted', [OrderController::class, 'getAcceptedOrders']);
+    
+    // Historique des commandes
+    Route::get('/orders/history', [OrderController::class, 'getOrderHistory']);
+    
+    // Créer une commande (Client)
+    Route::post('/orders', [OrderController::class, 'createOrder']);
+    
+    // Proposer un prix pour une commande (Freelancer)
+    Route::post('/orders/{order}/propose', [OrderController::class, 'proposePrice']);
+    
+    // Accepter une proposition (Client)
+    Route::post('/proposals/{proposal}/accept', [OrderController::class, 'acceptProposal']);
+    
+    // Refuser une proposition (Client)
+    Route::post('/proposals/{proposal}/reject', [OrderController::class, 'rejectProposal']);
+    
+    // Annuler une proposition (Freelancer)
+    Route::post('/proposals/{proposal}/cancel', [OrderController::class, 'cancelProposal']);
+    
+    // Commencer une commande (Freelancer)
+    Route::post('/orders/{order}/start', [OrderController::class, 'startOrder']);
+    
+    // Terminer une commande (Freelancer)
+    Route::post('/orders/{order}/complete', [OrderController::class, 'completeOrder']);
+    
+    // Ajouter un avis (Client)
+    Route::post('/orders/{order}/review', [OrderController::class, 'addReview']);
+    
+    // Annuler une commande (Client)
+    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancelOrder']);
 });
