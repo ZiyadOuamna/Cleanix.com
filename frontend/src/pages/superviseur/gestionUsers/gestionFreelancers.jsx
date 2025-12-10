@@ -5,8 +5,44 @@ import {
     Activity, FileText, Hash, Smartphone, Building,
     Search, Filter, Plus, Edit, Trash2, User, Mail, Phone, 
     MapPin, Calendar, Star, Briefcase, DollarSign, Eye,
-    CheckCircle, XCircle, Clock, Download, Send
+    CheckCircle, XCircle, Clock, Download, Send, Copy
 } from 'lucide-react';
+import Swal from 'sweetalert2';
+
+const MAROC_VILLES = [
+  "Agadir", "Casablanca", "Rabat", "Marrakech", "Fès", "Tanger", 
+  "Meknès", "Oujda", "Kénitra", "Tétouan", "Salé", "Mohammadia"
+];
+
+const SPECIALITES = [
+  'Nettoyage Résidentiel',
+  'Nettoyage Bureau',
+  'Nettoyage Vitres',
+  'Nettoyage Approfondi',
+  'Entretien Régulier',
+  'Désinfection',
+];
+
+// Fonction pour générer un mot de passe sécurisé aléatoire
+const generateSecurePassword = () => {
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+  const numbers = '0123456789';
+  const symbols = '!@#$%^&*-_=+';
+  const allChars = uppercase + lowercase + numbers + symbols;
+  
+  let password = '';
+  password += uppercase[Math.floor(Math.random() * uppercase.length)];
+  password += lowercase[Math.floor(Math.random() * lowercase.length)];
+  password += numbers[Math.floor(Math.random() * numbers.length)];
+  password += symbols[Math.floor(Math.random() * symbols.length)];
+  
+  for (let i = password.length; i < 12; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)];
+  }
+  
+  return password.split('').sort(() => Math.random() - 0.5).join('');
+};
 
 export default function GestionFreelancers() {
     const { isDarkMode } = useContext(SuperviseurContext);
@@ -71,13 +107,17 @@ export default function GestionFreelancers() {
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [editingFreelancer, setEditingFreelancer] = useState(null);
     const [selectedFreelancer, setSelectedFreelancer] = useState(null);
+    const [generatedPassword, setGeneratedPassword] = useState('');
     const [formData, setFormData] = useState({
+        prenom: '',
         nom: '',
         email: '',
         telephone: '',
-        adresse: '',
+        genre: '',
+        ville: MAROC_VILLES[0],
         specialite: 'Nettoyage Résidentiel',
-        statut: 'actif'
+        statut: 'actif',
+        password: ''
     });
 
     //l'icone de vérifer compte 
@@ -133,13 +173,18 @@ export default function GestionFreelancers() {
     // Ouvrir modal d'ajout
     const handleAddFreelancer = () => {
         setEditingFreelancer(null);
+        const newPassword = generateSecurePassword();
+        setGeneratedPassword(newPassword);
         setFormData({
+            prenom: '',
             nom: '',
             email: '',
             telephone: '',
-            adresse: '',
+            genre: '',
+            ville: MAROC_VILLES[0],
             specialite: 'Nettoyage Résidentiel',
-            statut: 'actif'
+            statut: 'actif',
+            password: newPassword
         });
         setShowModal(true);
     };
@@ -170,7 +215,7 @@ export default function GestionFreelancers() {
         if (editingFreelancer) {
             // Modification
             setFreelancers(freelancers.map(freelancer => 
-                freelancer.id === editingFreelancer.id ? { ...formData, id: editingFreelancer.id } : freelancer
+                freelancer.id === editingFreelancer.id ? { ...freelancer, ...formData } : freelancer
             ));
         } else {
             // Ajout
@@ -183,12 +228,10 @@ export default function GestionFreelancers() {
                 revenuTotal: 0,
                 documents: ['Informations Bancaire', 'CIN Rcto Verso', 'Photo Personnel'],
                 dernierAcces: new Date().toLocaleString('fr-FR'),
-                prenom: formData.nom.split(' ')[0], // AJOUTÉ
-                verifie: false, // AJOUTÉ
-                estConnecte: false, // AJOUTÉ
-                ville: formData.adresse.split(',')[1]?.trim() || 'Ville inconnue', // AJOUTÉ
-                detailsCompteBancaire: 'Nouveau compte', // AJOUTÉ
-                services: [] // AJOUTÉ
+                verifie: false,
+                estConnecte: false,
+                detailsCompteBancaire: 'Nouveau compte',
+                services: []
             };
             setFreelancers([...freelancers, newFreelancer]);
         }
@@ -471,66 +514,151 @@ const generatePDF = (type, freelancer) => {
             {/* Modal d'ajout/modification */}
             {showModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className={`w-full max-w-2xl rounded-2xl shadow-xl ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                        <div className="p-6 border-b border-gray-200">
+                    <div className={`w-full max-w-3xl rounded-2xl shadow-xl ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                        <div className={`p-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                             <h2 className="text-xl font-bold">
                                 {editingFreelancer ? 'Modifier le Freelancer' : 'Ajouter un Freelancer'}
                             </h2>
                         </div>
 
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Prenom + Nom */}
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium mb-2">Nom complet</label>
+                                    <label className={`block text-xs font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                        Prénom
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.prenom}
+                                        onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
+                                        className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                                            isDarkMode 
+                                                ? 'bg-gray-700 border-gray-600 text-white' 
+                                                : 'bg-white border-gray-300 text-gray-800'
+                                        } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                        placeholder="Prénom"
+                                    />
+                                </div>
+                                <div>
+                                    <label className={`block text-xs font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                        Nom
+                                    </label>
                                     <input
                                         type="text"
                                         required
                                         value={formData.nom}
                                         onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                                        className={`w-full px-4 py-3 rounded-xl border ${
+                                        className={`w-full px-3 py-2 rounded-lg border text-sm ${
                                             isDarkMode 
                                                 ? 'bg-gray-700 border-gray-600 text-white' 
                                                 : 'bg-white border-gray-300 text-gray-800'
                                         } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                        placeholder="Nom"
                                     />
                                 </div>
+                            </div>
 
+                            {/* Email */}
+                            <div>
+                                <label className={`block text-xs font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    Email
+                                </label>
+                                <input
+                                    type="email"
+                                    required
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                                        isDarkMode 
+                                            ? 'bg-gray-700 border-gray-600 text-white' 
+                                            : 'bg-white border-gray-300 text-gray-800'
+                                    } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                    placeholder="Email"
+                                />
+                            </div>
+
+                            {/* Telephone */}
+                            <div>
+                                <label className={`block text-xs font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    Téléphone
+                                </label>
+                                <input
+                                    type="tel"
+                                    required
+                                    value={formData.telephone}
+                                    onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
+                                    className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                                        isDarkMode 
+                                            ? 'bg-gray-700 border-gray-600 text-white' 
+                                            : 'bg-white border-gray-300 text-gray-800'
+                                    } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                    placeholder="Téléphone"
+                                />
+                            </div>
+
+                            {/* Genre + Ville */}
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium mb-2">Email</label>
-                                    <input
-                                        type="email"
-                                        required
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className={`w-full px-4 py-3 rounded-xl border ${
+                                    <label className={`block text-xs font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                        Genre
+                                    </label>
+                                    <div className="flex gap-4">
+                                        <label className="flex items-center gap-2 text-sm">
+                                            <input
+                                                type="radio"
+                                                name="genre"
+                                                value="Homme"
+                                                checked={formData.genre === 'Homme'}
+                                                onChange={(e) => setFormData({ ...formData, genre: e.target.value })}
+                                                className="w-4 h-4 cursor-pointer"
+                                            />
+                                            <span>Homme</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 text-sm">
+                                            <input
+                                                type="radio"
+                                                name="genre"
+                                                value="Femme"
+                                                checked={formData.genre === 'Femme'}
+                                                onChange={(e) => setFormData({ ...formData, genre: e.target.value })}
+                                                className="w-4 h-4 cursor-pointer"
+                                            />
+                                            <span>Femme</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className={`block text-xs font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                        Ville
+                                    </label>
+                                    <select
+                                        value={formData.ville}
+                                        onChange={(e) => setFormData({ ...formData, ville: e.target.value })}
+                                        className={`w-full px-3 py-2 rounded-lg border text-sm ${
                                             isDarkMode 
                                                 ? 'bg-gray-700 border-gray-600 text-white' 
                                                 : 'bg-white border-gray-300 text-gray-800'
                                         } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                                    />
+                                    >
+                                        {MAROC_VILLES.map(ville => (
+                                            <option key={ville} value={ville}>{ville}</option>
+                                        ))}
+                                    </select>
                                 </div>
+                            </div>
 
+                            {/* Specialite + Statut */}
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium mb-2">Téléphone</label>
-                                    <input
-                                        type="tel"
-                                        required
-                                        value={formData.telephone}
-                                        onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
-                                        className={`w-full px-4 py-3 rounded-xl border ${
-                                            isDarkMode 
-                                                ? 'bg-gray-700 border-gray-600 text-white' 
-                                                : 'bg-white border-gray-300 text-gray-800'
-                                        } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium mb-2">Spécialité</label>
+                                    <label className={`block text-xs font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                        Spécialité
+                                    </label>
                                     <select
                                         value={formData.specialite}
                                         onChange={(e) => setFormData({ ...formData, specialite: e.target.value })}
-                                        className={`w-full px-4 py-3 rounded-xl border ${
+                                        className={`w-full px-3 py-2 rounded-lg border text-sm ${
                                             isDarkMode 
                                                 ? 'bg-gray-700 border-gray-600 text-white' 
                                                 : 'bg-white border-gray-300 text-gray-800'
@@ -541,55 +669,93 @@ const generatePDF = (type, freelancer) => {
                                         ))}
                                     </select>
                                 </div>
+                                <div>
+                                    <label className={`block text-xs font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                        Statut
+                                    </label>
+                                    <select
+                                        value={formData.statut}
+                                        onChange={(e) => setFormData({ ...formData, statut: e.target.value })}
+                                        className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                                            isDarkMode 
+                                                ? 'bg-gray-700 border-gray-600 text-white' 
+                                                : 'bg-white border-gray-300 text-gray-800'
+                                        } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                    >
+                                        <option value="actif">Actif</option>
+                                        <option value="en_attente">En attente</option>
+                                        <option value="suspendu">Suspendu</option>
+                                    </select>
+                                </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Adresse</label>
-                                <textarea
-                                    required
-                                    value={formData.adresse}
-                                    onChange={(e) => setFormData({ ...formData, adresse: e.target.value })}
-                                    rows={3}
-                                    className={`w-full px-4 py-3 rounded-xl border ${
-                                        isDarkMode 
-                                            ? 'bg-gray-700 border-gray-600 text-white' 
-                                            : 'bg-white border-gray-300 text-gray-800'
-                                    } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                                />
-                            </div>
+                            {/* Mot de passe généré automatiquement */}
+                            {!editingFreelancer && (
+                                <div>
+                                    <label className={`block text-xs font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                        Mot de passe généré *
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="text"
+                                            readOnly
+                                            value={formData.password}
+                                            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-mono ${
+                                                isDarkMode 
+                                                    ? 'bg-gray-700 border-gray-600 text-white' 
+                                                    : 'bg-gray-50 border-gray-300 text-gray-800'
+                                            }`}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(formData.password);
+                                                Swal.fire({
+                                                    icon: 'success',
+                                                    title: 'Copié!',
+                                                    text: 'Mot de passe copié dans le presse-papiers',
+                                                    timer: 1500,
+                                                    showConfirmButton: false,
+                                                    background: isDarkMode ? '#1f2937' : '#ffffff',
+                                                    color: isDarkMode ? '#ffffff' : '#1f2937',
+                                                });
+                                            }}
+                                            className="p-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                            title="Copier le mot de passe"
+                                        >
+                                            <Copy size={16} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const newPassword = generateSecurePassword();
+                                                setGeneratedPassword(newPassword);
+                                                setFormData({ ...formData, password: newPassword });
+                                            }}
+                                            className="px-3 py-2 bg-gray-600 text-white text-xs rounded-lg hover:bg-gray-700 transition-colors whitespace-nowrap"
+                                        >
+                                            Régénérer
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Statut</label>
-                                <select
-                                    value={formData.statut}
-                                    onChange={(e) => setFormData({ ...formData, statut: e.target.value })}
-                                    className={`w-full px-4 py-3 rounded-xl border ${
-                                        isDarkMode 
-                                            ? 'bg-gray-700 border-gray-600 text-white' 
-                                            : 'bg-white border-gray-300 text-gray-800'
-                                    } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                                >
-                                    <option value="actif">Actif</option>
-                                    <option value="en_attente">En attente</option>
-                                    <option value="suspendu">Suspendu</option>
-                                </select>
-                            </div>
-
+                            {/* Buttons */}
                             <div className="flex gap-3 pt-4">
                                 <button
                                     type="button"
                                     onClick={() => setShowModal(false)}
-                                    className={`flex-1 px-6 py-3 rounded-xl border ${
+                                    className={`flex-1 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
                                         isDarkMode 
                                             ? 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600' 
                                             : 'bg-white border-gray-300 text-gray-800 hover:bg-gray-50'
-                                    } transition-colors`}
+                                    }`}
                                 >
                                     Annuler
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+                                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
                                 >
                                     {editingFreelancer ? 'Modifier' : 'Ajouter'}
                                 </button>
@@ -598,7 +764,6 @@ const generatePDF = (type, freelancer) => {
                     </div>
                 </div>
             )}
-
             {/* Modal de détails */}
             {showDetailModal && selectedFreelancer && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
