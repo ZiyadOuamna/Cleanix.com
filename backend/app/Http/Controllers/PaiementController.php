@@ -70,7 +70,7 @@ class PaiementController extends Controller
         $user = Auth::user();
 
         $validated = $request->validate([
-            'commande_id' => 'required|exists:orders,id',
+            'order_id' => 'required|exists:orders,id',
             'montant' => 'required|numeric|min:0',
             'methode_paiement' => 'required|in:Portefeuille,Carte bancaire,Virement,Especes',
             'transaction_id' => 'nullable|string',
@@ -79,7 +79,7 @@ class PaiementController extends Controller
 
         try {
             $paiement = Paiement::create([
-                'commande_id' => $validated['commande_id'],
+                'order_id' => $validated['order_id'],
                 'client_id' => $user->id,
                 'montant' => $validated['montant'],
                 'methode_paiement' => $validated['methode_paiement'],

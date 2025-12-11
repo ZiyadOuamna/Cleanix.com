@@ -11,7 +11,7 @@ class Paiement extends Model
     use HasFactory;
 
     protected $fillable = [
-        'commande_id',
+        'order_id',
         'client_id',
         'montant',
         'methode_paiement',
@@ -40,9 +40,9 @@ class Paiement extends Model
     const STATUT_REMBOURSE = 'Rembourse';
 
     // Relations
-    public function commande(): BelongsTo
+    public function order(): BelongsTo
     {
-        return $this->belongsTo(Order::class, 'commande_id');
+        return $this->belongsTo(Order::class, 'order_id');
     }
 
     public function client(): BelongsTo
