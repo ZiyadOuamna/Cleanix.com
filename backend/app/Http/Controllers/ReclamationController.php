@@ -102,7 +102,7 @@ class ReclamationController extends Controller
         $user = Auth::user();
 
         $validated = $request->validate([
-            'commande_id' => 'nullable|exists:orders,id',
+            'order_id' => 'nullable|exists:orders,id',
             'sujet' => 'required|string|max:255',
             'message' => 'required|string|min:10',
         ]);
@@ -110,7 +110,7 @@ class ReclamationController extends Controller
         try {
             $reclamation = Reclamation::create([
                 'user_id' => $user->id,
-                'commande_id' => $validated['commande_id'],
+                'order_id' => $validated['order_id'],
                 'sujet' => $validated['sujet'],
                 'message' => $validated['message'],
                 'statut' => Reclamation::STATUT_OUVERTE,

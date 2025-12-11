@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::create('reclamations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Qui fait la réclamation
-            $table->foreignId('commande_id')->nullable()->constrained('commandes')->onDelete('cascade');
-            $table->foreignId('support_id')->nullable()->constrained('supports')->onDelete('set null'); // Qui traite
+            $table->foreignId('order_id')->nullable()->constrained('orders')->onDelete('cascade');
+            $table->foreignId('superviseur_id')->nullable()->constrained('superviseurs')->onDelete('set null'); // Qui traite la réclamation
             
             $table->string('sujet');
             $table->text('message');

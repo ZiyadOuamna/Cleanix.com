@@ -1,10 +1,11 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { 
     Search, Filter, RefreshCcw, Eye, UserPlus, CheckCircle, 
     X, MessageSquare, Clock, Send, User, Shield, AlertTriangle,
     PauseCircle, RotateCcw
 } from 'lucide-react';
 import { SuperviseurContext } from './superviseurContext';
+import { getAllReclamations, respondToReclamation } from '../../services/reclamationService';
 
 // Couleurs
 const COLORS = {
@@ -15,61 +16,6 @@ const COLORS = {
     danger: '#ef4444',
     textSecondary: '#918a84',
 };
-
-// Données fictives pour les réclamations
-const MOCK_RECLAMATIONS = [
-    { 
-        id: 'REC-2024-001', 
-        client: 'Yassine A.', 
-        email: 'yassine@mail.com', 
-        titre: 'Problème de paiement', 
-        agent: 'Agent Karim', 
-        statut: 'Ouvert', 
-        urgence: 'High', 
-        date: '2025-11-19', 
-        description: "Le paiement a été débité mais la commande n'est pas validée.",
-        transfere: true,
-        raisonTransfert: "Le support n'a pas pu résoudre le problème dans les délais impartis",
-        messages: [
-            { id: 1, auteur: 'Client', message: "Bonjour, mon paiement a été débité mais ma commande n'est pas validée. Que se passe-t-il ?", date: '2025-11-19 10:30' },
-            { id: 2, auteur: 'Support', message: "Bonjour, nous vérifions avec notre service financier. Nous vous tiendrons informé.", date: '2025-11-19 11:15' }
-        ]
-    },
-    { 
-        id: 'REC-2024-002', 
-        client: 'Sara B.', 
-        email: 'sara@mail.com', 
-        titre: 'Freelancer absent', 
-        agent: 'Non assigné', 
-        statut: 'En cours', 
-        urgence: 'Medium', 
-        date: '2025-11-18', 
-        description: "Le freelancer ne s'est pas présenté à l'heure prévue.",
-        transfere: false,
-        raisonTransfert: "",
-        messages: [
-            { id: 1, auteur: 'Client', message: "Le freelancer n'est jamais venu à mon rendez-vous. Je suis très déçu.", date: '2025-11-18 09:20' }
-        ]
-    },
-    { 
-        id: 'REC-2024-003', 
-        client: 'Ahmed K.', 
-        email: 'ahmed@mail.com', 
-        titre: 'Qualité du service', 
-        agent: 'Agent Lina', 
-        statut: 'Résolu', 
-        urgence: 'Low', 
-        date: '2025-11-15', 
-        description: "Le nettoyage n'était pas complet dans la cuisine.",
-        transfere: true,
-        raisonTransfert: "Réclamation complexe nécessitant une approbation supérieure",
-        messages: [
-            { id: 1, auteur: 'Client', message: "La cuisine n'a pas été nettoyée correctement. Il reste des taches sur le plan de travail.", date: '2025-11-15 14:00' },
-            { id: 2, auteur: 'Support', message: "Nous allons envoyer un autre freelancer pour compléter le nettoyage.", date: '2025-11-15 15:30' },
-            { id: 3, auteur: 'Superviseur', message: "Problème résolu. Un remboursement partiel a été accordé.", date: '2025-11-16 10:00' }
-        ]
-    },
-];
 
 // Liste des agents disponibles pour la réassignation
 const AGENTS_DISPONIBLES = [
@@ -82,7 +28,12 @@ const AGENTS_DISPONIBLES = [
 
 export default function ReclamationsPage() {
     const {isDarkMode} = useContext(SuperviseurContext);
-    const [reclamations, setReclamations] = useState(MOCK_RECLAMATIONS);
+    
+    // États pour les réclamations (depuis API)
+    const [reclamations, setReclamations] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+    
     const [selectedTicket, setSelectedTicket] = useState(null); 
     const [newMessage, setNewMessage] = useState('');
     const [showReassignModal, setShowReassignModal] = useState(false);
@@ -91,6 +42,47 @@ export default function ReclamationsPage() {
     // États pour les filtres
     const [filterStatus, setFilterStatus] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Charger les réclamations depuis l'API
+    useEffect(() => {
+      const fetchReclamations = async () => {
+        try {
+          setIsLoading(true);
+          setError(null);
+          const response = await getAllReclamations();
+          
+          // Transformer les données de l'API
+          const formattedReclamations = response.data.map((rec) => ({
+            id: rec.id,
+            client: rec.user ? `${rec.user.firstname} ${rec.user.lastname}` : 'Client inconnu',
+            email: rec.user?.email || 'N/A',
+            titre: rec.sujet,
+            agent: rec.support ? `Agent ${rec.support.firstname}` : 'Non assigné',
+            statut: rec.statut === 'ouverte' ? 'Ouvert' : rec.statut === 'en_cours' ? 'En cours' : 'Résolu',
+            urgence: rec.statut === 'ouverte' ? 'High' : 'Medium',
+            date: new Date(rec.date_ouverture).toLocaleDateString('fr-FR'),
+            description: rec.message,
+            transfere: !!rec.support_id,
+            raisonTransfert: rec.reponse || '',
+            messages: rec.reponse ? [
+              { id: 1, auteur: 'Client', message: rec.message, date: rec.date_ouverture },
+              { id: 2, auteur: 'Superviseur', message: rec.reponse, date: rec.date_resolution || new Date().toISOString() }
+            ] : [
+              { id: 1, auteur: 'Client', message: rec.message, date: rec.date_ouverture }
+            ]
+          }));
+          
+          setReclamations(formattedReclamations);
+        } catch (err) {
+          console.error('Erreur lors du chargement des réclamations:', err);
+          setError('Impossible de charger les réclamations');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchReclamations();
+    }, []);
 
     // Filtrer les réclamations
     const filteredReclamations = reclamations.filter(ticket => {
@@ -276,6 +268,18 @@ export default function ReclamationsPage() {
     return (
         <div className="space-y-6 animate-fade-in">
             
+            {/* Loading State */}
+            {isLoading && (
+                <div className="flex items-center justify-center py-12">
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                        <p className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>Chargement des réclamations...</p>
+                    </div>
+                </div>
+            )}
+
+            {!isLoading && (
+            <>
             {/* --- 1. HEADER & STATS --- */}
             <div className="flex flex-col md:flex-row justify-between items-end gap-4">
                 <div>
@@ -715,6 +719,8 @@ export default function ReclamationsPage() {
                         </div>
                     </div>
                 </div>
+            )}
+            </>
             )}
         </div>
     );
