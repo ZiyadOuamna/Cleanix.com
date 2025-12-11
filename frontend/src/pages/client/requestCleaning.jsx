@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { 
   ArrowLeft, MapPin, Clock, Users, Check, AlertCircle,
-  ChevronRight, Home, KeyRound, Wind, Package,
+  ChevronRight, Home, Wind, Package,
   DoorOpen, Truck, Calendar, Zap
 } from 'lucide-react';
 import { ClientContext } from './clientContext';
@@ -58,20 +58,6 @@ const RequestService = ({ onBack }) => {
   const [quote, setQuote] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Generate ID for keys service
-  useEffect(() => {
-    if (selectedServiceType === 'gestion_cles' && !formData.chiLocataire) {
-      const year = new Date().getFullYear();
-      const idAppartement = user?.id || Math.random().toString(36).substring(2, 9).toUpperCase();
-      const generatedId = `Cle-${year}-${idAppartement}`;
-      setFormData(prev => ({ 
-        ...prev, 
-        chiLocataire: generatedId,
-        nomLocataire: user?.prenom && user?.nom ? `${user.prenom} ${user.nom}` : ''
-      }));
-    }
-  }, [selectedServiceType, user?.id, user?.prenom, user?.nom]);
-
   const serviceTypes = [
     { 
       id: 'nettoyage_residential', 
@@ -96,14 +82,6 @@ const RequestService = ({ onBack }) => {
       description: 'Nettoyage d\'objets spécifiques',
       color: 'from-purple-500 to-pink-500',
       category: 'nettoyage'
-    },
-    { 
-      id: 'gestion_cles', 
-      name: 'Gestion de Clés', 
-      icon: KeyRound, 
-      description: 'Service de gestion de clés',
-      color: 'from-orange-500 to-red-500',
-      category: 'cles'
     }
   ];
 
@@ -127,11 +105,6 @@ const RequestService = ({ onBack }) => {
     { id: 'meuble', label: 'Meuble', rate: 40 },
     { id: 'appareil', label: 'Appareil électroménager', rate: 30 },
     { id: 'lumiere', label: 'Lustre/Lumière', rate: 35 }
-  ];
-
-  const operationTypes = [
-    { id: 'remise', label: 'Remise de clés', rate: 50 },
-    { id: 'recuperation', label: 'Récupération', rate: 50 }
   ];
 
   const handleServiceSelect = (service) => {
@@ -208,17 +181,6 @@ const RequestService = ({ onBack }) => {
         
         details = [
           { label: `${unites} ${objectType?.label || 'objet'}(s)`, value: basePrice }
-        ];
-        break;
-
-      case 'gestion_cles':
-        const operationType = operationTypes.find(t => t.id === formData.typeOperation);
-        const prixBaseCles = operationType ? operationType.rate : 30;
-        
-        basePrice = prixBaseCles;
-        
-        details = [
-          { label: operationType?.label || 'Opération', value: basePrice }
         ];
         break;
 
@@ -447,99 +409,6 @@ const RequestService = ({ onBack }) => {
                   </button>
                 ))}
               </div>
-            </div>
-          </div>
-        );
-
-      case 'gestion_cles':
-        return (
-          <div className="space-y-6">
-            {/* Auto-Generated Request ID */}
-            <div className={`p-4 ${isDarkMode ? 'bg-gray-700' : 'bg-cyan-50'} rounded-lg border ${isDarkMode ? 'border-gray-600' : 'border-cyan-200'}`}>
-              <p className={`text-sm ${theme.textMuted} mb-2`}>ID de la clé (généré automatiquement)</p>
-              <p className={`text-2xl font-mono font-bold text-cyan-600`}>{formData.chiLocataire || 'Cle-2025-XXXXX'}</p>
-            </div>
-
-            {/* Full Name (Pre-filled, Disabled) */}
-            <div>
-              <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
-                Nom complet (par défaut) *
-              </label>
-              <input
-                type="text"
-                name="nomLocataire"
-                value={formData.nomLocataire || (user?.prenom && user?.nom ? `${user.prenom} ${user.nom}` : '')}
-                disabled
-                className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain} opacity-75 cursor-not-allowed`}
-              />
-              <p className={`text-xs ${theme.textMuted} mt-1`}>Ce champ est pré-rempli avec vos informations de compte</p>
-            </div>
-
-            {/* Type d'opération */}
-            <div>
-              <label className={`block text-sm font-medium ${theme.textMain} mb-3`}>
-                Type d'opération *
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                {operationTypes.map(type => (
-                  <button
-                    key={type.id}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, typeOperation: type.id }))}
-                    className={`p-4 rounded-lg border-2 transition text-left ${
-                      formData.typeOperation === type.id
-                        ? 'border-cyan-600 bg-cyan-600 bg-opacity-10'
-                        : `${theme.border} ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`
-                    }`}
-                  >
-                    <p className={`font-semibold ${theme.textMain} text-sm`}>{type.label}</p>
-                    <p className={`text-lg font-bold text-cyan-600`}>{type.rate}DH</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Date et Heure de l'opération */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
-                  Date de l'opération *
-                </label>
-                <input
-                  type="date"
-                  name="dateOperation"
-                  value={formData.dateOperation}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
-                />
-              </div>
-              <div>
-                <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
-                  Heure de l'opération *
-                </label>
-                <input
-                  type="time"
-                  name="heureOperation"
-                  value={formData.heureOperation}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
-                />
-              </div>
-            </div>
-
-            {/* Description des clés */}
-            <div>
-              <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
-                Description des clés
-              </label>
-              <input
-                type="text"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                placeholder="Ex: Clés de la porte principale, clés du garage..."
-                className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
-              />
             </div>
           </div>
         );

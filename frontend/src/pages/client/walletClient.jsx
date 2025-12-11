@@ -64,16 +64,6 @@ const WalletClient = () => {
       status: 'in_progress',
       image: '🏢',
       location: '789 Boulevard Saint-Germain'
-    },
-    {
-      id: 3,
-      service: 'Remise de clé',
-      freelancer: 'Ali B.',
-      amount: 50,
-      date: '10 Déc 2025',
-      status: 'pending',
-      image: '🔑',
-      location: '321 Rue Saint-Antoine'
     }
   ];
 
@@ -117,18 +107,6 @@ const WalletClient = () => {
     },
     {
       id: 4,
-      type: 'released',
-      description: 'Paiement libéré - Gestion de clés',
-      freelancer: 'Mohamed B.',
-      clientAmount: -50,
-      freelancerGains: 45,
-      cleanixGains: 5,
-      date: '28 Nov 2025',
-      time: '14:30',
-      status: 'completed'
-    },
-    {
-      id: 5,
       type: 'locked',
       description: 'Fonds bloqués - Nettoyage bureau',
       freelancer: 'Hassan D.',
@@ -140,7 +118,7 @@ const WalletClient = () => {
       status: 'locked'
     },
     {
-      id: 6,
+      id: 5,
       type: 'released',
       description: 'Paiement libéré - Nettoyage cuisine',
       freelancer: 'Zahra M.',
@@ -152,7 +130,7 @@ const WalletClient = () => {
       status: 'completed'
     },
     {
-      id: 7,
+      id: 6,
       type: 'refund',
       description: 'Remboursement - Freelancer non accepté',
       freelancer: 'Service annulé',

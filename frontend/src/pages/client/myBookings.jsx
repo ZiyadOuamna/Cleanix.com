@@ -18,7 +18,6 @@ import {
   ImagePlus,
   Send,
   Sparkles,
-  Key,
   User,
   User2
 } from 'lucide-react';
@@ -162,7 +161,7 @@ const MyBookings = () => {
   };
 
   const getServiceIcon = (serviceType) => {
-return serviceType === 'cles' ? <Key size={18} /> : <Sparkles size={18} />;
+    return <Sparkles size={18} />;
   };
 
   const getAvatarEmoji = (gender) => {
@@ -170,7 +169,7 @@ return gender === 'female' || gender === 'F' ? <User2 size={18}/> : <User size={
   };
 
   const getServiceLabel = (serviceType) => {
-    return serviceType === 'cles' ? 'Gestion de Clés' : 'Nettoyage';
+    return 'Nettoyage';
   };
 
   // Helper pour les couleurs Swal selon le mode sombre/clair
@@ -314,7 +313,7 @@ return gender === 'female' || gender === 'F' ? <User2 size={18}/> : <User size={
       ...filteredBookings.map(b => [
         b.id,
         b.service,
-        b.serviceType === 'nettoyage' ? 'Nettoyage' : 'Gestion de Clés',
+        'Nettoyage',
         b.freelancer,
         b.date,
         b.time,
@@ -400,8 +399,7 @@ return gender === 'female' || gender === 'F' ? <User2 size={18}/> : <User size={
           <Package size={20} className={theme.textMuted} />
           {[
             { id: 'all', label: 'Tous les services', icon: '⭐' },
-            { id: 'nettoyage', label: 'Nettoyage', icon: '✨' },
-            { id: 'cles', label: 'Gestion de Clés', icon: '🔑' }
+            { id: 'nettoyage', label: 'Nettoyage', icon: '✨' }
           ].map(filter => (
             <button
               key={filter.id}

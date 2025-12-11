@@ -8,7 +8,6 @@ import {
   Filter,
   Package,
   Sparkles,
-  Key,
   ChevronDown,
   Eye
 } from 'lucide-react';
@@ -55,21 +54,6 @@ const BookingHistory = () => {
     },
     {
       id: 3,
-      service: 'Remise de clé',
-      serviceType: 'cles',
-      freelancer: 'Ali B.',
-      date: '05 Déc 2025',
-      price: '50DH',
-      rating: 4,
-      image: '🔑',
-      freelancerAvatar: '👨',
-      location: '321 Rue Saint-Antoine, 75011 Paris',
-      completedDate: '05 Déc 2025 à 16:00',
-      review: 'Service rapide et sécurisé.',
-      status: 'completed'
-    },
-    {
-      id: 4,
       service: 'Nettoyage bureau',
       serviceType: 'nettoyage',
       freelancer: 'Hassan D.',
@@ -84,22 +68,7 @@ const BookingHistory = () => {
       status: 'completed'
     },
     {
-      id: 5,
-      service: 'Récupération de clé',
-      serviceType: 'cles',
-      freelancer: 'Sarah L.',
-      date: '28 Nov 2025',
-      price: '50DH',
-      rating: 5,
-      image: '🔑',
-      freelancerAvatar: '👩',
-      location: '654 Rue de Rivoli, 75004 Paris',
-      completedDate: '28 Nov 2025 à 14:30',
-      review: 'Excellent service!',
-      status: 'completed'
-    },
-    {
-      id: 6,
+      id: 4,
       service: 'Nettoyage appartement',
       serviceType: 'nettoyage',
       freelancer: 'Mohammed A.',
@@ -114,7 +83,7 @@ const BookingHistory = () => {
       status: 'cancelled'
     },
     {
-      id: 7,
+      id: 5,
       service: 'Nettoyage cuisine',
       serviceType: 'nettoyage',
       freelancer: 'Zainab M.',

@@ -5,8 +5,8 @@ import {
     CreditCard,
     Briefcase, Star, ShieldCheck, DollarSign, Users, TrendingUp, 
     Search, ArrowLeft, MapPin, Smartphone, Mail, Calendar, CheckCircle, 
-    AlertTriangle, FileText, Award, Clock, Wallet, Power, Building, Activity, UserCheck, XCircle, BarChart2,
-    Hash, Home, Key, Scissors, Wrench
+    AlertTriangle, FileText, Clock, Wallet, Power, Building, Activity, UserCheck, XCircle, BarChart2,
+    Hash, Home, Scissors, Wrench
 } from 'lucide-react';
 import { 
     LabelList,
@@ -27,9 +27,7 @@ const GLOBAL_STATS = {
 const TYPES_SERVICES = {
     NETTOYAGE_RESIDENTIEL: 'Nettoyage Résidentiel',
     NETTOYAGE_SUPERFICIE: 'Nettoyage de Surface',
-    NETTOYAGE_UNITAIRE: 'Nettoyage Unitaire',
-    GESTION_CLES: 'Gestion de Clés',
-    JARDINAGE: 'Jardinage'
+    NETTOYAGE_UNITAIRE: 'Nettoyage Unitaire'
 };
 
 // Fonction pour générer les services basés sur la spécialité
@@ -53,22 +51,6 @@ const getServicesBySpecialite = (specialite) => {
                 description: 'Nettoyage par unité',
                 tarifBase: 50,
                 options: ['Par pièce', 'Par surface']
-            }
-        ],
-        'Gestion Clés': [
-            {
-                type: TYPES_SERVICES.GESTION_CLES,
-                description: 'Gestion et remise de clés',
-                tarifBase: 30,
-                options: ['Garde de clés', 'Remise sécurisée', 'Dépannage serrurerie']
-            }
-        ],
-        'Jardinage': [
-            {
-                type: TYPES_SERVICES.JARDINAGE,
-                description: 'Entretien d\'espaces verts',
-                tarifBase: 100,
-                options: ['Tonte', 'Taille', 'Plantation']
             }
         ]
     };
@@ -543,9 +525,7 @@ const ServiceIcon = ({ serviceType }) => {
     const icons = {
         [TYPES_SERVICES.NETTOYAGE_RESIDENTIEL]: <Home size={16} className="text-blue-600" />,
         [TYPES_SERVICES.NETTOYAGE_SUPERFICIE]: <Wrench size={16} className="text-green-600" />,
-        [TYPES_SERVICES.NETTOYAGE_UNITAIRE]: <Scissors size={16} className="text-purple-600" />,
-        [TYPES_SERVICES.GESTION_CLES]: <Key size={16} className="text-orange-600" />,
-        [TYPES_SERVICES.JARDINAGE]: <Award size={16} className="text-green-600" />
+        [TYPES_SERVICES.NETTOYAGE_UNITAIRE]: <Scissors size={16} className="text-purple-600" />
     };
     
     return icons[serviceType] || <Briefcase size={16} className="text-gray-600" />;
