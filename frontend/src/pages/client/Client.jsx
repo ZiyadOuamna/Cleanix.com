@@ -5,7 +5,7 @@ import {
   Sun, Moon, User, Briefcase, HelpCircle, DollarSign, 
   Home, Clock, Star, MessageCircle, Settings, Bell, Menu, Package, 
   History, TrendingUp, FileText, Users, MapPin, Filter, RefreshCw, X, LogOut,
-  Plus, CreditCard
+  Plus, CreditCard, Key
 } from 'lucide-react';
 import { ClientProvider, ClientContext } from './clientContext';
 import { logoutUser } from '../../services/authService';
@@ -16,6 +16,7 @@ import logoCleanix from '../../imgs/logoCleanix.png';
 const ICONS = {
   dashboard: Home,
   request: Plus,
+  keys: Key,
   bookings: Package,
   history: History,
   wallet: CreditCard,
@@ -46,6 +47,7 @@ const STRING_ICONS = {
 const ACCENT_COLORS = { 
   primary: '#0891b2', // Cyan pour le client
   request: '#10B981',
+  keys: '#F59E0B',     // Orange pour le service de clés
   bookings: '#8B5CF6', 
   history: '#06B6D4',
   wallet: '#10B981',

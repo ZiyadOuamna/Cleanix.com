@@ -16,7 +16,7 @@ import DashboardSuperviseur from './pages/superviseur/superviseur';
 
 // les imports des pages de la partie : réclamations , rembourssement et settings chez superviseur 
 import Reclamations from './pages/superviseur/gestionReclamations';
-import RembourssementsPage from './pages/superviseur/gestionRembourssements';
+import RemboursementSuperviseurPage from './pages/superviseur/gestionRembourssements';
 import SettingsPage from './pages/superviseur/settings-Superviseur';
 
 // les imports des pages de la partie gestion des utilisateurs chez superviseur 
@@ -57,6 +57,7 @@ import ProfileClient from './pages/client/profileClient';
 import SupportClient from './pages/client/support';
 import SettingsClient from './pages/client/settings';
 import MyBookings from './pages/client/myBookings';
+import CommandeHistory from './pages/client/commandeHistory';
 import BookingHistory from './pages/client/bookingHistory';
 import WalletClient from './pages/client/walletClient';
 import RequestCleaning from './pages/client/requestCleaning';
@@ -103,7 +104,7 @@ export default function App() {
       <Route path="/superviseur/dashboard" element={<ProtectedRoute element={<DashboardSuperviseur />} requiredUserType="superviseur" isLoading={isLoading} />}>
         {/* les routes des partie : réclamations , rembourssement et settings */}
         <Route path="gestion-reclamations"    element={<Reclamations />}/>
-        <Route path="gestion-rembourssements" element={<RembourssementsPage />}/>
+        <Route path="gestion-rembourssements" element={<RemboursementSuperviseurPage />}/>
         <Route path="settings-superviseur"    element={<SettingsPage />}/>
 
         {/* les routes de la partie dashboard */}
@@ -129,6 +130,9 @@ export default function App() {
         
         {/* Mes Réservations */}
         <Route path='my-bookings' element={<MyBookings />} />
+        
+        {/* Historique des Commandes */}
+        <Route path='commande-history' element={<CommandeHistory />} />
         
         {/* Historique */}
         <Route path='booking-history' element={<BookingHistory />} />
