@@ -64,28 +64,28 @@ export const getMyServices = async () => {
  */
 export const createService = async (serviceData) => {
   try {
-    const formData = new FormData();
-    
-    // Ajouter les champs texte
-    formData.append('nom', serviceData.nom);
-    formData.append('description', serviceData.description);
-    formData.append('prix', serviceData.prix);
-    
-    if (serviceData.duree_prevue) {
-      formData.append('duree_prevue', serviceData.duree_prevue);
-    }
-    if (serviceData.adresse) {
-      formData.append('adresse', serviceData.adresse);
-    }
-    
-    // Ajouter l'image si présente
-    if (serviceData.image) {
-      formData.append('image', serviceData.image);
-    }
-    
-    const response = await apiClient.post('/services', formData, {
+    const payload = {
+      name: serviceData.name,
+      category: serviceData.category,
+      serviceType: serviceData.serviceType,
+      description: serviceData.description,
+      detailedDescription: serviceData.detailedDescription || null,
+      zones: serviceData.zones || [],
+      availability: serviceData.availability || {},
+      includedItems: serviceData.includedItems || [],
+      termsAccepted: serviceData.termsAccepted || false,
+      pricingAccepted: serviceData.pricingAccepted || false,
+      // Champs spécifiques
+      nombrePieces: serviceData.nombrePieces || null,
+      superficieTotale: serviceData.superficieTotale || null,
+      superficie: serviceData.superficie || null,
+      nomObjet: serviceData.nomObjet || null,
+      prixObjet: serviceData.prixObjet || null,
+    };
+
+    const response = await apiClient.post('/services', payload, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': 'application/json',
       },
     });
     return response.data;
@@ -99,20 +99,21 @@ export const createService = async (serviceData) => {
  */
 export const updateService = async (serviceId, serviceData) => {
   try {
-    const formData = new FormData();
-    
-    // Ajouter seulement les champs fournis
-    if (serviceData.nom) formData.append('nom', serviceData.nom);
-    if (serviceData.description) formData.append('description', serviceData.description);
-    if (serviceData.prix) formData.append('prix', serviceData.prix);
-    if (serviceData.duree_prevue) formData.append('duree_prevue', serviceData.duree_prevue);
-    if (serviceData.adresse) formData.append('adresse', serviceData.adresse);
-    if (serviceData.est_actif !== undefined) formData.append('est_actif', serviceData.est_actif);
-    if (serviceData.image) formData.append('image', serviceData.image);
-    
-    const response = await apiClient.put(`/services/${serviceId}`, formData, {
+    const payload = {
+      name: serviceData.name || null,
+      category: serviceData.category || null,
+      description: serviceData.description || null,
+      detailedDescription: serviceData.detailedDescription || null,
+      zones: serviceData.zones || [],
+      availability: serviceData.availability || {},
+      includedItems: serviceData.includedItems || [],
+      duration: serviceData.duration || null,
+      address: serviceData.address || null,
+    };
+
+    const response = await apiClient.put(`/services/${serviceId}`, payload, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': 'application/json',
       },
     });
     return response.data;
@@ -127,6 +128,46 @@ export const updateService = async (serviceId, serviceData) => {
 export const deleteService = async (serviceId) => {
   try {
     const response = await apiClient.delete(`/services/${serviceId}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Récupérer les services en attente de validation (Superviseur)
+ */
+export const getPendingServices = async (page = 1) => {
+  try {
+    const response = await apiClient.get(`/superviseur/services/pending?page=${page}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Approuver un service (Superviseur)
+ */
+export const approveService = async (serviceId, comment = null) => {
+  try {
+    const response = await apiClient.post(`/superviseur/services/${serviceId}/approve`, {
+      comment: comment,
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Rejeter un service (Superviseur)
+ */
+export const rejectService = async (serviceId, reason) => {
+  try {
+    const response = await apiClient.post(`/superviseur/services/${serviceId}/reject`, {
+      reason: reason,
+    });
     return response.data;
   } catch (error) {
     throw error;
