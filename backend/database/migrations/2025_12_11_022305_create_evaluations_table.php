@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('evaluations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('commande_id')->constrained('commandes')->onDelete('cascade');
+            $table->foreignId('order_id')->constrained('orders')->onDelete('cascade');
             $table->foreignId('client_id')->constrained('clients')->onDelete('cascade');
             $table->foreignId('freelancer_id')->constrained('freelancers')->onDelete('cascade');
             
@@ -20,7 +20,7 @@ return new class extends Migration
             $table->timestamps();
             
             // Un client ne peut évaluer qu'une seule fois par commande
-            $table->unique('commande_id');
+            $table->unique('order_id');
         });
     }
 

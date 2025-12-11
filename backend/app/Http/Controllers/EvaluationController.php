@@ -76,7 +76,7 @@ class EvaluationController extends Controller
         }
 
         // Vérifier qu'il n'y a pas déjà une évaluation
-        $existingEval = Evaluation::where('commande_id', $order->id)
+        $existingEval = Evaluation::where('order_id', $order->id)
             ->where('client_id', $user->id)
             ->first();
 
@@ -94,7 +94,7 @@ class EvaluationController extends Controller
 
         try {
             $evaluation = Evaluation::create([
-                'commande_id' => $order->id,
+                'order_id' => $order->id,
                 'client_id' => $user->id,
                 'freelancer_id' => $order->freelancer_id,
                 'note' => $validated['note'],

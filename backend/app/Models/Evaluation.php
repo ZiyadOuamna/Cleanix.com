@@ -11,7 +11,7 @@ class Evaluation extends Model
     use HasFactory;
 
     protected $fillable = [
-        'commande_id',
+        'order_id',
         'client_id',
         'freelancer_id',
         'note',
@@ -23,9 +23,9 @@ class Evaluation extends Model
     ];
 
     // Relations
-    public function commande(): BelongsTo
+    public function order(): BelongsTo
     {
-        return $this->belongsTo(Order::class, 'commande_id');
+        return $this->belongsTo(Order::class, 'order_id');
     }
 
     public function client(): BelongsTo
