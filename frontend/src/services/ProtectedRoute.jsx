@@ -34,8 +34,6 @@ export const ProtectedRoute = ({
         return <Navigate to="/client/dashboard" replace />;
       case 'freelancer':
         return <Navigate to="/freelancer/dashboard" replace />;
-      case 'support':
-        return <Navigate to="/support/dashboard" replace />;
       case 'superviseur':
         return <Navigate to="/superviseur/dashboard" replace />;
       default:
@@ -68,8 +66,6 @@ export const PublicRoute = ({ element, isLoading = false }) => {
         return <Navigate to="/client/dashboard" replace />;
       case 'freelancer':
         return <Navigate to="/freelancer/dashboard" replace />;
-      case 'support':
-        return <Navigate to="/support/dashboard" replace />;
       case 'superviseur':
         return <Navigate to="/superviseur/dashboard" replace />;
       default:

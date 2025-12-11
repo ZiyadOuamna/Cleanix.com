@@ -1,6 +1,6 @@
-import React, { useState, useContext, useRef, useCallback } from 'react';
+import React, { useState, useContext, useRef, useCallback, useEffect } from 'react';
 import Swal from 'sweetalert2';
-import { Settings, Shield, Clock, Lock, RefreshCw, User, Bell, Camera, CheckCircle, XCircle, Upload, Eye, EyeOff, CreditCard, Mail, AtSign } from "react-feather";
+import { Settings, Shield, Clock, Lock, RefreshCw, User, Bell, Camera, CheckCircle, XCircle, Upload, Eye, EyeOff, CreditCard, Mail, AtSign, Loader } from "react-feather";
 
 // Assurez-vous que le chemin d'import est correct vers votre fichier context
 import { FreelancerContext } from './freelancerContext';
@@ -86,10 +86,53 @@ const SettingsFreelancer = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [showBankInfo, setShowBankInfo] = useState(false);
   const [emailCode, setEmailCode] = useState('');
+  const [loading, setLoading] = useState(true);
   
   const cinFrontRef = useRef(null);
   const cinBackRef = useRef(null);
   const selfieRef = useRef(null);
+
+  // Charger les données du profil utilisateur
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        setLoading(true);
+        
+        // Si l'utilisateur existe dans le contexte, mettre à jour les données
+        if (user) {
+          const userData = {
+            name: user.name || `${user.prenom || ''} ${user.nom || ''}`.trim() || '',
+            email: user.email || '',
+            phone: user.telephone || user.phone || '',
+            specialty: user.specialty || 'Non spécifié'
+          };
+          
+          setFormData(prev => ({
+            ...prev,
+            name: userData.name,
+            email: userData.email,
+            phone: userData.phone,
+            specialty: userData.specialty,
+            personalInfo: {
+              ...prev.personalInfo,
+              dateOfBirth: user.date_of_birth || user.dateOfBirth || '',
+              nationality: user.nationality || '',
+              gender: user.gender || '',
+              taxNumber: user.tax_number || user.taxNumber || ''
+            },
+            // Les paramètres de notification et confidentialité sont généralement gérés par l'utilisateur
+            // donc on les laisse avec les valeurs par défaut sauf s'ils sont fournis par le serveur
+          }));
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des données:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadUserData();
+  }, [user]);
 
   // --- THÈME "EYE-FRIENDLY" (Anti-Fatigue) ---
   const theme = {
@@ -1202,6 +1245,18 @@ const SettingsFreelancer = () => {
         return null;
     }
   };
+
+  // Afficher un loader pendant le chargement
+  if (loading) {
+    return (
+      <div className={`${theme.bg} min-h-screen py-8 flex items-center justify-center transition-colors duration-200`}>
+        <div className="text-center">
+          <Loader className={`animate-spin mx-auto ${theme.textMain}`} size={40} />
+          <p className={`mt-4 ${theme.textMain}`}>Chargement de vos paramètres...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`${theme.bg} min-h-screen py-8 transition-colors duration-200`}>

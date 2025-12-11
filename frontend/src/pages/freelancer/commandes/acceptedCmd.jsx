@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { Camera, Upload, X, Check, MapPin, Phone, Mail, Calendar, Clock, AlertCircle, Shield, ShieldCheck, ShieldOff, MessageCircle } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { getAcceptedOrders } from '../../../services/orderService';
 
 const CommandesAcceptees = () => {
   const { isDarkMode } = useOutletContext();
@@ -87,35 +88,65 @@ const CommandesAcceptees = () => {
     tableBorder: isDarkMode ? 'border-gray-700' : 'border-gray-200',
   };
 
-  // Données simulées - UNE SEULE COMMANDE
-  const [orders, setOrders] = useState([
-    {
-      id: 'CMD-2024-001',
-      clientName: 'Marie Dubois',
-      clientPhone: '+212 6 12 34 56 78',
-      clientEmail: 'marie.dubois@email.com',
-      service: 'Nettoyage résidentiel',
-      date: '2024-01-15',
-      time: '10:00 - 13:00',
-      address: '123 Avenue Hassan II, Casablanca',
-      amount: 450.00,
-      status: 'en_cours',
-      paymentStatus: 'payé',
-      specialInstructions: 'Préfère les produits écologiques. Clés chez le gardien.',
-      createdAt: '2024-01-14 14:30',
-      acceptedAt: '2024-01-14 15:45',
-      beforePhotos: [],
-      afterPhotos: [],
-      photoPermission: 'pending',
-      permissionRequestedAt: null,
-      permissionResponseAt: null,
-      permissionReason: '',
-      submitted: false,
-      clientValidation: false,
-      rating: 4.8,
-      completedOrders: 15
-    }
-  ]);
+  // Données depuis l'API
+  const [orders, setOrders] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Charger les commandes acceptées au montage
+  useEffect(() => {
+    const fetchAcceptedOrders = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await getAcceptedOrders();
+        
+        // Transformer les données de l'API au format du composant
+        const formattedOrders = response.data.map((order) => ({
+          id: order.id,
+          clientName: order.client ? `${order.client.firstname} ${order.client.lastname}` : 'Client inconnu',
+          clientPhone: order.client?.phone || 'Non fourni',
+          clientEmail: order.client?.email || 'Non fourni',
+          service: order.service?.nom || order.service_type,
+          date: new Date(order.scheduled_date).toLocaleDateString('fr-FR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          }),
+          time: order.heure_execution ? new Date(order.heure_execution).toLocaleTimeString('fr-FR', {
+            hour: '2-digit',
+            minute: '2-digit'
+          }) + ' - À confirmer' : 'Horaire à confirmer',
+          address: `${order.adresse}, ${order.code_postal} ${order.ville}`,
+          amount: order.agreed_price || order.initial_price,
+          status: order.status === 'in_progress' ? 'en_cours' : 'en_attente',
+          paymentStatus: 'payé', // À adapter selon la structure du modèle Paiement
+          specialInstructions: order.notes_speciales || order.notes || 'Aucune instruction spéciale',
+          createdAt: new Date(order.created_at).toLocaleString('fr-FR'),
+          acceptedAt: new Date(order.updated_at).toLocaleString('fr-FR'),
+          beforePhotos: [],
+          afterPhotos: order.photos_after ? JSON.parse(order.photos_after) : [],
+          photoPermission: 'pending',
+          permissionRequestedAt: null,
+          permissionResponseAt: null,
+          permissionReason: '',
+          submitted: false,
+          clientValidation: order.status === 'completed',
+          rating: order.rating || 0,
+          completedOrders: 0 // À récupérer du profil freelancer
+        }));
+        
+        setOrders(formattedOrders);
+      } catch (err) {
+        console.error('Erreur lors du chargement des commandes acceptées:', err);
+        setError('Impossible de charger vos commandes acceptées');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAcceptedOrders();
+  }, []);
 
   // Fonction pour développer/réduire les détails d'une commande
   const toggleOrderDetails = (orderId) => {
@@ -646,6 +677,18 @@ const CommandesAcceptees = () => {
 
   return (
     <div className={`min-h-screen ${theme.bgPrimary} py-8 transition-colors duration-300`}>
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className={theme.textSecondary}>Chargement de vos commandes acceptées...</p>
+          </div>
+        </div>
+      )}
+
+      {!isLoading && (
+        <>
       <PermissionModal />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1080,6 +1123,8 @@ const CommandesAcceptees = () => {
           )}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };

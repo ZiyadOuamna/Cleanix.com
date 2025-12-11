@@ -7,6 +7,7 @@ import {
 import { ClientContext } from './clientContext';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
+import { createOrder } from '../../services/orderService';
 
 const RequestService = ({ onBack }) => {
   const { user, isDarkMode } = useContext(ClientContext);
@@ -254,8 +255,26 @@ const RequestService = ({ onBack }) => {
   const handleConfirmAndPay = async () => {
     setIsProcessing(true);
 
-    setTimeout(() => {
+    try {
+      // Préparer les données de la commande
+      const orderData = {
+        service_type: selectedServiceType,
+        description: formData.description || `Commande de ${selectedServiceType}`,
+        adresse: formData.adresse,
+        ville: formData.ville || 'Non spécifiée',
+        code_postal: formData.code_postal,
+        horaire_prefere: formData.horaire_prefere,
+        genre_freelancer_prefere: formData.genre_freelancer_prefere,
+        initial_price: quote?.total,
+        scheduled_date: formData.dateOperation || new Date().toISOString(),
+        notes_speciales: formData.notes || '',
+      };
+
+      // Appeler l'API pour créer la commande
+      const response = await createOrder(orderData);
+
       setIsProcessing(false);
+      
       showAlert('success', 'Demande envoyée!', 
         'Votre demande a été envoyée aux freelancers disponibles. Vous serez notifié dès qu\'un freelancer l\'acceptera.');
       
@@ -266,7 +285,12 @@ const RequestService = ({ onBack }) => {
       setTimeout(() => {
         navigate('my-bookings');
       }, 2000);
-    }, 2000);
+    } catch (error) {
+      setIsProcessing(false);
+      console.error('Erreur lors de la création de la commande:', error);
+      showAlert('error', 'Erreur', 
+        error.response?.data?.message || 'Une erreur s\'est produite lors de la création de la commande.');
+    }
   };
 
   const renderServiceForm = () => {

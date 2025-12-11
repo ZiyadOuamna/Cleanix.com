@@ -16,7 +16,6 @@ const ICONS = {
   users: Users,
   briefcase: Briefcase,
   verification: Shield,
-  support: HelpCircle,
   profile: User,
   remboursement: DollarSign,
   reclamations: MessageCircle,
@@ -45,7 +44,6 @@ const ACCENT_COLORS = {
   verification: '#3b82f6', // Bleu clair
   remboursement: '#10b981', // Vert
   reclamations: '#f59e0b', // Amber
-  support: '#8b5cf6',   // Violet
   settings: '#64748b'   // Gris
 };
 
@@ -97,6 +95,7 @@ function InnerLayout() {
     else if (path.includes('gestion-clients')) setActivePage('gestion-clients');
     else if (path.includes('gestion-freelancers')) setActivePage('gestion-freelancers');
     else if (path.includes('superviseur-verification')) setActivePage('superviseur-verification');
+    else if (path.includes('validation-services')) setActivePage('validation-services');
     else if (path.includes('gestion-rembourssements')) setActivePage('gestion-rembourssements');
     else if (path.includes('gestion-reclamations')) setActivePage('gestion-reclamations');
     else if (path.includes('settings-superviseur')) setActivePage('settings-superviseur');
@@ -362,6 +361,18 @@ function InnerLayout() {
               >
                 <ICONS.verification size={20} style={{ color: getMenuItemStyle('superviseur-verification').iconColor }} />
                 <span>Vérification Freelancers</span>
+              </button>
+            </li>
+
+            {/* Validation Services */}
+            <li>
+              <button 
+                onClick={() => handleNavigation('validation-services', 'validation-services')}
+                className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all text-left ${getMenuItemStyle('validation-services').className}`}
+                style={getMenuItemStyle('validation-services').style}
+              >
+                <ICONS.briefcase size={20} style={{ color: getMenuItemStyle('validation-services').iconColor }} />
+                <span>Validation Services</span>
               </button>
             </li>
 

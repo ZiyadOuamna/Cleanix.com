@@ -1,11 +1,12 @@
 import React, { useState, useContext, useRef } from 'react';
 import { 
   Upload, Camera, Plus, X, DollarSign, Clock, Tag, Package, ArrowLeft, AlertCircle,
-  Check, Image as ImageIcon, FileText, MapPin, Calendar, ChevronRight
+  Check, Image as ImageIcon, FileText, MapPin, Calendar, ChevronRight, Loader
 } from 'lucide-react';
 import { FreelancerContext } from '../freelancerContext';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { createService } from '../../../services/serviceService';
 
 const PublierService = () => {
   const { isDarkMode, user } = useContext(FreelancerContext);
@@ -26,6 +27,7 @@ const PublierService = () => {
   const [formData, setFormData] = useState({
     name: '',
     category: '',
+    serviceType: 'residentiel', // Type de service: residentiel, superficie, unitaire
     description: '',
     detailedDescription: '',
     availability: {
@@ -33,6 +35,15 @@ const PublierService = () => {
     },
     zones: [],
     includedItems: ['Matériel de nettoyage', 'Produits professionnels'],
+    // Champs spécifiques résidentiel
+    nombrePieces: 2,
+    superficieTotale: 100,
+    // Champs spécifiques superficie
+    superficie: 100,
+    // Champs spécifiques unitaire
+    nomObjet: '',
+    prixObjet: 0,
+    // Flags
     status: 'pending_review',
     termsAccepted: false,
     pricingAccepted: false
@@ -41,6 +52,20 @@ const PublierService = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+
+  // Types de services disponibles
+  const serviceTypes = {
+    residentiel: { label: 'Nettoyage Résidentiel', description: 'Maisons, appartements' },
+    superficie: { label: 'Nettoyage par Superficie', description: 'Calcul par m²' },
+    unitaire: { label: 'Nettoyage Unitaire', description: 'Prix par objet/item' }
+  };
+
+  // Catégories dynamiques selon le type
+  const categories = {
+    residentiel: ['Studio', '1 Chambre', '2 Chambres', '3+ Chambres', 'Villa'],
+    superficie: ['Petit Bureau', 'Bureau Standard', 'Grand Bureau', 'Immeuble', 'Autre'],
+    unitaire: ['Canapé', 'Tapis', 'Fenêtres', 'Carrelage', 'Vitres', 'Autre']
+  };
 
   // Zones simulées
   const cityZones = {
@@ -83,7 +108,17 @@ const PublierService = () => {
 
   const validateCurrentStep = () => {
     switch (currentStep) {
-      case 1: return formData.name && formData.category && formData.description;
+      case 1: {
+        const hasBasic = formData.name && formData.category && formData.description;
+        if (formData.serviceType === 'residentiel') {
+          return hasBasic && formData.nombrePieces && formData.superficieTotale;
+        } else if (formData.serviceType === 'superficie') {
+          return hasBasic && formData.superficie;
+        } else if (formData.serviceType === 'unitaire') {
+          return hasBasic && formData.nomObjet && formData.prixObjet;
+        }
+        return hasBasic;
+      }
       case 2: return true; // Pas de validation nécessaire pour cette étape
       case 3: return formData.zones.length > 0;
       case 4: return formData.termsAccepted && formData.pricingAccepted;
@@ -104,30 +139,64 @@ const PublierService = () => {
     if (!formData.termsAccepted || !formData.pricingAccepted) return;
 
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSubmitting(false);
-    
-    Swal.fire({
-      icon: 'success',
-      title: 'Service soumis !',
-      text: 'Votre service a été envoyé au superviseur pour validation.',
-      confirmButtonText: 'Voir mes services',
-      confirmButtonColor: '#10B981',
-      background: isDarkMode ? '#1f2937' : '#ffffff',
-      color: isDarkMode ? '#ffffff' : '#000000',
-      allowOutsideClick: true, 
-      allowEscapeKey: true
-    }).then(() => {
-      navigate('/dev-freelancer-page/gestion-services-freelancer', { 
-        state: { newService: { ...formData, id: Date.now(), status: 'pending_review' } } 
-      });
-    });
-  };
+    try {
+      const payload = {
+        name: formData.name,
+        category: formData.category,
+        serviceType: formData.serviceType,
+        description: formData.description,
+        detailedDescription: formData.detailedDescription,
+        zones: formData.zones,
+        availability: formData.availability,
+        includedItems: formData.includedItems,
+        termsAccepted: formData.termsAccepted,
+        pricingAccepted: formData.pricingAccepted,
+      };
 
-  const categories = [
-    'Nettoyage résidentiel', 'Nettoyage commercial', 'Nettoyage de bureau',
-    'Nettoyage après travaux', 'Nettoyage de printemps', 'Nettoyage de vitres'
-  ];
+      // Ajouter les champs spécifiques selon le type
+      if (formData.serviceType === 'residentiel') {
+        payload.nombrePieces = formData.nombrePieces;
+        payload.superficieTotale = formData.superficieTotale;
+      } else if (formData.serviceType === 'superficie') {
+        payload.superficie = formData.superficie;
+      } else if (formData.serviceType === 'unitaire') {
+        payload.nomObjet = formData.nomObjet;
+        payload.prixObjet = formData.prixObjet;
+      }
+
+      const response = await createService(payload);
+
+      if (response.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Service créé avec succès !',
+          text: 'Votre service est en attente de validation par le superviseur.',
+          confirmButtonText: 'Voir mes services',
+          confirmButtonColor: '#10B981',
+          background: isDarkMode ? '#1f2937' : '#ffffff',
+          color: isDarkMode ? '#ffffff' : '#000000',
+          allowOutsideClick: false,
+          allowEscapeKey: false
+        }).then(() => {
+          navigate('../gestion-services-freelancer');
+        });
+      }
+    } catch (error) {
+      console.error('Service creation error:', error);
+      const errorMsg = error.response?.data?.message || error.message || 'Une erreur est survenue';
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: errorMsg,
+        confirmButtonText: 'Réessayer',
+        confirmButtonColor: '#EF4444',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#000000',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const ServicePreview = () => (
     <div className={`${theme.cardBg} rounded-xl shadow-lg border ${theme.border} p-6 sticky top-6`}>
@@ -198,7 +267,7 @@ const PublierService = () => {
         
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <button 
-            onClick={() => navigate('gestion-services-freelancer')} 
+            onClick={() => navigate('../gestion-services-freelancer')} 
             className={`flex items-center gap-2 ${theme.textSecondary} hover:${theme.textMain} transition`}
           >
             <ArrowLeft size={20} />
@@ -252,20 +321,72 @@ const PublierService = () => {
                 {currentStep === 1 && (
                   <div className="space-y-5">
                     <div>
-                      <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Nom du service *</label>
-                      <input type="text" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} className={`w-full px-4 py-2 rounded-lg border ${theme.inputBg} focus:ring-2 focus:ring-green-500 outline-none`} required />
+                      <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Type de service *</label>
+                      <select value={formData.serviceType} onChange={(e) => {
+                        handleInputChange('serviceType', e.target.value);
+                        handleInputChange('category', ''); // Reset category when type changes
+                      }} className={`w-full px-4 py-2 rounded-lg border ${theme.inputBg} focus:ring-2 focus:ring-green-500 outline-none`} required>
+                        {Object.entries(serviceTypes).map(([key, value]) => (
+                          <option key={key} value={key}>{value.label} - {value.description}</option>
+                        ))}
+                      </select>
                     </div>
+
                     <div>
                       <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Catégorie *</label>
                       <select value={formData.category} onChange={(e) => handleInputChange('category', e.target.value)} className={`w-full px-4 py-2 rounded-lg border ${theme.inputBg} focus:ring-2 focus:ring-green-500 outline-none`} required>
                         <option value="">Choisir...</option>
-                        {categories.map((cat, i) => <option key={i} value={cat}>{cat}</option>)}
+                        {categories[formData.serviceType]?.map((cat, i) => <option key={i} value={cat}>{cat}</option>)}
                       </select>
                     </div>
+
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Nom du service *</label>
+                      <input type="text" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} className={`w-full px-4 py-2 rounded-lg border ${theme.inputBg} focus:ring-2 focus:ring-green-500 outline-none`} required />
+                    </div>
+
                     <div>
                       <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Description courte *</label>
                       <textarea value={formData.description} onChange={(e) => handleInputChange('description', e.target.value)} rows="3" className={`w-full px-4 py-2 rounded-lg border ${theme.inputBg} focus:ring-2 focus:ring-green-500 outline-none`} required maxLength={150}/>
                     </div>
+
+                    {/* Champs spécifiques Résidentiel */}
+                    {formData.serviceType === 'residentiel' && (
+                      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-300">
+                        <div>
+                          <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Nombre de pièces *</label>
+                          <input type="number" min="1" value={formData.nombrePieces} onChange={(e) => handleInputChange('nombrePieces', parseInt(e.target.value))} className={`w-full px-4 py-2 rounded-lg border ${theme.inputBg} focus:ring-2 focus:ring-green-500 outline-none`} required />
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Superficie totale (m²) *</label>
+                          <input type="number" min="0.01" step="0.01" value={formData.superficieTotale} onChange={(e) => handleInputChange('superficieTotale', parseFloat(e.target.value))} className={`w-full px-4 py-2 rounded-lg border ${theme.inputBg} focus:ring-2 focus:ring-green-500 outline-none`} required />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Champs spécifiques Superficie */}
+                    {formData.serviceType === 'superficie' && (
+                      <div className="pt-4 border-t border-gray-300">
+                        <div>
+                          <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Superficie (m²) *</label>
+                          <input type="number" min="0.01" step="0.01" value={formData.superficie} onChange={(e) => handleInputChange('superficie', parseFloat(e.target.value))} className={`w-full px-4 py-2 rounded-lg border ${theme.inputBg} focus:ring-2 focus:ring-green-500 outline-none`} required />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Champs spécifiques Unitaire */}
+                    {formData.serviceType === 'unitaire' && (
+                      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-300">
+                        <div>
+                          <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Nom de l'objet *</label>
+                          <input type="text" value={formData.nomObjet} onChange={(e) => handleInputChange('nomObjet', e.target.value)} className={`w-full px-4 py-2 rounded-lg border ${theme.inputBg} focus:ring-2 focus:ring-green-500 outline-none`} required />
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Prix (DH) *</label>
+                          <input type="number" min="0.01" step="0.01" value={formData.prixObjet} onChange={(e) => handleInputChange('prixObjet', parseFloat(e.target.value))} className={`w-full px-4 py-2 rounded-lg border ${theme.inputBg} focus:ring-2 focus:ring-green-500 outline-none`} required />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import {
   Package,
   Calendar,
@@ -18,107 +18,87 @@ import {
   ImagePlus,
   Send,
   Sparkles,
-  Key
+  Key,
+  User,
+  User2
 } from 'lucide-react';
 import { ClientContext } from './clientContext';
 import Swal from 'sweetalert2';
+import { getOrderHistory } from '../../services/orderService';
 
 const MyBookings = () => {
   const { isDarkMode, wallet } = useContext(ClientContext);
   const [activeFilter, setActiveFilter] = useState('in_progress');
   const [activeServiceFilter, setActiveServiceFilter] = useState('all');
   const [showDetails, setShowDetails] = useState(null);
-  const [bookings, setBookings] = useState([
-    {
-      id: 1,
-      service: 'Nettoyage complet',
-      serviceType: 'nettoyage',
-      freelancer: 'Ahmed M.',
-      date: '20 Déc 2025',
-      time: '10:00 - 12:00',
-      location: '123 Rue de Paris, 75000 Paris',
-      price: '850DH',
-      status: 'in_progress',
-      rating: null,
-      image: '🧹',
-      freelancerAvatar: '👨',
-      photos_requested: false,
-      completed: false
-    },
-    {
-      id: 2,
-      service: 'Nettoyage de vitres',
-      serviceType: 'nettoyage',
-      freelancer: 'Fatima K.',
-      date: '22 Déc 2025',
-      time: '14:00 - 15:30',
-      location: '456 Avenue des Champs, 75008 Paris',
-      price: '450DH',
-      status: 'pending_approval',
-      rating: null,
-      image: '🪟',
-      freelancerAvatar: '👩',
-      photos_requested: true,
-      completed: true,
-      photos: [
-        { id: 1, type: 'before', url: '📸', label: 'Avant' },
-        { id: 2, type: 'after', url: '📸', label: 'Après' }
-      ]
-    },
-    {
-      id: 3,
-      service: 'Nettoyage bureau',
-      serviceType: 'nettoyage',
-      freelancer: 'Hassan D.',
-      date: '15 Déc 2025',
-      time: '09:00 - 11:00',
-      location: '789 Boulevard Saint-Germain, 75005 Paris',
-      price: '1200DH',
-      status: 'in_progress',
-      rating: null,
-      image: '🏢',
-      freelancerAvatar: '👨',
-      photos_requested: false,
-      completed: false
-    },
-    {
-      id: 4,
-      service: 'Remise de clé',
-      serviceType: 'cles',
-      freelancer: 'Ali B.',
-      date: '18 Déc 2025',
-      time: '16:00 - 16:30',
-      location: '321 Rue Saint-Antoine, 75011 Paris',
-      price: '50DH',
-      status: 'in_progress',
-      rating: null,
-      image: '🔑',
-      freelancerAvatar: '👨',
-      photos_requested: false,
-      completed: false
-    },
-    {
-      id: 5,
-      service: 'Récupération de clé',
-      serviceType: 'cles',
-      freelancer: 'Sarah L.',
-      date: '25 Déc 2025',
-      time: '11:00 - 11:30',
-      location: '654 Rue de Rivoli, 75004 Paris',
-      price: '50DH',
-      status: 'in_progress',
-      rating: null,
-      image: '🔑',
-      freelancerAvatar: '👩',
-      photos_requested: false,
-      completed: false
-    }
-  ]);
+  const [bookings, setBookings] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [messageText, setMessageText] = useState('');
   const [showMessageModal, setShowMessageModal] = useState(null);
   const [showValidationModal, setShowValidationModal] = useState(null);
   const [validationRating, setValidationRating] = useState(0);
   const [validationComment, setValidationComment] = useState('');
+
+  // Charger l'historique des commandes au montage du composant
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await getOrderHistory();
+        
+        // Transformer les données de l'API au format du composant
+        const formattedBookings = response.data.map((order) => ({
+          id: order.id,
+          service: order.service?.nom || order.service_type,
+          serviceType: order.service_type,
+          freelancer: order.freelancer ? `${order.freelancer.firstname} ${order.freelancer.lastname}` : 'À assigner',
+          date: new Date(order.scheduled_date).toLocaleDateString('fr-FR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }),
+          time: order.heure_execution ? new Date(order.heure_execution).toLocaleTimeString('fr-FR', {
+            hour: '2-digit',
+            minute: '2-digit'
+          }) + ' - À déterminer' : 'Horaire à déterminer',
+          location: `${order.adresse}, ${order.code_postal} ${order.ville}`,
+          price: `${order.agreed_price || order.initial_price}DH`,
+          status: order.status,
+          rating: order.rating,
+          image: getServiceIcon(order.service_type),
+          freelancerAvatar: order.freelancer ? getAvatarEmoji(order.freelancer.gender) : '❓',
+          photos_requested: order.status === 'completed',
+          completed: order.status === 'completed',
+          photos: order.photos_after ? JSON.parse(order.photos_after).map((photo, idx) => ({
+            id: idx,
+            type: 'after',
+            url: photo,
+            label: 'Après'
+          })) : [],
+          review: order.review,
+          orderId: order.id
+        }));
+        
+        setBookings(formattedBookings);
+      } catch (err) {
+        console.error('Erreur lors du chargement des commandes:', err);
+        setError('Impossible de charger vos commandes');
+        Swal.fire({
+          icon: 'error',
+          title: 'Erreur',
+          text: 'Impossible de charger vos commandes. Veuillez réessayer.',
+          background: isDarkMode ? '#1f2937' : '#ffffff',
+          color: isDarkMode ? '#ffffff' : '#1f2937',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchBookings();
+  }, [isDarkMode]);
 
   const theme = {
     bg: isDarkMode ? 'bg-gray-900' : 'bg-transparent',
@@ -182,7 +162,11 @@ const MyBookings = () => {
   };
 
   const getServiceIcon = (serviceType) => {
-    return serviceType === 'cles' ? <Key size={18} /> : <Sparkles size={18} />;
+return serviceType === 'cles' ? <Key size={18} /> : <Sparkles size={18} />;
+  };
+
+  const getAvatarEmoji = (gender) => {
+return gender === 'female' || gender === 'F' ? <User2 size={18}/> : <User size={18}/>;
   };
 
   const getServiceLabel = (serviceType) => {
@@ -361,6 +345,18 @@ const MyBookings = () => {
 
   return (
     <div className={`space-y-6 ${theme.bg}`}>
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-cyan-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className={theme.textSecondary}>Chargement de vos réservations...</p>
+          </div>
+        </div>
+      )}
+
+      {!isLoading && (
+        <>
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -808,6 +804,8 @@ const MyBookings = () => {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

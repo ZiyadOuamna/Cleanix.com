@@ -20,7 +20,6 @@ const ICONS = {
   bookings: Package,
   history: History,
   wallet: CreditCard,
-  support: HelpCircle,
   profile: User,
   earnings: DollarSign,
   notifications: Bell,
@@ -52,7 +51,6 @@ const ACCENT_COLORS = {
   history: '#06B6D4',
   wallet: '#10B981',
   earnings: '#10B981',
-  support: '#F59E0B',
   settings: '#64748b' 
 };
 
@@ -112,7 +110,6 @@ function InnerLayout() {
     else if (path.includes('booking-history')) setActivePage('booking-history');
     else if (path.includes('wallet-client')) setActivePage('wallet-client');
     else if (path.includes('settings-client')) setActivePage('settings-client');
-    else if (path.includes('support-client')) setActivePage('support-client');
     else if (path.includes('request-service')) setActivePage('request-service');
   }, [location.pathname]);
 
@@ -200,7 +197,6 @@ function InnerLayout() {
       'dashboard-client': ACCENT_COLORS.primary,
       'booking-history': ACCENT_COLORS.history,
       'wallet-client': ACCENT_COLORS.wallet,
-      'support-client': ACCENT_COLORS.support,
       'settings-client': ACCENT_COLORS.settings,
       'profile-client': ACCENT_COLORS.settings
     };
@@ -341,7 +337,6 @@ function InnerLayout() {
             {/* Autres Items */}
             {[
               { id: 'wallet-client', label: 'Portefeuille', icon: ICONS.wallet, path: 'wallet-client' },
-              { id: 'support-client', label: 'Support', icon: ICONS.support, path: 'support-client' },
               { id: 'profile-client', label: 'Profil', icon: ICONS.profile, path: 'profile-client' },
               { id: 'settings-client', label: 'Paramètres', icon: ICONS.settings, path: 'settings-client' },
             ].map((item) => {

@@ -129,6 +129,37 @@ export const forgotPassword = async (data) => {
 };
 
 /**
+ * Récupère les données de l'utilisateur authentifié
+ * @returns {Promise<object>} Les données du user
+ */
+export const getAuthenticatedUser = async () => {
+    try {
+        const response = await apiClient.get('/user');
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+/**
+ * Met à jour le profil de l'utilisateur
+ * @param {FormData|object} data - Les données à mettre à jour (nom, prenom, email, etc.)
+ * @returns {Promise<object>} Les données mises à jour
+ */
+export const updateUserProfile = async (data) => {
+    try {
+        const response = await apiClient.put('/profile', data, {
+            headers: {
+                'Content-Type': data instanceof FormData ? 'multipart/form-data' : 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+/**
  * Envoie le nouveau mot de passe avec le token (Route /api/reset-password)
  * @param {object} data - { email, token, password, password_confirmation }
  * @returns {Promise<object>} La réponse du serveur
