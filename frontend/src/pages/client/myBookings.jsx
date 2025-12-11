@@ -11,14 +11,114 @@ import {
   Download,
   Eye,
   X,
-  Filter
+  Filter,
+  Image as ImageIcon,
+  Truck,
+  CheckCheck,
+  ImagePlus,
+  Send,
+  Sparkles,
+  Key
 } from 'lucide-react';
 import { ClientContext } from './clientContext';
+import Swal from 'sweetalert2';
 
 const MyBookings = () => {
   const { isDarkMode, wallet } = useContext(ClientContext);
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [activeFilter, setActiveFilter] = useState('in_progress');
+  const [activeServiceFilter, setActiveServiceFilter] = useState('all');
   const [showDetails, setShowDetails] = useState(null);
+  const [bookings, setBookings] = useState([
+    {
+      id: 1,
+      service: 'Nettoyage complet',
+      serviceType: 'nettoyage',
+      freelancer: 'Ahmed M.',
+      date: '20 Déc 2025',
+      time: '10:00 - 12:00',
+      location: '123 Rue de Paris, 75000 Paris',
+      price: '850DH',
+      status: 'in_progress',
+      rating: null,
+      image: '🧹',
+      freelancerAvatar: '👨',
+      photos_requested: false,
+      completed: false
+    },
+    {
+      id: 2,
+      service: 'Nettoyage de vitres',
+      serviceType: 'nettoyage',
+      freelancer: 'Fatima K.',
+      date: '22 Déc 2025',
+      time: '14:00 - 15:30',
+      location: '456 Avenue des Champs, 75008 Paris',
+      price: '450DH',
+      status: 'pending_approval',
+      rating: null,
+      image: '🪟',
+      freelancerAvatar: '👩',
+      photos_requested: true,
+      completed: true,
+      photos: [
+        { id: 1, type: 'before', url: '📸', label: 'Avant' },
+        { id: 2, type: 'after', url: '📸', label: 'Après' }
+      ]
+    },
+    {
+      id: 3,
+      service: 'Nettoyage bureau',
+      serviceType: 'nettoyage',
+      freelancer: 'Hassan D.',
+      date: '15 Déc 2025',
+      time: '09:00 - 11:00',
+      location: '789 Boulevard Saint-Germain, 75005 Paris',
+      price: '1200DH',
+      status: 'in_progress',
+      rating: null,
+      image: '🏢',
+      freelancerAvatar: '👨',
+      photos_requested: false,
+      completed: false
+    },
+    {
+      id: 4,
+      service: 'Remise de clé',
+      serviceType: 'cles',
+      freelancer: 'Ali B.',
+      date: '18 Déc 2025',
+      time: '16:00 - 16:30',
+      location: '321 Rue Saint-Antoine, 75011 Paris',
+      price: '50DH',
+      status: 'in_progress',
+      rating: null,
+      image: '🔑',
+      freelancerAvatar: '👨',
+      photos_requested: false,
+      completed: false
+    },
+    {
+      id: 5,
+      service: 'Récupération de clé',
+      serviceType: 'cles',
+      freelancer: 'Sarah L.',
+      date: '25 Déc 2025',
+      time: '11:00 - 11:30',
+      location: '654 Rue de Rivoli, 75004 Paris',
+      price: '50DH',
+      status: 'in_progress',
+      rating: null,
+      image: '🔑',
+      freelancerAvatar: '👩',
+      photos_requested: false,
+      completed: false
+    }
+  ]);
+  const [messageText, setMessageText] = useState('');
+  const [showMessageModal, setShowMessageModal] = useState(null);
+  const [showValidationModal, setShowValidationModal] = useState(null);
+  const [validationRating, setValidationRating] = useState(0);
+  const [validationComment, setValidationComment] = useState('');
 
   const theme = {
     bg: isDarkMode ? 'bg-gray-900' : 'bg-transparent',
@@ -28,53 +128,27 @@ const MyBookings = () => {
     textMuted: isDarkMode ? 'text-gray-400' : 'text-slate-600',
     border: isDarkMode ? 'border-gray-700' : 'border-slate-200',
     hoverBg: isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-slate-100',
+    inputBg: isDarkMode ? 'bg-gray-700 text-white' : 'bg-white text-slate-900'
   };
 
-  const bookings = [
-    {
-      id: 1,
-      service: 'Nettoyage complet',
-      freelancer: 'Ahmed M.',
-      date: '20 Déc 2025',
-      time: '10:00 - 12:00',
-      location: '123 Rue de Paris, 75000 Paris',
-      price: '850DH',
-      status: 'confirmed',
-      rating: null,
-      image: '🧹'
-    },
-    {
-      id: 2,
-      service: 'Nettoyage de vitres',
-      freelancer: 'Fatima K.',
-      date: '22 Déc 2025',
-      time: '14:00 - 15:30',
-      location: '456 Avenue des Champs, 75008 Paris',
-      price: '450DH',
-      status: 'pending',
-      rating: null,
-      image: '🪟'
-    },
-    {
-      id: 3,
-      service: 'Nettoyage bureau',
-      freelancer: 'Hassan D.',
-      date: '15 Déc 2025',
-      time: '09:00 - 11:00',
-      location: '789 Boulevard Saint-Germain, 75005 Paris',
-      price: '1200DH',
-      status: 'completed',
-      rating: 4.8,
-      image: '🏢'
-    }
-  ];
+  // Helper pour SweetAlert2 avec thème dark/light
+  const showAlert = (config) => {
+    const swalConfig = {
+      ...config,
+      background: isDarkMode ? '#1f2937' : '#ffffff',
+      color: isDarkMode ? '#ffffff' : '#1f2937',
+      confirmButtonColor: config.confirmButtonColor || '#0891b2',
+      cancelButtonColor: config.cancelButtonColor || '#6b7280',
+    };
+    return Swal.fire(swalConfig);
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'confirmed':
+      case 'in_progress':
         return 'bg-blue-100 text-blue-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+      case 'pending_approval':
+        return 'bg-purple-100 text-purple-800';
       case 'completed':
         return 'bg-green-100 text-green-800';
       case 'cancelled':
@@ -86,18 +160,204 @@ const MyBookings = () => {
 
   const getStatusLabel = (status) => {
     const labels = {
-      confirmed: 'Confirmée',
-      pending: 'En attente',
+      in_progress: 'En cours',
+      pending_approval: 'En attente de validation',
       completed: 'Complétée',
       cancelled: 'Annulée'
     };
     return labels[status] || status;
   };
 
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'in_progress':
+        return <Truck size={18} />;
+      case 'pending_approval':
+        return <AlertCircle size={18} />;
+      case 'completed':
+        return <CheckCheck size={18} />;
+      default:
+        return <Clock size={18} />;
+    }
+  };
+
+  const getServiceIcon = (serviceType) => {
+    return serviceType === 'cles' ? <Key size={18} /> : <Sparkles size={18} />;
+  };
+
+  const getServiceLabel = (serviceType) => {
+    return serviceType === 'cles' ? 'Gestion de Clés' : 'Nettoyage';
+  };
+
+  // Helper pour les couleurs Swal selon le mode sombre/clair
+  const getSwalTheme = () => {
+    if (!isDarkMode) {
+      return {
+        confirmButtonColor: '#0891b2'
+      };
+    }
+    return {
+      background: '#1f2937',
+      color: '#f3f4f6',
+      confirmButtonColor: '#0891b2',
+      cancelButtonColor: '#4b5563',
+      inputBg: '#374151',
+      didOpen: (modal) => {
+        const popup = modal.querySelector('.swal2-popup');
+        if (popup) {
+          popup.style.backgroundColor = '#1f2937';
+          popup.style.color = '#f3f4f6';
+        }
+        const input = modal.querySelector('.swal2-input');
+        if (input) {
+          input.style.backgroundColor = '#374151';
+          input.style.color = '#f3f4f6';
+          input.style.borderColor = '#4b5563';
+        }
+        const textarea = modal.querySelector('.swal2-textarea');
+        if (textarea) {
+          textarea.style.backgroundColor = '#374151';
+          textarea.style.color = '#f3f4f6';
+          textarea.style.borderColor = '#4b5563';
+        }
+      }
+    };
+  };
+
+  // Fonction pour envoyer un message
+  const handleSendMessage = (bookingId) => {
+    if (!messageText.trim()) {
+      Swal.fire({
+        ...getSwalTheme(),
+        icon: 'warning',
+        title: 'Message vide',
+        text: 'Veuillez écrire un message avant d\'envoyer'
+      });
+      return;
+    }
+    
+    Swal.fire({
+      ...getSwalTheme(),
+      icon: 'success',
+      title: 'Message envoyé',
+      text: `Votre message a été envoyé au freelancer`
+    });
+    
+    setMessageText('');
+    setShowMessageModal(null);
+  };
+
+  // Fonction pour valider une commande
+  const handleValidateBooking = (bookingId) => {
+    setShowValidationModal(bookingId);
+    setValidationRating(0);
+    setValidationComment('');
+  };
+
+  // Fonction pour confirmer la validation avec note et avis
+  const handleConfirmValidation = (bookingId) => {
+    if (validationRating === 0) {
+      Swal.fire({
+        ...getSwalTheme(),
+        icon: 'warning',
+        title: 'Note requise',
+        text: 'Veuillez donner une note au freelancer'
+      });
+      return;
+    }
+
+    // Mettre à jour le booking avec le statut complété
+    setBookings(bookings.map(b => 
+      b.id === bookingId ? {
+        ...b,
+        status: 'completed',
+        rating: validationRating,
+        review: validationComment
+      } : b
+    ));
+
+    Swal.fire({
+      ...getSwalTheme(),
+      icon: 'success',
+      title: 'Commande validée!',
+      text: 'Merci pour votre avis. Le freelancer recevra le paiement dans les 24h'
+    });
+
+    setShowValidationModal(null);
+    setShowDetails(null);
+    setValidationRating(0);
+    setValidationComment('');
+  };
+
+  // Fonction pour refuser une commande
+  const handleRejectBooking = (bookingId) => {
+    Swal.fire({
+      ...getSwalTheme(),
+      title: 'Refuser ce travail?',
+      text: 'Pourquoi ne pouvez-vous pas accepter ce travail?',
+      input: 'textarea',
+      inputPlaceholder: 'Expliquez les raisons...',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: isDarkMode ? '#4b5563' : '#d1d5db'
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        setBookings(bookings.map(b => 
+          b.id === bookingId ? { ...b, status: 'in_progress', completed: false } : b
+        ));
+        Swal.fire({
+          ...getSwalTheme(),
+          icon: 'info',
+          title: 'Travail renvoyé',
+          text: 'Le freelancer a été notifié et pourra corriger'
+        });
+        setShowDetails(null);
+      }
+    });
+  };
+
   const filteredBookings = bookings.filter(b => {
-    if (activeFilter === 'all') return true;
-    return b.status === activeFilter;
+    const statusMatch = activeFilter === 'all' ? true : b.status === activeFilter;
+    const serviceMatch = activeServiceFilter === 'all' ? true : b.serviceType === activeServiceFilter;
+    return statusMatch && serviceMatch;
   });
+
+  // Fonction pour exporter les réservations
+  const handleExport = () => {
+    const csvContent = [
+      ['ID', 'Service', 'Type', 'Freelancer', 'Date', 'Heure', 'Lieu', 'Prix', 'Statut', 'Note'],
+      ...filteredBookings.map(b => [
+        b.id,
+        b.service,
+        b.serviceType === 'nettoyage' ? 'Nettoyage' : 'Gestion de Clés',
+        b.freelancer,
+        b.date,
+        b.time,
+        b.location,
+        b.price,
+        getStatusLabel(b.status),
+        b.rating ? `${b.rating}/5` : 'N/A'
+      ])
+    ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `reservations_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    Swal.fire({
+      ...getSwalTheme(),
+      icon: 'success',
+      title: 'Export réussi',
+      text: `${filteredBookings.length} réservations exportées en CSV`
+    });
+  };
 
   return (
     <div className={`space-y-6 ${theme.bg}`}>
@@ -105,35 +365,62 @@ const MyBookings = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className={`text-3xl font-bold ${theme.textMain}`}>Mes Réservations</h1>
-          <p className={`mt-2 ${theme.textSecondary}`}>Gérez vos services de nettoyage</p>
+          <p className={`mt-2 ${theme.textSecondary}`}>Commandes en cours et en attente</p>
         </div>
-        <button className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg transition">
+        <button 
+          onClick={handleExport}
+          className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg transition"
+        >
           <Download size={20} />
           Exporter
         </button>
       </div>
 
       {/* Filters */}
-      <div className={`${theme.cardBg} rounded-xl p-4 shadow-sm border ${theme.border} flex flex-wrap gap-2 items-center`}>
-        <Filter size={20} className={theme.textMuted} />
-        {[
-          { id: 'all', label: 'Tous' },
-          { id: 'confirmed', label: 'Confirmées' },
-          { id: 'pending', label: 'En attente' },
-          { id: 'completed', label: 'Complétées' }
-        ].map(filter => (
-          <button
-            key={filter.id}
-            onClick={() => setActiveFilter(filter.id)}
-            className={`px-4 py-2 rounded-lg transition font-medium ${
-              activeFilter === filter.id
-                ? 'bg-cyan-600 text-white'
-                : `${isDarkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`
-            }`}
-          >
-            {filter.label}
-          </button>
-        ))}
+      <div className={`${theme.cardBg} rounded-xl p-4 shadow-sm border ${theme.border} space-y-3`}>
+        {/* Filter par statut */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <Filter size={20} className={theme.textMuted} />
+          {[
+            { id: 'in_progress', label: 'En cours' },
+            { id: 'pending_approval', label: 'En attente' }
+          ].map(filter => (
+            <button
+              key={filter.id}
+              onClick={() => setActiveFilter(filter.id)}
+              className={`px-4 py-2 rounded-lg transition font-medium text-sm ${
+                activeFilter === filter.id
+                  ? 'bg-cyan-600 text-white'
+                  : `${isDarkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`
+              }`}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Filter par type de service */}
+        <div className="flex flex-wrap gap-2 items-center pt-2 border-t border-gray-300 dark:border-gray-600">
+          <Package size={20} className={theme.textMuted} />
+          {[
+            { id: 'all', label: 'Tous les services', icon: '⭐' },
+            { id: 'nettoyage', label: 'Nettoyage', icon: '✨' },
+            { id: 'cles', label: 'Gestion de Clés', icon: '🔑' }
+          ].map(filter => (
+            <button
+              key={filter.id}
+              onClick={() => setActiveServiceFilter(filter.id)}
+              className={`px-4 py-2 rounded-lg transition font-medium text-sm flex items-center gap-2 ${
+                activeServiceFilter === filter.id
+                  ? 'bg-purple-600 text-white'
+                  : `${isDarkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`
+              }`}
+            >
+              <span>{filter.icon}</span>
+              {filter.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Bookings List */}
@@ -147,21 +434,29 @@ const MyBookings = () => {
           filteredBookings.map(booking => (
             <div key={booking.id} className={`${theme.cardBg} rounded-xl overflow-hidden shadow-sm border ${theme.border} hover:shadow-md transition`}>
               <div className="p-6">
-                <div className="flex flex-col md:flex-row md:items-center gap-6">
+                <div className="flex flex-col lg:flex-row lg:items-start gap-6">
                   {/* Left: Service Info */}
                   <div className="flex-1">
                     <div className="flex items-start gap-4 mb-4">
                       <div className="text-4xl">{booking.image}</div>
                       <div className="flex-1">
-                        <h3 className={`text-xl font-bold ${theme.textMain}`}>{booking.service}</h3>
-                        <p className={`${theme.textSecondary} text-sm`}>avec {booking.freelancer}</p>
-                        <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(booking.status)}`}>
-                          {getStatusLabel(booking.status)}
-                        </span>
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <h3 className={`text-xl font-bold ${theme.textMain}`}>{booking.service}</h3>
+                            <p className={`${theme.textSecondary} text-sm flex items-center gap-2 mt-1`}>
+                              <span>{booking.freelancerAvatar}</span>
+                              avec {booking.freelancer}
+                            </p>
+                          </div>
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(booking.status)} whitespace-nowrap`}>
+                            {getStatusIcon(booking.status)}
+                            {getStatusLabel(booking.status)}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Details */}
+                    {/* Details Grid */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                       <div>
                         <p className={`${theme.textMuted} text-xs uppercase mb-1`}>Date</p>
@@ -189,28 +484,67 @@ const MyBookings = () => {
                         <p className={`text-2xl font-bold text-cyan-600`}>{booking.price}</p>
                       </div>
                     </div>
+
+                    {/* Photos Section - Only for pending approval or completed */}
+                    {(booking.status === 'pending_approval' || booking.status === 'completed') && booking.photos_requested && (
+                      <div className={`mt-4 p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-slate-50'} border ${theme.border}`}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <ImageIcon size={16} className="text-cyan-600" />
+                          <h4 className={`font-semibold ${theme.textMain}`}>Photos du travail</h4>
+                        </div>
+                        {booking.photos && booking.photos.length > 0 ? (
+                          <div className="grid grid-cols-2 gap-3">
+                            {booking.photos.map(photo => (
+                              <div key={photo.id} className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-600' : 'bg-white'} border ${theme.border} text-center`}>
+                                <div className="text-3xl mb-2">{photo.url}</div>
+                                <p className={`text-xs font-medium ${theme.textMuted}`}>{photo.label}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className={`${theme.textMuted} text-sm`}>Aucune photo fournie pour le moment</p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Right: Actions */}
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-3 lg:min-w-[150px]">
                     <button
                       onClick={() => setShowDetails(booking.id)}
-                      className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition font-medium text-sm"
                     >
                       <Eye size={18} />
                       Détails
                     </button>
-                    {booking.status === 'confirmed' && (
-                      <button className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg transition">
+
+                    {booking.status === 'in_progress' && (
+                      <button 
+                        onClick={() => setShowMessageModal(booking.id)}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium text-sm"
+                      >
                         <MessageCircle size={18} />
                         Message
                       </button>
                     )}
-                    {booking.status === 'completed' && !booking.rating && (
-                      <button className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-yellow-200 hover:bg-yellow-300 text-yellow-800 rounded-lg transition">
-                        <Star size={18} />
-                        Évaluer
-                      </button>
+
+                    {booking.status === 'pending_approval' && (
+                      <>
+                        <button 
+                          onClick={() => handleValidateBooking(booking.id)}
+                          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-medium text-sm"
+                        >
+                          <CheckCircle size={18} />
+                          Valider
+                        </button>
+                        <button 
+                          onClick={() => handleRejectBooking(booking.id)}
+                          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition font-medium text-sm"
+                        >
+                          <AlertCircle size={18} />
+                          Refuser
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -223,13 +557,16 @@ const MyBookings = () => {
       {/* Details Modal */}
       {showDetails && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className={`${theme.cardBg} rounded-xl max-w-2xl w-full max-h-96 overflow-y-auto`}>
+          <div className={`${theme.cardBg} rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto`}>
             {(() => {
               const booking = bookings.find(b => b.id === showDetails);
               return (
-                <div className="p-8">
+                <div className="p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className={`text-2xl font-bold ${theme.textMain}`}>{booking.service}</h2>
+                    <div>
+                      <h2 className={`text-2xl font-bold ${theme.textMain}`}>{booking.service}</h2>
+                      <p className={`${theme.textMuted} text-sm mt-1`}>Numéro de commande: #{booking.id}</p>
+                    </div>
                     <button
                       onClick={() => setShowDetails(null)}
                       className={`p-2 rounded-lg ${theme.hoverBg} transition`}
@@ -239,38 +576,112 @@ const MyBookings = () => {
                   </div>
 
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className={`${theme.textMuted} text-sm mb-1`}>Freelancer</p>
-                        <p className={`${theme.textMain} font-semibold`}>{booking.freelancer}</p>
-                      </div>
-                      <div>
-                        <p className={`${theme.textMuted} text-sm mb-1`}>Statut</p>
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(booking.status)}`}>
-                          {getStatusLabel(booking.status)}
-                        </span>
-                      </div>
-                      <div>
-                        <p className={`${theme.textMuted} text-sm mb-1`}>Date</p>
-                        <p className={`${theme.textMain} font-semibold`}>{booking.date} à {booking.time}</p>
-                      </div>
-                      <div>
-                        <p className={`${theme.textMuted} text-sm mb-1`}>Prix</p>
-                        <p className={`text-xl font-bold text-cyan-600`}>{booking.price}</p>
+                    {/* Status and Freelancer Info */}
+                    <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-slate-50'} border ${theme.border}`}>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className={`${theme.textMuted} text-xs font-semibold uppercase mb-2`}>Freelancer</p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{booking.freelancerAvatar}</span>
+                            <div>
+                              <p className={`${theme.textMain} font-semibold`}>{booking.freelancer}</p>
+                              <p className={`${theme.textMuted} text-xs`}>Professional vérifié</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <p className={`${theme.textMuted} text-xs font-semibold uppercase mb-2`}>Statut</p>
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(booking.status)}`}>
+                            {getStatusIcon(booking.status)}
+                            {getStatusLabel(booking.status)}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    <div>
-                      <p className={`${theme.textMuted} text-sm mb-1`}>Localisation</p>
-                      <p className={`${theme.textMain} font-semibold flex items-center gap-2`}>
-                        <MapPin size={16} />
-                        {booking.location}
-                      </p>
+                    {/* Service Details */}
+                    <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-slate-50'} border ${theme.border}`}>
+                      <h3 className={`font-semibold ${theme.textMain} mb-3`}>Détails du service</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className={`${theme.textMuted} text-xs font-semibold uppercase mb-1`}>Date et heure</p>
+                          <p className={`${theme.textMain} font-semibold`}>{booking.date} à {booking.time}</p>
+                        </div>
+                        <div>
+                          <p className={`${theme.textMuted} text-xs font-semibold uppercase mb-1`}>Prix</p>
+                          <p className={`text-xl font-bold text-cyan-600`}>{booking.price}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className={`${theme.textMuted} text-xs font-semibold uppercase mb-1`}>Localisation</p>
+                          <p className={`${theme.textMain} font-semibold flex items-center gap-2`}>
+                            <MapPin size={16} />
+                            {booking.location}
+                          </p>
+                        </div>
+                      </div>
                     </div>
 
+                    {/* Photos Section */}
+                    {booking.photos_requested && (
+                      <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-slate-50'} border ${theme.border}`}>
+                        <h3 className={`font-semibold ${theme.textMain} mb-3 flex items-center gap-2`}>
+                          <ImageIcon size={18} />
+                          Photos du travail
+                        </h3>
+                        {booking.photos && booking.photos.length > 0 ? (
+                          <div className="grid grid-cols-2 gap-3">
+                            {booking.photos.map(photo => (
+                              <div key={photo.id} className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-600' : 'bg-white'} border ${theme.border} text-center cursor-pointer hover:opacity-80 transition`}>
+                                <div className="text-4xl mb-2">{photo.url}</div>
+                                <p className={`text-sm font-medium ${theme.textMain}`}>{photo.label}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className={`${theme.textMuted} text-sm`}>Aucune photo fournie pour le moment</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Timeline */}
+                    <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-slate-50'} border ${theme.border}`}>
+                      <h3 className={`font-semibold ${theme.textMain} mb-3`}>Historique</h3>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle size={16} className="text-green-500 flex-shrink-0" />
+                          <span className={theme.textSecondary}>Commande acceptée par {booking.freelancer}</span>
+                        </div>
+                        {booking.status === 'in_progress' && (
+                          <div className="flex items-center gap-2">
+                            <Truck size={16} className="text-blue-500 flex-shrink-0" />
+                            <span className={theme.textSecondary}>Travail en cours...</span>
+                          </div>
+                        )}
+                        {booking.status === 'pending_approval' && (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <CheckCircle size={16} className="text-green-500 flex-shrink-0" />
+                              <span className={theme.textSecondary}>Travail complété par {booking.freelancer}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <AlertCircle size={16} className="text-yellow-500 flex-shrink-0" />
+                              <span className={theme.textSecondary}>En attente de votre validation</span>
+                            </div>
+                          </>
+                        )}
+                        {booking.status === 'completed' && (
+                          <div className="flex items-center gap-2">
+                            <CheckCheck size={16} className="text-green-500 flex-shrink-0" />
+                            <span className={theme.textSecondary}>Commande finalisée et payée</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Rating */}
                     {booking.rating && (
                       <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-slate-50'}`}>
-                        <p className={`${theme.textMuted} text-sm mb-2`}>Votre évaluation</p>
+                        <p className={`${theme.textMuted} text-sm mb-2 font-semibold`}>Votre évaluation</p>
                         <div className="flex items-center gap-2">
                           {[...Array(5)].map((_, i) => (
                             <Star
@@ -279,7 +690,7 @@ const MyBookings = () => {
                               className={i < booking.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}
                             />
                           ))}
-                          <span className={`ml-2 ${theme.textMain} font-semibold`}>{booking.rating}/5</span>
+                          <span className={`ml-2 ${theme.textMain} font-semibold`}>{booking.rating}/5 ⭐</span>
                         </div>
                       </div>
                     )}
@@ -287,6 +698,114 @@ const MyBookings = () => {
                 </div>
               );
             })()}
+          </div>
+        </div>
+      )}
+
+      {/* Message Modal */}
+      {showMessageModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`${theme.cardBg} rounded-xl max-w-md w-full shadow-xl border ${theme.border}`}>
+            <div className="p-6 border-b border-gray-300 dark:border-gray-600">
+              <h2 className={`text-xl font-bold ${theme.textMain}`}>Envoyer un message</h2>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className={`block ${theme.textSecondary} text-sm font-medium mb-2`}>
+                  Votre message
+                </label>
+                <textarea
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  placeholder="Écrivez votre message au freelancer..."
+                  className={`w-full px-4 py-2 rounded-lg border ${theme.border} ${theme.inputBg} focus:outline-none focus:ring-2 focus:ring-cyan-500`}
+                  rows="4"
+                />
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-300 dark:border-gray-600 flex gap-3">
+              <button
+                onClick={() => setShowMessageModal(null)}
+                className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition font-medium"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => handleSendMessage(showMessageModal)}
+                className="flex-1 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition font-medium"
+              >
+                Envoyer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Validation Modal - Note & Comment */}
+      {showValidationModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`${theme.cardBg} rounded-xl max-w-md w-full shadow-xl border ${theme.border}`}>
+            <div className="p-6 border-b border-gray-300 dark:border-gray-600">
+              <h2 className={`text-lg font-bold ${theme.textMain}`}>Évaluer ce travail</h2>
+              <p className={`${theme.textSecondary} text-sm mt-1`}>Comment était le travail du freelancer?</p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Rating Stars */}
+              <div className="space-y-2">
+                <p className={`${theme.textSecondary} text-sm font-medium`}>Note</p>
+                <div className="flex justify-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => setValidationRating(star)}
+                      className="p-2 hover:scale-110 transition"
+                    >
+                      <Star
+                        size={32}
+                        className={star <= validationRating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}
+                      />
+                    </button>
+                  ))}
+                </div>
+                {validationRating > 0 && (
+                  <p className={`text-center ${theme.textMain} font-semibold text-sm`}>
+                    {validationRating === 1 && 'Très insatisfait'}
+                    {validationRating === 2 && 'Insatisfait'}
+                    {validationRating === 3 && 'Acceptable'}
+                    {validationRating === 4 && 'Très satisfait'}
+                    {validationRating === 5 && 'Excellent!'}
+                  </p>
+                )}
+              </div>
+
+              {/* Comment */}
+              <div>
+                <p className={`${theme.textSecondary} text-sm font-medium mb-2`}>Commentaire (optionnel)</p>
+                <textarea
+                  value={validationComment}
+                  onChange={(e) => setValidationComment(e.target.value)}
+                  placeholder="Partagez votre avis sur ce service..."
+                  className={`w-full px-3 py-2 rounded-lg border ${theme.border} ${theme.inputBg} text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500`}
+                  rows="3"
+                />
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-300 dark:border-gray-600 flex gap-3">
+              <button
+                onClick={() => setShowValidationModal(null)}
+                className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition font-medium text-sm"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => handleConfirmValidation(showValidationModal)}
+                className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-medium text-sm"
+              >
+                Valider & Évaluer
+              </button>
+            </div>
           </div>
         </div>
       )}

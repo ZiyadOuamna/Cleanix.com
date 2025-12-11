@@ -15,7 +15,7 @@ import {
 import { ClientContext } from './clientContext';
 import Swal from 'sweetalert2';
 
-const BookingHistory = () => {
+const CommandeHistory = () => {
   const { isDarkMode } = useContext(ClientContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeServiceFilter, setActiveServiceFilter] = useState('all');
@@ -319,18 +319,18 @@ const BookingHistory = () => {
               {status.label}
             </button>
           ))}
-          
-          {/* Export Button */}
-          <div className="ml-auto">
-            <button
-              onClick={handleExport}
-              className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1 rounded-full transition font-medium text-xs"
-            >
-              <Download size={14} />
-              Exporter
-            </button>
-          </div>
         </div>
+      </div>
+
+      {/* Export Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={handleExport}
+          className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg transition font-medium text-sm"
+        >
+          <Download size={16} />
+          Exporter en CSV
+        </button>
       </div>
 
       {/* History List */}
@@ -430,4 +430,4 @@ const BookingHistory = () => {
   );
 };
 
-export default BookingHistory;
+export default CommandeHistory;

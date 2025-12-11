@@ -78,6 +78,7 @@ export default function RemboursementSuperviseurPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRefund, setSelectedRefund] = useState(null);
     const [newMessage, setNewMessage] = useState('');
+    const [selectedRefundIds, setSelectedRefundIds] = useState([]);
 
     // Filtrer les remboursements
     const filteredRefunds = refunds.filter(r => {
@@ -195,6 +196,48 @@ export default function RemboursementSuperviseurPage() {
         setNewMessage('');
     };
 
+    // Toggle checkbox pour sélectionner/désélectionner un remboursement
+    const handleToggleSelection = (id) => {
+        setSelectedRefundIds(prev => 
+            prev.includes(id) ? prev.filter(rId => rId !== id) : [...prev, id]
+        );
+    };
+
+    // Rembourser tout le monde (les remboursements sélectionnés)
+    const handleBulkApprove = () => {
+        if (selectedRefundIds.length === 0) {
+            alert('Veuillez sélectionner au moins un remboursement');
+            return;
+        }
+
+        const selectedAmount = refunds
+            .filter(r => selectedRefundIds.includes(r.id) && r.statut === 'En attente')
+            .reduce((acc, curr) => acc + parseFloat(curr.montant), 0);
+
+        if (window.confirm(`Êtes-vous certain de valider ${selectedRefundIds.length} remboursement(s) pour un montant total de ${selectedAmount.toFixed(2)} DH ?`)) {
+            const updatedRefunds = refunds.map(r => {
+                if (selectedRefundIds.includes(r.id) && r.statut === 'En attente') {
+                    const messageSysteme = {
+                        id: r.messages.length + 1,
+                        auteur: 'Système',
+                        message: 'Votre remboursement a été approuvé. Le montant sera crédité sur votre compte dans les 24-48h.',
+                        date: new Date().toLocaleString('fr-FR')
+                    };
+                    
+                    return { 
+                        ...r, 
+                        statut: 'Validé',
+                        messages: [...r.messages, messageSysteme]
+                    };
+                }
+                return r;
+            });
+            
+            setRefunds(updatedRefunds);
+            setSelectedRefundIds([]);
+        }
+    };
+
     // Stats rapides
     const stats = {
         pendingCount: refunds.filter(r => r.statut === 'En attente').length,
@@ -278,6 +321,16 @@ export default function RemboursementSuperviseurPage() {
                 </div>
                 
                 <div className="flex gap-3">
+                    {selectedRefundIds.length > 0 && (
+                        <button 
+                            onClick={handleBulkApprove}
+                            className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition font-medium flex items-center gap-2"
+                        >
+                            <Check size={18} />
+                            Rembourser ({selectedRefundIds.length})
+                        </button>
+                    )}
+                    
                     <button className={`p-2 rounded-lg border transition hover:bg-gray-50 ${isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-200 text-gray-600'}`}>
                         <RefreshCcw size={20} />
                     </button>
@@ -306,6 +359,20 @@ export default function RemboursementSuperviseurPage() {
                 <table className="w-full text-left">
                     <thead className={`text-xs uppercase font-semibold border-b ${isDarkMode ? 'bg-gray-700/50 text-gray-400 border-gray-700' : 'bg-gray-50 text-gray-500 border-gray-100'}`}>
                         <tr>
+                            <th className="px-6 py-4 w-12">
+                                <input 
+                                    type="checkbox"
+                                    checked={selectedRefundIds.length === filteredRefunds.length && filteredRefunds.length > 0}
+                                    onChange={(e) => {
+                                        if (e.target.checked) {
+                                            setSelectedRefundIds(filteredRefunds.map(r => r.id));
+                                        } else {
+                                            setSelectedRefundIds([]);
+                                        }
+                                    }}
+                                    className="cursor-pointer"
+                                />
+                            </th>
                             <th className="px-6 py-4">ID</th>
                             <th className="px-6 py-4">Commande</th>
                             <th className="px-6 py-4">Client</th>
@@ -320,6 +387,16 @@ export default function RemboursementSuperviseurPage() {
                         {filteredRefunds.length > 0 ? (
                             filteredRefunds.map((r) => (
                                 <tr key={r.id} className={`transition ${isDarkMode ? 'hover:bg-gray-700/30' : 'hover:bg-gray-50/80'}`}>
+                                    <td className="px-6 py-4">
+                                        <input 
+                                            type="checkbox"
+                                            checked={selectedRefundIds.includes(r.id)}
+                                            onChange={() => handleToggleSelection(r.id)}
+                                            disabled={r.statut !== 'En attente'}
+                                            className="cursor-pointer disabled:opacity-50"
+                                            title={r.statut !== 'En attente' ? 'Seulement les remboursements en attente peuvent être sélectionnés' : ''}
+                                        />
+                                    </td>
                                     <td className={`px-6 py-4 font-mono text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{r.id}</td>
                                     <td className="px-6 py-4">
                                         <span className="text-indigo-500 font-medium text-sm bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded">{r.commande}</span>
@@ -356,7 +433,7 @@ export default function RemboursementSuperviseurPage() {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="8" className={`px-6 py-8 text-center ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                                <td colSpan="9" className={`px-6 py-8 text-center ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                                     Aucune demande trouvée.
                                 </td>
                             </tr>
