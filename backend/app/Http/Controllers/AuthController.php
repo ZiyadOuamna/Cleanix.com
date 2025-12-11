@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Client;
 use App\Models\Freelancer;
-use App\Models\Support;
 use App\Models\Superviseur;
 use App\Models\Portefeuille;
 use Carbon\Carbon;
@@ -535,14 +534,6 @@ class AuthController extends Controller
                 ]);
                 break;
 
-            case 'Support':
-                Support::create([
-                    'user_id' => $user->id,
-                    'est_disponible' => true,
-                    'tickets_traites' => 0,
-                ]);
-                break;
-
             case 'Superviseur':
                 Superviseur::create([
                     'user_id' => $user->id,
@@ -560,7 +551,6 @@ class AuthController extends Controller
         return match($userType) {
             'Client' => 'client.portefeuille',
             'Freelancer' => 'freelancer.portefeuille',
-            'Support' => 'support',
             'Superviseur' => 'superviseur',
             default => '',
         };

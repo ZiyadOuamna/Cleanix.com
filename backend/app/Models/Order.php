@@ -75,6 +75,11 @@ class Order extends Model
         return $this->hasMany(OrderProposal::class);
     }
 
+    public function gestionCle(): HasMany
+    {
+        return $this->hasMany(GestionCle::class, 'order_id');
+    }
+
     // Accesseurs pour les statuts
     public function isPending(): bool
     {

@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('password');
             $table->string('telephone')->unique();
             $table->enum('genre', ['Homme', 'Femme'])->default('Homme');
-            $table->enum('user_type', ['Client', 'Freelancer', 'Support', 'Superviseur'])->default('Client');
+            $table->enum('user_type', ['Client', 'Freelancer', 'Superviseur'])->default('Client');
             $table->string('photo_profil')->nullable();
             $table->rememberToken();
             $table->timestamps();

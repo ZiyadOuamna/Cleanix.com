@@ -7,6 +7,8 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\ReclamationController;
 use App\Http\Controllers\PaiementController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\WalletController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -52,6 +54,52 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Créer un superviseur (Superviseurs uniquement)
     Route::post('/create-superviseur', [AuthController::class, 'createSuperviseur']);
+
+    // ========== ROUTES SETTINGS ==========
+    
+    // Get user settings
+    Route::get('/settings', [SettingsController::class, 'getSettings']);
+    
+    // Send email verification code
+    Route::post('/settings/send-email-code', [SettingsController::class, 'sendVerificationEmail']);
+    
+    // Confirm email code
+    Route::post('/settings/confirm-email-code', [SettingsController::class, 'confirmEmailCode']);
+    
+    // Change password
+    Route::post('/settings/change-password', [SettingsController::class, 'changePassword']);
+    
+    // Update notification settings
+    Route::put('/settings/notifications', [SettingsController::class, 'updateNotificationSettings']);
+    
+    // Update privacy settings
+    Route::put('/settings/privacy', [SettingsController::class, 'updatePrivacySettings']);
+    
+    // Update availability settings
+    Route::put('/settings/availability', [SettingsController::class, 'updateAvailabilitySettings']);
+    
+    // Update bank info
+    Route::put('/settings/bank-info', [SettingsController::class, 'updateBankInfo']);
+    
+    // Upload identity documents
+    Route::post('/settings/upload-identity', [SettingsController::class, 'uploadIdentityDocuments']);
+
+    // ========== ROUTES WALLET ==========
+    
+    // Get wallet
+    Route::get('/wallet', [WalletController::class, 'getWallet']);
+    
+    // Get transactions
+    Route::get('/wallet/transactions', [WalletController::class, 'getTransactions']);
+    
+    // Get payment methods
+    Route::get('/wallet/payment-methods', [WalletController::class, 'getPaymentMethods']);
+    
+    // Add payment method
+    Route::post('/wallet/payment-methods', [WalletController::class, 'addPaymentMethod']);
+    
+    // Request withdrawal
+    Route::post('/wallet/withdraw', [WalletController::class, 'requestWithdrawal']);
 
     // ========== ROUTES COMMANDES (Orders) ==========
     
@@ -110,6 +158,17 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Supprimer un service (Freelancer/Superviseur)
     Route::delete('/services/{service}', [ServiceController::class, 'destroy']);
+
+    // ========== ROUTES SUPERVISEUR VALIDATION SERVICES ==========
+    
+    // Récupérer les services en attente de validation (Superviseur)
+    Route::get('/superviseur/services/pending', [ServiceController::class, 'getPendingServices']);
+    
+    // Approuver un service (Superviseur)
+    Route::post('/superviseur/services/{service}/approve', [ServiceController::class, 'approveService']);
+    
+    // Rejeter un service (Superviseur)
+    Route::post('/superviseur/services/{service}/reject', [ServiceController::class, 'rejectService']);
 
     // ========== ROUTES NOTIFICATIONS ==========
     
