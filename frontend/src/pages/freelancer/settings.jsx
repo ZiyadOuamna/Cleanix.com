@@ -4,6 +4,17 @@ import { Settings, Shield, Clock, Lock, RefreshCw, User, Bell, Camera, CheckCirc
 
 // Assurez-vous que le chemin d'import est correct vers votre fichier context
 import { FreelancerContext } from './freelancerContext';
+import { 
+  sendVerificationEmail as sendVerificationEmailAPI,
+  confirmEmailCode as confirmEmailCodeAPI,
+  updatePassword as updatePasswordAPI,
+  updateNotificationSettings,
+  updatePrivacySettings,
+  updateAvailabilitySettings,
+  updateBankInfo,
+  getSettings,
+  uploadIdentityDocuments
+} from '../../services/settingsService';
 
 const SettingsFreelancer = () => {
   const { 
@@ -247,7 +258,7 @@ const SettingsFreelancer = () => {
     }));
   }, []);
 
-  const sendVerificationEmail = useCallback(() => {
+  const sendVerificationEmail = useCallback(async () => {
     if (!formData.email) {
       Swal.fire({
         icon: 'error',
@@ -259,16 +270,14 @@ const SettingsFreelancer = () => {
       return;
     }
 
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-    
     setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      const response = await sendVerificationEmailAPI(formData.email);
+      
       setFormData(prev => ({
         ...prev,
         emailVerification: {
           ...prev.emailVerification,
-          verificationCode: verificationCode,
           codeSent: true
         }
       }));
@@ -276,14 +285,24 @@ const SettingsFreelancer = () => {
       Swal.fire({
         icon: 'success',
         title: 'Code envoyé!',
-        html: `Un code de vérification a été envoyé à <strong>${formData.email}</strong><br><br>Code de test: <strong>${verificationCode}</strong>`,
+        html: `Un code de vérification a été envoyé à <strong>${formData.email}</strong>`,
         background: isDarkMode ? '#1f2937' : '#ffffff',
         color: isDarkMode ? '#ffffff' : '#000000',
       });
-    }, 1500);
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: error.response?.data?.message || 'Impossible d\'envoyer le code',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#000000',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   }, [formData.email, isDarkMode]);
 
-  const verifyEmailCode = useCallback(() => {
+  const verifyEmailCode = useCallback(async () => {
     if (!emailCode) {
       Swal.fire({
         icon: 'error',
@@ -295,7 +314,10 @@ const SettingsFreelancer = () => {
       return;
     }
 
-    if (emailCode === formData.emailVerification.verificationCode) {
+    setIsSaving(true);
+    try {
+      const response = await confirmEmailCodeAPI(emailCode, formData.email);
+      
       setFormData(prev => ({
         ...prev,
         emailVerification: {
@@ -305,6 +327,8 @@ const SettingsFreelancer = () => {
         }
       }));
       
+      setEmailCode('');
+      
       Swal.fire({
         icon: 'success',
         title: 'Email vérifié!',
@@ -312,19 +336,20 @@ const SettingsFreelancer = () => {
         background: isDarkMode ? '#1f2937' : '#ffffff',
         color: isDarkMode ? '#ffffff' : '#000000',
       });
-      setEmailCode('');
-    } else {
+    } catch (error) {
       Swal.fire({
         icon: 'error',
-        title: 'Code incorrect',
-        text: 'Le code de vérification est incorrect. Veuillez réessayer.',
+        title: 'Code invalide',
+        text: error.response?.data?.message || 'Le code saisi est incorrect',
         background: isDarkMode ? '#1f2937' : '#ffffff',
         color: isDarkMode ? '#ffffff' : '#000000',
       });
+    } finally {
+      setIsSaving(false);
     }
-  }, [emailCode, formData.emailVerification.verificationCode, isDarkMode]);
+  }, [emailCode, formData.email, isDarkMode]);
 
-  const submitVerificationToSupervisor = useCallback(() => {
+  const submitVerificationToSupervisor = useCallback(async () => {
     if (!formData.emailVerification.verified) {
       Swal.fire({
         icon: 'error',
@@ -371,8 +396,24 @@ const SettingsFreelancer = () => {
 
     setIsSaving(true);
     
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      // Upload des documents d'identité
+      const formDataUpload = new FormData();
+      if (formData.identityVerification.cinFront) {
+        formDataUpload.append('cin_front', formData.identityVerification.cinFront);
+      }
+      if (formData.identityVerification.cinBack) {
+        formDataUpload.append('cin_back', formData.identityVerification.cinBack);
+      }
+      if (formData.identityVerification.selfiePhoto) {
+        formDataUpload.append('selfie', formData.identityVerification.selfiePhoto);
+      }
+      
+      const response = await uploadIdentityDocuments(
+        formData.identityVerification.cinNumber,
+        formDataUpload
+      );
+      
       setFormData(prev => ({
         ...prev,
         identityVerification: {
@@ -403,43 +444,18 @@ const SettingsFreelancer = () => {
         color: isDarkMode ? '#ffffff' : '#000000',
         width: 500
       });
-    }, 2000);
-  }, [formData, isDarkMode]);
-
-  const simulateSupervisorApproval = useCallback(() => {
-    setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      setFormData(prev => ({
-        ...prev,
-        identityVerification: {
-          ...prev.identityVerification,
-          status: 'verified',
-          supervisorStatus: 'approved',
-          verificationDate: new Date().toISOString()
-        }
-      }));
-      
-      if (setIsAccountActive) {
-        setIsAccountActive(true);
-      }
-      
+    } catch (error) {
       Swal.fire({
-        icon: 'success',
-        title: 'Compte vérifié et activé!',
-        html: `
-          <div style="text-align: center;">
-            <div style="font-size: 48px; color: #10B981;">✓</div>
-            <p style="margin-top: 15px;"><strong>Félicitations !</strong></p>
-            <p>Votre compte a été vérifié et activé par le superviseur.</p>
-            <p>Vous avez maintenant accès à toutes les fonctionnalités.</p>
-          </div>
-        `,
+        icon: 'error',
+        title: 'Erreur',
+        text: error.response?.data?.message || 'Impossible de soumettre les documents',
         background: isDarkMode ? '#1f2937' : '#ffffff',
         color: isDarkMode ? '#ffffff' : '#000000',
       });
-    }, 1500);
-  }, [setIsAccountActive, isDarkMode]);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [formData, isDarkMode]);
 
   const getEmailVerificationBadge = () => {
     const { verified } = formData.emailVerification;

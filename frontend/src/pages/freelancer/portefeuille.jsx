@@ -1,7 +1,14 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { FreelancerContext } from './freelancerContext';
 import { CheckCircle, Clock, AlertCircle, CreditCard, DollarSign, User, Mail, Smartphone, Building } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { 
+  getWallet,
+  getTransactions,
+  getPaymentMethods,
+  addPaymentMethod,
+  requestWithdrawal
+} from '../../services/walletService';
 
 const Portefeuille = () => {
   const { isDarkMode } = useContext(FreelancerContext);
@@ -11,6 +18,14 @@ const Portefeuille = () => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [verificationStep, setVerificationStep] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [walletData, setWalletData] = useState({
+    balance: 0,
+    pending: 0,
+    totalEarned: 0,
+    transactions: []
+  });
+  const [paymentMethods, setPaymentMethods] = useState([]);
   const [verificationData, setVerificationData] = useState({
     methodType: '',
     firstName: '',
@@ -51,54 +66,47 @@ const Portefeuille = () => {
     tableRow: isDarkMode ? 'bg-gray-800 hover:bg-gray-700/50' : 'bg-white hover:bg-slate-50'
   };
 
-  // Données simulées pour le portefeuille
-  const walletData = {
-    balance: 2450.75,
-    pending: 320.50,
-    totalEarned: 12890.25,
-    transactions: [
-      { id: 1, date: '2024-01-15', description: 'Nettoyage résidentiel - Casablanca', amount: 450.00, status: 'completed', type: 'credit' },
-      { id: 2, date: '2024-01-12', description: 'Nettoyage commercial - Rabat', amount: 680.00, status: 'completed', type: 'credit' },
-      { id: 3, date: '2024-01-10', description: 'Retrait bancaire', amount: 1000.00, status: 'completed', type: 'debit' },
-      { id: 4, date: '2024-01-08', description: 'Nettoyage après déménagement - Casablanca', amount: 320.50, status: 'pending', type: 'credit' },
-      { id: 5, date: '2024-01-05', description: 'Nettoyage régulier - Mohammedia', amount: 275.00, status: 'completed', type: 'credit' },
-      { id: 6, date: '2024-01-02', description: 'Frais de service', amount: 45.00, status: 'completed', type: 'debit' },
-    ]
-  };
+  // Charger les données du portefeuille depuis l'API
+  useEffect(() => {
+    const loadWalletData = async () => {
+      try {
+        setLoading(true);
+        
+        // Charger le portefeuille
+        const walletResponse = await getWallet();
+        if (walletResponse.data) {
+          setWalletData({
+            balance: walletResponse.data.balance || 0,
+            pending: walletResponse.data.pending || 0,
+            totalEarned: walletResponse.data.total_earned || 0,
+            transactions: []
+          });
+        }
+        
+        // Charger les transactions
+        const transactionsResponse = await getTransactions();
+        if (transactionsResponse.data) {
+          setWalletData(prev => ({
+            ...prev,
+            transactions: transactionsResponse.data || []
+          }));
+        }
+        
+        // Charger les méthodes de paiement
+        const methodsResponse = await getPaymentMethods();
+        if (methodsResponse.data) {
+          setPaymentMethods(methodsResponse.data || []);
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des données du portefeuille:', error);
+        // Garder les données par défaut en cas d'erreur
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Méthodes de paiement
-  const [paymentMethods, setPaymentMethods] = useState([
-    { 
-      id: 1, 
-      type: 'visa', 
-      name: 'Carte Visa', 
-      details: '1234•••• ••••5678', 
-      verified: true,
-      cardNumberStart: '1234',
-      cardNumberEnd: '5678',
-      expiryDate: '12/25',
-      cardHolder: 'John Doe'
-    },
-    { 
-      id: 2, 
-      type: 'mastercard', 
-      name: 'Carte Mastercard', 
-      details: '5678•••• ••••9012', 
-      verified: true,
-      cardNumberStart: '5678',
-      cardNumberEnd: '9012',
-      expiryDate: '09/24',
-      cardHolder: 'John Doe'
-    },
-    { 
-      id: 3, 
-      type: 'paypal', 
-      name: 'PayPal', 
-      details: 'freelancer@email.com', 
-      verified: true,
-      email: 'freelancer@email.com'
-    }
-  ]);
+    loadWalletData();
+  }, []);
 
   const stats = [
     { label: 'Solde disponible', value: `${walletData.balance} MAD`, color: isDarkMode ? 'text-green-400' : 'text-green-700' },
@@ -192,19 +200,42 @@ const Portefeuille = () => {
       preConfirm: () => {
         return { success: true };
       }
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        Swal.fire({
-          icon: 'success',
-          title: 'Retrait confirmé !',
-          text: `Votre demande de retrait de ${amount} MAD a été envoyée.`,
-          background: isDarkMode ? '#1f2937' : '#ffffff',
-          color: isDarkMode ? '#ffffff' : '#000000',
-          confirmButtonColor: '#10b981',
-          timer: 3000,
-          showConfirmButton: false
-        });
-        setWithdrawAmount('');
+        try {
+          const withdrawResponse = await requestWithdrawal(amount, selectedPaymentMethod);
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'Retrait confirmé !',
+            text: `Votre demande de retrait de ${amount} MAD a été envoyée.`,
+            background: isDarkMode ? '#1f2937' : '#ffffff',
+            color: isDarkMode ? '#ffffff' : '#000000',
+            confirmButtonColor: '#10b981',
+            timer: 3000,
+            showConfirmButton: false
+          });
+          setWithdrawAmount('');
+          
+          // Recharger les données du portefeuille
+          const updatedWallet = await getWallet();
+          if (updatedWallet.data) {
+            setWalletData(prev => ({
+              ...prev,
+              balance: updatedWallet.data.balance || prev.balance,
+              pending: updatedWallet.data.pending || prev.pending
+            }));
+          }
+        } catch (error) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Erreur',
+            text: error.response?.data?.message || 'Impossible de traiter le retrait',
+            background: isDarkMode ? '#1f2937' : '#ffffff',
+            color: isDarkMode ? '#ffffff' : '#000000',
+            confirmButtonColor: '#3b82f6'
+          });
+        }
       }
     });
   };
@@ -609,7 +640,17 @@ const Portefeuille = () => {
 
   return (
     <div className={`${theme.wrapper} py-8 transition-colors duration-300`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {loading && (
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+            <p className={theme.textSecondary}>Chargement des données...</p>
+          </div>
+        </div>
+      )}
+      
+      {!loading && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* En-tête */}
         <div className="mb-8">
@@ -909,7 +950,6 @@ const Portefeuille = () => {
             )}
           </div>
         </div>
-      </div>
 
       {/* Modal de vérification */}
       {showVerificationModal && (
@@ -1420,6 +1460,8 @@ const Portefeuille = () => {
               </div>
             </div>
           </div>
+        </div>
+      )}
         </div>
       )}
     </div>

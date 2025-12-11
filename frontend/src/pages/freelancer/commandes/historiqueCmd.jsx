@@ -1,10 +1,11 @@
-import React, { useState, useRef, useContext } from 'react';
+import React, { useState, useRef, useContext, useEffect } from 'react';
 import { 
   Search, Download, Star, X, Package, FileText, Save, Plus, Minus
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 // IMPORT IMPORTANT : On connecte la page au contexte global
 import { FreelancerContext } from '../freelancerContext';
+import { getAcceptedOrders } from '../../../services/orderService';
 
 const HistoriqueCommandes = () => {
   // CORRECTION ICI : On récupère isDarkMode depuis le contexte, pas les props
@@ -15,6 +16,8 @@ const HistoriqueCommandes = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showExportSettings, setShowExportSettings] = useState(false);
   const [exportFormat, setExportFormat] = useState('append');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   // --- SYSTÈME DE THÈME AMÉLIORÉ (Haute Visibilité) ---
   const theme = {
@@ -57,147 +60,58 @@ const HistoriqueCommandes = () => {
   // Référence pour le contenu HTML de la facture
   const invoiceRef = useRef(null);
 
-  // Données d'historique des commandes
-  const [orderHistory, setOrderHistory] = useState([
-    {
-      id: 101,
-      clientName: "Jean Dupont",
-      clientPhoto: "JD",
-      service: "Nettoyage complet",
-      date: "15 Jan 2024",
-      time: "10:30",
-      address: "123 Rue de Paris, 75001 Paris",
-      price: 85,
-      duration: "2h30",
-      status: "completed",
-      rating: 5,
-      clientReview: "Excellent travail, très professionnel!",
-      paymentMethod: "Carte bancaire",
-      paymentStatus: "paid",
-      exportDate: null
-    },
-    {
-      id: 102,
-      clientName: "Marie Martin",
-      clientPhoto: "MM",
-      service: "Nettoyage de printemps",
-      date: "14 Jan 2024",
-      time: "14:00",
-      address: "456 Avenue des Champs, 75008 Paris",
-      price: 120,
-      duration: "4h",
-      status: "completed",
-      rating: 4,
-      clientReview: "Très satisfaite, à recommander",
-      paymentMethod: "PayPal",
-      paymentStatus: "paid",
-      exportDate: null
-    },
-    {
-      id: 103,
-      clientName: "Pierre Bernard",
-      clientPhoto: "PB",
-      service: "Nettoyage bureau",
-      date: "13 Jan 2024",
-      time: "09:00",
-      address: "789 Boulevard Saint-Germain, 75006 Paris",
-      price: 150,
-      duration: "3h",
-      status: "cancelled",
-      rating: null,
-      clientReview: null,
-      paymentMethod: "Carte bancaire",
-      paymentStatus: "refunded",
-      cancellationReason: "Client a annulé",
-      exportDate: null
-    },
-    {
-      id: 104,
-      clientName: "Sophie Laurent",
-      clientPhoto: "SL",
-      service: "Nettoyage de vitres",
-      date: "12 Jan 2024",
-      time: "11:00",
-      address: "321 Rue de Rivoli, 75004 Paris",
-      price: 65,
-      duration: "1h30",
-      status: "completed",
-      rating: 5,
-      clientReview: "Parfait, merci beaucoup!",
-      paymentMethod: "Espèces",
-      paymentStatus: "paid",
-      exportDate: null
-    },
-    {
-      id: 105,
-      clientName: "Thomas Moreau",
-      clientPhoto: "TM",
-      service: "Nettoyage après travaux",
-      date: "10 Jan 2024",
-      time: "13:30",
-      address: "654 Rue de la Paix, 75002 Paris",
-      price: 200,
-      duration: "5h",
-      status: "completed",
-      rating: 4,
-      clientReview: "Très bon service",
-      paymentMethod: "Carte bancaire",
-      paymentStatus: "paid",
-      exportDate: null
-    },
-    {
-      id: 106,
-      clientName: "Émilie Rousseau",
-      clientPhoto: "ER",
-      service: "Nettoyage complet",
-      date: "08 Jan 2024",
-      time: "15:00",
-      address: "987 Avenue Montaigne, 75008 Paris",
-      price: 95,
-      duration: "3h",
-      status: "completed",
-      rating: 5,
-      clientReview: "Impeccable, je recommande",
-      paymentMethod: "PayPal",
-      paymentStatus: "paid",
-      exportDate: null
-    },
-    {
-      id: 107,
-      clientName: "Antoine Dubois",
-      clientPhoto: "AD",
-      service: "Nettoyage vitres",
-      date: "05 Jan 2024",
-      time: "16:00",
-      address: "147 Rue du Faubourg Saint-Honoré, 75008 Paris",
-      price: 70,
-      duration: "2h",
-      status: "completed",
-      rating: 3,
-      clientReview: "Correct, mais pourrait mieux faire",
-      paymentMethod: "Espèces",
-      paymentStatus: "paid",
-      exportDate: null
-    },
-    {
-      id: 108,
-      clientName: "Camille Lefevre",
-      clientPhoto: "CL",
-      service: "Nettoyage de printemps",
-      date: "03 Jan 2024",
-      time: "10:00",
-      address: "258 Rue de Vaugirard, 75015 Paris",
-      price: 135,
-      duration: "4h30",
-      status: "cancelled",
-      rating: null,
-      clientReview: null,
-      paymentMethod: "Carte bancaire",
-      paymentStatus: "refunded",
-      cancellationReason: "Problème d'emploi du temps",
-      exportDate: null
-    }
-  ]);
+  // Données depuis l'API - d'abord un état vide
+  const [orderHistory, setOrderHistory] = useState([]);
+
+  // Charger l'historique des commandes au montage
+  useEffect(() => {
+    const fetchOrderHistory = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await getAcceptedOrders();
+        
+        // Filtrer et transformer les commandes complétées/validées
+        const completedOrders = response.data
+          .filter(order => order.status === 'completed' || order.status === 'validated')
+          .map((order) => ({
+            id: order.id,
+            clientName: order.client ? `${order.client.firstname} ${order.client.lastname}` : 'Client inconnu',
+            clientPhoto: order.client ? `${order.client.firstname[0]}${order.client.lastname[0]}`.toUpperCase() : 'XX',
+            service: order.service?.nom || order.service_type || 'Service non spécifié',
+            date: new Date(order.scheduled_date).toLocaleDateString('fr-FR', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            }),
+            time: order.heure_execution ? new Date(order.heure_execution).toLocaleTimeString('fr-FR', {
+              hour: '2-digit',
+              minute: '2-digit'
+            }) : 'Horaire non spécifié',
+            address: `${order.adresse}, ${order.code_postal} ${order.ville}`,
+            price: order.agreed_price || order.initial_price || 0,
+            duration: order.duration || 'Non spécifié',
+            status: order.status === 'completed' ? 'completed' : 'completed',
+            rating: order.rating || 0,
+            clientReview: order.client_feedback || order.notes || 'Pas de commentaire',
+            paymentMethod: order.payment_method || 'Non spécifié',
+            paymentStatus: order.payment_status === 'paid' ? 'paid' : 'pending',
+            exportDate: null,
+            createdAt: new Date(order.created_at).toLocaleString('fr-FR'),
+            completedAt: new Date(order.updated_at).toLocaleString('fr-FR')
+          }));
+        
+        setOrderHistory(completedOrders);
+      } catch (err) {
+        console.error('Erreur lors du chargement de l\'historique:', err);
+        setError('Impossible de charger l\'historique des commandes');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchOrderHistory();
+  }, []);
 
   const filters = [
     { id: 'all', label: 'Toutes', count: orderHistory.length },
@@ -686,6 +600,26 @@ const HistoriqueCommandes = () => {
 
   return (
     <div className={`min-h-screen ${theme.bgPrimary} py-8 transition-colors duration-300`}>
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className={theme.textSecondary}>Chargement de votre historique...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className={`p-4 rounded-lg border border-red-300 ${isDarkMode ? 'bg-red-900/20 text-red-300' : 'bg-red-50 text-red-800'}`}>
+            <p className="font-medium">⚠️ {error}</p>
+          </div>
+        </div>
+      )}
+
+      {!isLoading && !error && (
       <ExportSettingsModal />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
@@ -898,6 +832,7 @@ const HistoriqueCommandes = () => {
           />
         )}
       </div>
+      )}
     </div>
   );
 };
