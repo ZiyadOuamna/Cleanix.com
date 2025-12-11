@@ -2,6 +2,11 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\EvaluationController;
+use App\Http\Controllers\ReclamationController;
+use App\Http\Controllers\PaiementController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -85,4 +90,86 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Annuler une commande (Client)
     Route::post('/orders/{order}/cancel', [OrderController::class, 'cancelOrder']);
+
+    // ========== ROUTES SERVICES ==========
+    
+    // Lister tous les services
+    Route::get('/services', [ServiceController::class, 'index']);
+    
+    // Voir un service spécifique
+    Route::get('/services/{service}', [ServiceController::class, 'show']);
+    
+    // Services du freelancer connecté
+    Route::get('/my-services', [ServiceController::class, 'getFreelancerServices']);
+    
+    // Créer un service (Freelancer)
+    Route::post('/services', [ServiceController::class, 'store']);
+    
+    // Modifier un service (Freelancer/Superviseur)
+    Route::put('/services/{service}', [ServiceController::class, 'update']);
+    
+    // Supprimer un service (Freelancer/Superviseur)
+    Route::delete('/services/{service}', [ServiceController::class, 'destroy']);
+
+    // ========== ROUTES NOTIFICATIONS ==========
+    
+    // Lister les notifications
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    
+    // Notifications non lues
+    Route::get('/notifications/unread', [NotificationController::class, 'unread']);
+    
+    // Marquer comme lue
+    Route::put('/notifications/{notification}', [NotificationController::class, 'markAsRead']);
+    
+    // Marquer tout comme lu
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+    
+    // Supprimer une notification
+    Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy']);
+
+    // ========== ROUTES ÉVALUATIONS ==========
+    
+    // Lister les évaluations
+    Route::get('/evaluations', [EvaluationController::class, 'index']);
+    
+    // Évaluer une commande
+    Route::post('/orders/{order}/evaluate', [EvaluationController::class, 'store']);
+    
+    // Voir une évaluation
+    Route::get('/evaluations/{evaluation}', [EvaluationController::class, 'show']);
+
+    // ========== ROUTES RÉCLAMATIONS ==========
+    
+    // Lister les réclamations de l'utilisateur
+    Route::get('/reclamations', [ReclamationController::class, 'index']);
+    
+    // Créer une réclamation
+    Route::post('/reclamations', [ReclamationController::class, 'store']);
+    
+    // Voir une réclamation
+    Route::get('/reclamations/{reclamation}', [ReclamationController::class, 'show']);
+    
+    // Répondre à une réclamation (Support)
+    Route::put('/reclamations/{reclamation}', [ReclamationController::class, 'respond']);
+    
+    // Lister toutes les réclamations (Support/Superviseur)
+    Route::get('/all-reclamations', [ReclamationController::class, 'all']);
+
+    // ========== ROUTES PAIEMENTS ==========
+    
+    // Lister les paiements
+    Route::get('/payments', [PaiementController::class, 'index']);
+    
+    // Créer un paiement
+    Route::post('/payments', [PaiementController::class, 'store']);
+    
+    // Voir un paiement
+    Route::get('/payments/{paiement}', [PaiementController::class, 'show']);
+    
+    // Confirmer un paiement
+    Route::post('/payments/{paiement}/confirm', [PaiementController::class, 'confirm']);
+    
+    // Rembourser un paiement
+    Route::post('/payments/{paiement}/refund', [PaiementController::class, 'refund']);
 });

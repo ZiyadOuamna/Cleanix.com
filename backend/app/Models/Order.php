@@ -14,27 +14,44 @@ class Order extends Model
     protected $fillable = [
         'client_id',
         'freelancer_id',
+        'service_id',
         'service_type',
         'description',
+        'adresse',
+        'ville',
+        'code_postal',
         'location',
+        'horaire_prefere',
+        'genre_freelancer_prefere',
         'initial_price',
         'agreed_price',
+        'commission_plateforme',
+        'montant_freelancer',
         'scheduled_date',
+        'date_execution',
+        'heure_execution',
         'completed_at',
         'status',
         'photos_before',
         'photos_after',
         'notes',
+        'notes_speciales',
         'rating',
         'review'
     ];
 
     protected $casts = [
         'scheduled_date' => 'datetime',
+        'date_execution' => 'date',
+        'heure_execution' => 'datetime',
         'completed_at' => 'datetime',
         'photos_before' => 'array',
         'photos_after' => 'array',
-        'rating' => 'float'
+        'rating' => 'float',
+        'initial_price' => 'decimal:2',
+        'agreed_price' => 'decimal:2',
+        'commission_plateforme' => 'decimal:2',
+        'montant_freelancer' => 'decimal:2'
     ];
 
     // Relations
@@ -46,6 +63,11 @@ class Order extends Model
     public function freelancer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'freelancer_id');
+    }
+
+    public function service(): BelongsTo
+    {
+        return $this->belongsTo(Service::class);
     }
 
     public function proposals(): HasMany
