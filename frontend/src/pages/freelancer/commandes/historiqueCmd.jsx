@@ -620,11 +620,12 @@ const HistoriqueCommandes = () => {
       )}
 
       {!isLoading && !error && (
-      <ExportSettingsModal />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        {/* En-tête */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <>
+          <ExportSettingsModal />
+          
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            {/* En-tête */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h2 className={`text-2xl font-bold ${theme.textPrimary}`}>Historique des Commandes</h2>
             <p className={`${theme.textMuted} mt-1`}>
@@ -832,6 +833,7 @@ const HistoriqueCommandes = () => {
           />
         )}
       </div>
+        </>
       )}
     </div>
   );

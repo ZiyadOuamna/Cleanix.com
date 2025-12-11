@@ -1,0 +1,484 @@
+@startuml Cleanix_Diagram_Classes
+!theme plain
+skinparam linetype ortho
+skinparam classBackgroundColor #F0F0FF
+skinparam classBorderColor #000080
+skinparam arrowColor #000080
+
+title Cleanix.com - Diagramme de Classes\n(Architecture Multi-Rôles)
+
+' ========================================
+' CLASSES PRINCIPALES D'AUTHENTIFICATION
+' ========================================
+
+class User {
+    --Attributs--
+    - id: int
+    - nom: string
+    - prenom: string
+    - email: string {unique}
+    - password: string
+    - genre: enum(Homme, Femme)
+    - telephone: string {unique}
+    - user_type: enum(Client, Freelancer, Support, Superviseur)
+    - photo_profil: string
+    - created_at: datetime
+    - updated_at: datetime
+    --Méthodes--
+    + isClient(): bool
+    + isFreelancer(): bool
+    + isSupport(): bool
+    + isSuperviseur(): bool
+    + isHomme(): bool
+    + isFemme(): bool
+}
+
+' ========================================
+' CLASSES DE RÔLES UTILISATEUR
+' ========================================
+
+class Client {
+    --Attributs--
+    - id: int
+    - user_id: int {FK}
+    - adresse: string
+    - ville: string
+    - code_postal: string
+    - created_at: datetime
+    - updated_at: datetime
+    --Méthodes--
+    + passerCommande(details): bool
+    + annulerCommande(commande): bool
+    + payerCommande(commande): bool
+    + evaluerFreelancer(commande, note, commentaire): void
+}
+
+class Freelancer {
+    --Attributs--
+    - id: int
+    - user_id: int {FK}
+    - statut_disponibilite: enum(Available, Busy, Offline)
+    - competences: string
+    - est_connecte: bool
+    - solde: decimal
+    - nombre_missions: int
+    - note_moyenne: decimal
+    - nombre_avis: int
+    - created_at: datetime
+    - updated_at: datetime
+    --Méthodes--
+    + setStatut(statut): void
+    + accepterCommande(commande): bool
+    + refuserCommande(commande): bool
+    + executer Commande(commande): bool
+}
+
+class Superviseur {
+    --Attributs--
+    - id: int
+    - user_id: int {FK}
+    - departement: string
+    - created_at: datetime
+    - updated_at: datetime
+    --Méthodes--
+    + validerService(service): bool
+    + rejeterService(service, raison): bool
+    + gererReclamations(): void
+}
+
+class Support {
+    --Attributs--
+    - id: int
+    - user_id: int {FK}
+    - created_at: datetime
+    - updated_at: datetime
+    --Méthodes--
+    + traiterReclamation(reclamation): bool
+    + aiderlUtilisateur(): void
+}
+
+' ========================================
+' CLASSES DE SERVICES
+' ========================================
+
+class Service {
+    --Attributs--
+    - id: int
+    - freelancer_id: int {FK}
+    - nom: string
+    - category: string
+    - description: string
+    - detailed_description: text
+    - duree_prevue: int
+    - adresse: string
+    - zones: json (array)
+    - availability: json (array)
+    - included_items: json (array)
+    - est_actif: bool
+    - image: string
+    - status: enum(pending_review, approved, rejected)
+    - reviewed_at: datetime
+    - reviewed_by: int
+    - rejection_reason: string
+    - created_at: datetime
+    - updated_at: datetime
+    --Méthodes--
+    + activer(): bool
+    + desactiver(): bool
+    + verifierDisponibilite(): bool
+}
+
+class NettoyageResidentiel {
+    --Attributs--
+    - id: int
+    - service_id: int {FK}
+    - nombre_pieces: int
+    - nettoyage_cuisine: bool
+    - nettoyage_sdb: bool
+}
+
+class NettoyageSuperficie {
+    --Attributs--
+    - id: int
+    - service_id: int {FK}
+    - superficie: decimal
+    - type_surface: string
+}
+
+class NettoyageUnitaire {
+    --Attributs--
+    - id: int
+    - service_id: int {FK}
+    - description_element: string
+    - prix_unitaire: decimal
+}
+
+class ServiceReview {
+    --Attributs--
+    - id: int
+    - service_id: int {FK}
+    - supervisor_id: int {FK}
+    - note: int (1-5)
+    - commentaires: text
+    - date_revision: datetime
+    - status: enum(approved, rejected)
+}
+
+' ========================================
+' CLASSES DE COMMANDES/ORDRES
+' ========================================
+
+class Order {
+    --Attributs--
+    - id: int
+    - client_id: int {FK}
+    - freelancer_id: int {FK}
+    - service_id: int {FK}
+    - service_type: string
+    - description: string
+    - adresse: string
+    - ville: string
+    - code_postal: string
+    - location: string
+    - horaire_prefere: string
+    - genre_freelancer_prefere: enum(Homme, Femme)
+    - initial_price: decimal
+    - agreed_price: decimal
+    - commission_plateforme: decimal
+    - montant_freelancer: decimal
+    - scheduled_date: datetime
+    - date_execution: date
+    - heure_execution: datetime
+    - completed_at: datetime
+    - status: enum(pending, in_progress, completed, cancelled)
+    - photos_before: json (array)
+    - photos_after: json (array)
+    - notes: text
+    - notes_speciales: text
+    - rating: float
+    - review: text
+    - created_at: datetime
+    - updated_at: datetime
+    --Méthodes--
+    + accepter(): bool
+    + refuser(): bool
+    + marquerCompletion(): bool
+    + evaluer(rating, review): bool
+}
+
+class OrderProposal {
+    --Attributs--
+    - id: int
+    - order_id: int {FK}
+    - freelancer_id: int {FK}
+    - prix_propose: decimal
+    - date_debut: datetime
+    - date_fin: datetime
+    - description_travail: string
+    - statut: enum(pending, accepted, rejected)
+    - created_at: datetime
+    - updated_at: datetime
+    --Méthodes--
+    + accepter(): bool
+    + refuser(): bool
+}
+
+' ========================================
+' CLASSES DE PAIEMENTS & PORTEFEUILLE
+' ========================================
+
+class Paiement {
+    --Attributs--
+    - id: int
+    - order_id: int {FK}
+    - montant: decimal
+    - status: enum(pending, completed, failed)
+    - methode: string
+    - reference_transaction: string
+    - date_paiement: datetime
+    - created_at: datetime
+    - updated_at: datetime
+    --Méthodes--
+    + traiter(): bool
+    + annuler(): bool
+}
+
+class Portefeuille {
+    --Attributs--
+    - id: int
+    - user_id: int {FK}
+    - solde: decimal
+    - solde_bloquer: decimal
+    - solde_disponible: decimal
+    - created_at: datetime
+    - updated_at: datetime
+    --Méthodes--
+    + crediter(montant): bool
+    + debiter(montant): bool
+    + hasEnoughBalance(montant): bool
+    + verifierSolde(): decimal
+}
+
+class PaymentMethod {
+    --Attributs--
+    - id: int
+    - user_id: int {FK}
+    - type: enum(carte, virement, wallet)
+    - details: json
+    - est_principal: bool
+    - created_at: datetime
+    - updated_at: datetime
+}
+
+class BankInfo {
+    --Attributs--
+    - id: int
+    - user_id: int {FK}
+    - iban: string
+    - bic: string
+    - compte_bancaire: string
+    - nom_titulaire: string
+    - created_at: datetime
+    - updated_at: datetime
+}
+
+class Transaction {
+    --Attributs--
+    - id: int
+    - portefeuille_id: int {FK}
+    - type: enum(credit, debit)
+    - montant: decimal
+    - raison: string
+    - reference: string
+    - created_at: datetime
+    - updated_at: datetime
+    --Méthodes--
+    + creer(portefeuille, type, montant): bool
+    + validerTransaction(): bool
+}
+
+class Wallet {
+    --Attributs--
+    - id: int
+    - user_id: int {FK}
+    - balance: decimal
+    - status: enum(active, blocked)
+    - created_at: datetime
+    - updated_at: datetime
+}
+
+' ========================================
+' CLASSES DE NOTIFICATIONS & SUPPORT
+' ========================================
+
+class Notification {
+    --Attributs--
+    - id: int
+    - user_id: int {FK}
+    - type: string
+    - titre: string
+    - message: string
+    - data: json
+    - est_lue: bool
+    - created_at: datetime
+    - read_at: datetime
+    --Méthodes--
+    + marquerCommeUle(): void
+    + marquerCommeNonLue(): void
+}
+
+class Reclamation {
+    --Attributs--
+    - id: int
+    - order_id: int {FK}
+    - user_id: int {FK}
+    - sujet: string
+    - description: text
+    - statut: enum(ouverte, en_cours, resolue, rejetee)
+    - priorite: enum(basse, normale, haute)
+    - date_ouverture: datetime
+    - date_resolution: datetime
+    - created_at: datetime
+    - updated_at: datetime
+    --Méthodes--
+    + ouvrir(): bool
+    + resolver(): bool
+    + assigner(support): bool
+}
+
+class Evaluation {
+    --Attributs--
+    - id: int
+    - order_id: int {FK}
+    - evaluateur_id: int {FK}
+    - evalue_id: int {FK}
+    - note: int (1-5)
+    - commentaire: text
+    - competence_note: int
+    - fiabilite_note: int
+    - proprete_note: int
+    - created_at: datetime
+    - updated_at: datetime
+    --Méthodes--
+    + sauvegarder(): bool
+    + calculerMoyenne(): decimal
+}
+
+' ========================================
+' CLASSES DE CONFIGURATION
+' ========================================
+
+class UserSettings {
+    --Attributs--
+    - id: int
+    - user_id: int {FK}
+    - notifications_actives: bool
+    - email_notifications: bool
+    - langue: string
+    - devise: string
+    - theme: enum(light, dark)
+    - created_at: datetime
+    - updated_at: datetime
+}
+
+' ========================================
+' RELATIONS ENTRE CLASSES
+' ========================================
+
+' Relations User
+User "1" -- "0..1" Client : crée >
+User "1" -- "0..1" Freelancer : crée >
+User "1" -- "0..1" Superviseur : crée >
+User "1" -- "0..1" Support : crée >
+User "1" -- "1" UserSettings : a >
+
+' Relations Client
+Client "1" -- "0..*" Order : passe >
+Client "1" -- "1" Portefeuille : possède >
+
+' Relations Freelancer
+Freelancer "1" -- "1..*" Service : offre >
+Freelancer "1" -- "0..*" Order : exécute >
+Freelancer "1" -- "1" Portefeuille : possède >
+Freelancer "1" -- "0..*" OrderProposal : propose >
+
+' Relations Service
+Service "1" -- "0..1" NettoyageResidentiel : peut-être
+Service "1" -- "0..1" NettoyageSuperficie : peut-être
+Service "1" -- "0..1" NettoyageUnitaire : peut-être
+Service "1" -- "0..*" ServiceReview : reçoit >
+Service "0..*" -- "1..*" Order : est-commandée >
+
+' Relations Superviseur
+Superviseur "1" -- "0..*" ServiceReview : effectue >
+
+' Relations Order
+Order "1" -- "1" Client : commandée-par >
+Order "1" -- "1" Freelancer : exécutée-par >
+Order "1" -- "1" Service : pour-service >
+Order "1" -- "0..*" OrderProposal : reçoit >
+Order "1" -- "0..*" Paiement : génère >
+Order "1" -- "0..*" Reclamation : peut-générer >
+Order "1" -- "0..*" Evaluation : génère >
+
+' Relations Paiement
+Paiement "0..*" -- "1" PaymentMethod : utilise >
+Paiement "0..*" -- "1" Order : paie >
+
+' Relations Portefeuille
+Portefeuille "1" -- "0..*" Transaction : contient >
+Portefeuille "1" -- "1" User : appartient-à >
+
+' Relations Portefeuille avec Paiement
+Portefeuille "1" -- "0..*" Paiement : finance >
+
+' Relations User avec autres
+User "1" -- "0..*" Notification : reçoit >
+User "1" -- "0..*" Evaluation : reçoit >
+User "1" -- "0..1" BankInfo : a >
+User "1" -- "0..1" PaymentMethod : a >
+User "1" -- "0..1" Wallet : possède >
+
+' Relations Reclamation
+Reclamation "0..*" -- "1" User : ouverte-par >
+
+' Relations UserSettings
+UserSettings "1" -- "1" User : configure >
+
+note right of User
+  Classe de base pour tous les utilisateurs
+  Utilise la colonne 'user_type' pour identifier le rôle
+  Utilise Sanctum pour l'authentification API
+end note
+
+note right of Client
+  Représente un client qui commande des services
+  Possède un portefeuille pour les paiements
+  Peut évaluer les freelancers
+end note
+
+note right of Freelancer
+  Représente un prestataire de services
+  Offre des services et propose des prix
+  Gère sa disponibilité et sa notation
+end note
+
+note right of Order
+  Représente une commande/mission
+  Suivi complet du cycle de vie
+  Gestion du statut et des documents
+end note
+
+note right of Portefeuille
+  Système de portefeuille pour les transactions
+  Solde bloqué pour les commandes en cours
+  Suivi des transactions
+end note
+
+note right of Reclamation
+  Système de support client
+  Gestion des problèmes et litiges
+  Attribution aux équipes support
+end note
+
+@enduml

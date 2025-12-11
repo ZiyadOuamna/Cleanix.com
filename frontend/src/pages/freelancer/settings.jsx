@@ -193,6 +193,66 @@ const SettingsFreelancer = () => {
     }
   }, []);
 
+  const saveSettings = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      // Save profile info
+      const profileData = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        specialty: formData.specialty
+      };
+      
+      // Only call API if we have profile data to save
+      if (profileData.name || profileData.email || profileData.phone) {
+        const { updateUserProfile } = await import('../../services/authService');
+        await updateUserProfile(profileData);
+      }
+
+      // Save notification settings
+      if (formData.notifications && Object.keys(formData.notifications).length > 0) {
+        await updateNotificationSettings(formData.notifications);
+      }
+
+      // Save privacy settings
+      if (formData.privacy && Object.keys(formData.privacy).length > 0) {
+        await updatePrivacySettings(formData.privacy);
+      }
+
+      // Save availability settings
+      if (formData.availability && Object.keys(formData.availability).length > 0) {
+        await updateAvailabilitySettings(formData.availability);
+      }
+
+      // Save bank info if provided
+      if (formData.personalInfo?.bankInfo && Object.keys(formData.personalInfo.bankInfo).some(k => formData.personalInfo.bankInfo[k])) {
+        await updateBankInfo(formData.personalInfo.bankInfo);
+      }
+
+      setIsSaving(false);
+      Swal.fire({
+        icon: 'success',
+        title: 'Enregistré!',
+        text: 'Tous vos paramètres ont été sauvegardés avec succès!',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#000000',
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      setIsSaving(false);
+      console.error('Error saving settings:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: error?.response?.data?.message || 'Erreur lors de la sauvegarde des paramètres',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#000000',
+      });
+    }
+  }, [formData, isDarkMode]);
+
   const handleNestedChange = useCallback((section, subSection, field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -1347,21 +1407,7 @@ const SettingsFreelancer = () => {
                       Annuler
                     </button>
                     <button
-                      onClick={() => {
-                        setIsSaving(true);
-                        setTimeout(() => {
-                          setIsSaving(false);
-                          Swal.fire({
-                            icon: 'success',
-                            title: 'Sauvegardé!',
-                            text: 'Paramètres sauvegardés avec succès!',
-                            background: isDarkMode ? '#1f2937' : '#ffffff',
-                            color: isDarkMode ? '#ffffff' : '#000000',
-                            timer: 2000,
-                            showConfirmButton: false,
-                          });
-                        }, 1000);
-                      }}
+                      onClick={saveSettings}
                       disabled={isSaving}
                       className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >

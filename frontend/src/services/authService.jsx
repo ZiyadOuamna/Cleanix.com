@@ -173,3 +173,23 @@ export const resetPassword = async (data) => {
         throw error;
     }
 };
+
+/**
+ * Change le mot de passe de l'utilisateur
+ * @param {string} currentPassword - Le mot de passe actuel
+ * @param {string} newPassword - Le nouveau mot de passe
+ * @param {string} confirmPassword - Confirmation du nouveau mot de passe
+ * @returns {Promise<object>} La réponse du serveur
+ */
+export const updatePassword = async (currentPassword, newPassword, confirmPassword) => {
+    try {
+        const response = await apiClient.post('/change-password', {
+            current_password: currentPassword,
+            new_password: newPassword,
+            new_password_confirmation: confirmPassword
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};

@@ -210,11 +210,14 @@ class AuthController extends Controller
         $validated = $request->validate([
             'nom' => 'sometimes|string|max:255',
             'prenom' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'phone' => 'sometimes|string|unique:users,telephone,' . $user->id,
             'telephone' => 'sometimes|string|unique:users,telephone,' . $user->id,
             'genre' => 'sometimes|in:Homme,Femme',
             'photo_profil' => 'sometimes|image|max:2048',
             
             // Client specific fields
+            'address' => 'sometimes|string|max:255',
             'adresse' => 'sometimes|string|max:255',
             'ville' => 'sometimes|string|max:100',
             'code_postal' => 'sometimes|string|max:10',
@@ -226,6 +229,18 @@ class AuthController extends Controller
         DB::beginTransaction();
         
         try {
+            // Normalize phone field (handle both 'phone' and 'telephone')
+            if (isset($validated['phone']) && !isset($validated['telephone'])) {
+                $validated['telephone'] = $validated['phone'];
+                unset($validated['phone']);
+            }
+
+            // Normalize address field (handle both 'address' and 'adresse')
+            if (isset($validated['address']) && !isset($validated['adresse'])) {
+                $validated['adresse'] = $validated['address'];
+                unset($validated['address']);
+            }
+
             // Handle photo upload
             if ($request->hasFile('photo_profil')) {
                 $validated['photo_profil'] = $request->file('photo_profil')->store('photos_profil', 'public');
@@ -233,7 +248,7 @@ class AuthController extends Controller
 
             // Update user table
             $user->update(array_intersect_key($validated, array_flip([
-                'nom', 'prenom', 'telephone', 'genre', 'photo_profil'
+                'nom', 'prenom', 'email', 'telephone', 'genre', 'photo_profil'
             ])));
 
             // Update profile specific table

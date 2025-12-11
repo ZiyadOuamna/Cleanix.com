@@ -116,20 +116,37 @@ class SettingsController extends Controller
     public function updateNotificationSettings(Request $request)
     {
         $validated = $request->validate([
-            'email' => 'boolean',
-            'push' => 'boolean',
-            'sms' => 'boolean',
-            'new_orders' => 'boolean',
-            'messages' => 'boolean',
-            'promotions' => 'boolean'
+            'emailNotifications' => 'sometimes|boolean',
+            'smsNotifications' => 'sometimes|boolean',
+            'newProposals' => 'sometimes|boolean',
+            'serviceReminders' => 'sometimes|boolean',
+            'promotions' => 'sometimes|boolean',
+            'news' => 'sometimes|boolean',
+            // Also accept alternative field names
+            'email' => 'sometimes|boolean',
+            'push' => 'sometimes|boolean',
+            'sms' => 'sometimes|boolean',
+            'new_orders' => 'sometimes|boolean',
+            'messages' => 'sometimes|boolean'
         ]);
 
         $user = $request->user();
         
+        // Normalize the data
+        $notificationData = [
+            'emailNotifications' => $validated['emailNotifications'] ?? $validated['email'] ?? false,
+            'smsNotifications' => $validated['smsNotifications'] ?? $validated['sms'] ?? false,
+            'newProposals' => $validated['newProposals'] ?? $validated['new_orders'] ?? false,
+            'serviceReminders' => $validated['serviceReminders'] ?? false,
+            'promotions' => $validated['promotions'] ?? false,
+            'news' => $validated['news'] ?? false,
+            'messages' => $validated['messages'] ?? false
+        ];
+        
         $settings = UserSettings::updateOrCreate(
             ['user_id' => $user->id],
             [
-                'notifications' => json_encode($validated)
+                'notifications' => json_encode($notificationData)
             ]
         );
 
@@ -146,20 +163,35 @@ class SettingsController extends Controller
     public function updatePrivacySettings(Request $request)
     {
         $validated = $request->validate([
-            'profile_visible' => 'boolean',
-            'show_earnings' => 'boolean',
-            'allow_messages' => 'boolean',
-            'show_phone_number' => 'boolean',
-            'show_email' => 'boolean',
-            'share_location' => 'boolean'
+            'profileVisible' => 'sometimes|boolean',
+            'showEmail' => 'sometimes|boolean',
+            'showPhone' => 'sometimes|boolean',
+            'allowMessages' => 'sometimes|boolean',
+            'shareLocation' => 'sometimes|boolean',
+            // Also accept alternative field names
+            'profile_visible' => 'sometimes|boolean',
+            'show_earnings' => 'sometimes|boolean',
+            'show_phone_number' => 'sometimes|boolean',
+            'show_email' => 'sometimes|boolean',
+            'share_location' => 'sometimes|boolean'
         ]);
 
         $user = $request->user();
 
+        // Normalize the data
+        $privacyData = [
+            'profileVisible' => $validated['profileVisible'] ?? $validated['profile_visible'] ?? false,
+            'showEmail' => $validated['showEmail'] ?? $validated['show_email'] ?? false,
+            'showPhone' => $validated['showPhone'] ?? $validated['show_phone_number'] ?? false,
+            'allowMessages' => $validated['allowMessages'] ?? false,
+            'shareLocation' => $validated['shareLocation'] ?? $validated['share_location'] ?? false,
+            'show_earnings' => $validated['show_earnings'] ?? false
+        ];
+
         $settings = UserSettings::updateOrCreate(
             ['user_id' => $user->id],
             [
-                'privacy' => json_encode($validated)
+                'privacy' => json_encode($privacyData)
             ]
         );
 
