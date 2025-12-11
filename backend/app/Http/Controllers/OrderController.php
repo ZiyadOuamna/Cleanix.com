@@ -101,10 +101,15 @@ class OrderController extends Controller
     {
         $request->validate([
             'service_type' => 'required|string',
-            'description' => 'required|string',
-            'location' => 'required|string',
+            'description' => 'nullable|string',
+            'adresse' => 'required|string',
+            'ville' => 'required|string',
+            'code_postal' => 'nullable|string',
+            'horaire_prefere' => 'nullable|in:Matin,Apres-midi,Soir',
+            'genre_freelancer_prefere' => 'nullable|in:Homme,Femme,Pas de preference',
             'initial_price' => 'nullable|numeric|min:0',
             'scheduled_date' => 'required|date|after:now',
+            'notes_speciales' => 'nullable|string',
         ]);
 
         try {
@@ -112,16 +117,21 @@ class OrderController extends Controller
                 'client_id' => Auth::id(),
                 'service_type' => $request->service_type,
                 'description' => $request->description,
-                'location' => $request->location,
+                'adresse' => $request->adresse,
+                'ville' => $request->ville,
+                'code_postal' => $request->code_postal,
+                'horaire_prefere' => $request->horaire_prefere,
+                'genre_freelancer_prefere' => $request->genre_freelancer_prefere ?? 'Pas de preference',
                 'initial_price' => $request->initial_price,
                 'scheduled_date' => $request->scheduled_date,
+                'notes_speciales' => $request->notes_speciales,
                 'status' => 'pending'
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Order created successfully',
-                'data' => $order
+                'data' => $order->load('client')
             ], 201);
         } catch (\Exception $e) {
             return response()->json([

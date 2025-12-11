@@ -28,12 +28,23 @@ class Freelancer extends Model
     const STATUT_BUSY = 'Busy';
     const STATUT_OFFLINE = 'Offline';
 
+    // Relation inverse vers User
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    // Méthodes utiles
+    public function portefeuille()
+    {
+        return $this->hasOne(Portefeuille::class);
+    }
+
+    // Relations selon votre UML
+    public function commandes()
+    {
+        return $this->hasMany(Commande::class); 
+    }
+
     public function setStatut($statut)
     {
         $this->statut_disponibilite = $statut;
@@ -51,8 +62,36 @@ class Freelancer extends Model
         return $this->statut_disponibilite === self::STATUT_AVAILABLE;
     }
 
-    public function portefeuille()
+    public function accepterCommande($commande)
     {
-        return $this->hasOne(Portefeuille::class); 
+        // À implémenter plus tard
+    }
+
+    public function refuserCommande($commande)
+    {
+        // À implémenter plus tard
+    }
+
+    public function terminerCommande($commande)
+    {
+        // À implémenter plus tard
+    }
+
+    public function modifierStatut($nouveauStatut)
+    {
+        $this->setStatut($nouveauStatut);
+    }
+
+    public function demanderRetrait($montant, $compteBancaire)
+    {
+        if ($this->portefeuille) {
+            return $this->portefeuille->demanderRetrait($montant, $compteBancaire);
+        }
+        return false;
+    }
+
+    public function consulterHistoriqueCommandes()
+    {
+        return $this->commandes()->orderBy('created_at', 'desc')->get();
     }
 }
