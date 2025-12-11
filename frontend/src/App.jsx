@@ -5,12 +5,13 @@ import "@fontsource/material-icons-two-tone";
 import { ProtectedRoute, PublicRoute, validateToken } from './services/ProtectedRoute';
 import { ThemeProvider } from './context/ThemeContext';
 
-// les import des pages avant la connexion 
+// les import des pages avant la connexion
 import CleanixLandingPage from './pages/homePage';
 import RegisterPage from './pages/registerPage';
 import LoginPage from './pages/loginPage';
 import ForgotPasswordPage from './pages/forgotPasswordPage';
-import ResetPasswordPage  from '../src/pages/ResetPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+
 // ( 1 ) les import des pages après la connexion de la page de superviseur 
 import DashboardSuperviseur from './pages/superviseur/superviseur';
 
