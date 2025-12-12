@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Client;
 use App\Models\Freelancer;
+use App\Models\Superviseur;
 use App\Models\Order;
 use App\Models\Paiement;
 use App\Models\Reclamation;
@@ -730,5 +731,377 @@ class SuperviseurController extends Controller
             'message' => 'Order status updated successfully',
             'data' => $order,
         ]);
+    }
+
+    /**
+     * Create new client (by superviseur)
+     */
+    public function createClient(Request $request)
+    {
+        if (!$this->isSuperviseur($request)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'prenom' => 'required|string|max:255',
+                'nom' => 'required|string|max:255',
+                'email' => 'required|email|unique:users',
+                'telephone' => 'nullable|string|max:20',
+                'ville' => 'nullable|string|max:255',
+                'password' => 'required|string|min:8',
+            ]);
+
+            DB::beginTransaction();
+
+            // Create user
+            $user = User::create([
+                'prenom' => $validated['prenom'],
+                'nom' => $validated['nom'],
+                'email' => $validated['email'],
+                'telephone' => $validated['telephone'] ?? null,
+                'password' => bcrypt($validated['password']),
+                'user_type' => 'Client',
+                'email_verified_at' => now(), // Auto-verify for superviseur-created users
+            ]);
+
+            // Create client profile
+            $client = Client::create([
+                'user_id' => $user->id,
+                'ville' => $validated['ville'] ?? 'Non spécifiée',
+                'solde' => 0,
+            ]);
+
+            // Send email with login credentials
+            $this->sendCredentialsEmail($user, $validated['password']);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Client created successfully',
+                'data' => $user->load('client'),
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating client: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Create new freelancer (by superviseur)
+     */
+    public function createFreelancer(Request $request)
+    {
+        if (!$this->isSuperviseur($request)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'prenom' => 'required|string|max:255',
+                'nom' => 'required|string|max:255',
+                'email' => 'required|email|unique:users',
+                'telephone' => 'nullable|string|max:20',
+                'ville' => 'nullable|string|max:255',
+                'password' => 'required|string|min:8',
+            ]);
+
+            DB::beginTransaction();
+
+            // Create user
+            $user = User::create([
+                'prenom' => $validated['prenom'],
+                'nom' => $validated['nom'],
+                'email' => $validated['email'],
+                'telephone' => $validated['telephone'] ?? null,
+                'password' => bcrypt($validated['password']),
+                'user_type' => 'Freelancer',
+                'email_verified_at' => now(), // Auto-verify for superviseur-created users
+            ]);
+
+            // Create freelancer profile
+            $freelancer = Freelancer::create([
+                'user_id' => $user->id,
+                'ville' => $validated['ville'] ?? 'Non spécifiée',
+                'solde' => 0,
+                'note' => 0,
+                'statut' => 'actif',
+            ]);
+
+            // Send email with login credentials
+            $this->sendCredentialsEmail($user, $validated['password']);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Freelancer created successfully',
+                'data' => $user->load('freelancer'),
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating freelancer: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Send credentials email to newly created user
+     */
+    private function sendCredentialsEmail($user, $password)
+    {
+        try {
+            \Mail::send('emails.credentials', [
+                'user' => $user,
+                'password' => $password,
+                'loginUrl' => config('app.frontend_url') . '/login',
+            ], function ($message) use ($user) {
+                $message->to($user->email)
+                        ->subject('[Cleanix] Vos identifiants de connexion');
+            });
+        } catch (\Exception $e) {
+            \Log::error('Error sending credentials email: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get all superviseurs (with pagination)
+     */
+    public function getSuperviseurs(Request $request)
+    {
+        if (!$this->isSuperviseur($request)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        try {
+            $page = $request->query('page', 1);
+            $search = $request->query('search', '');
+            $perPage = 15;
+
+            $query = User::where('user_type', 'Superviseur')
+                        ->with('superviseur');
+
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('prenom', 'like', '%' . $search . '%')
+                      ->orWhere('nom', 'like', '%' . $search . '%')
+                      ->orWhere('email', 'like', '%' . $search . '%');
+                });
+            }
+
+            $superviseurs = $query->paginate($perPage, ['*'], 'page', $page);
+
+            return response()->json([
+                'success' => true,
+                'data' => $superviseurs,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching superviseurs: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get superviseur by ID
+     */
+    public function getSuperviseurById($superviseurId)
+    {
+        try {
+            $user = User::where('id', $superviseurId)
+                       ->where('user_type', 'Superviseur')
+                       ->with('superviseur')
+                       ->first();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Superviseur not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $user,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching superviseur: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Create new superviseur (by main superviseur)
+     */
+    public function createSuperviseur(Request $request)
+    {
+        if (!$this->isSuperviseur($request)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'prenom' => 'required|string|max:255',
+                'nom' => 'required|string|max:255',
+                'email' => 'required|email|unique:users',
+                'telephone' => 'nullable|string|max:20',
+                'ville' => 'nullable|string|max:255',
+                'password' => 'required|string|min:8',
+            ]);
+
+            DB::beginTransaction();
+
+            // Create user
+            $user = User::create([
+                'prenom' => $validated['prenom'],
+                'nom' => $validated['nom'],
+                'email' => $validated['email'],
+                'telephone' => $validated['telephone'] ?? null,
+                'password' => bcrypt($validated['password']),
+                'user_type' => 'Superviseur',
+                'email_verified_at' => now(),
+            ]);
+
+            // Create superviseur profile
+            $superviseur = Superviseur::create([
+                'user_id' => $user->id,
+                'ville' => $validated['ville'] ?? 'Non spécifiée',
+                'statut' => 'actif',
+            ]);
+
+            // Send email with login credentials
+            $this->sendCredentialsEmail($user, $validated['password']);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Superviseur created successfully',
+                'data' => $user->load('superviseur'),
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating superviseur: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Update superviseur
+     */
+    public function updateSuperviseur(Request $request, $superviseurId)
+    {
+        if (!$this->isSuperviseur($request)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        try {
+            $user = User::where('id', $superviseurId)
+                       ->where('user_type', 'Superviseur')
+                       ->first();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Superviseur not found'
+                ], 404);
+            }
+
+            $validated = $request->validate([
+                'prenom' => 'nullable|string|max:255',
+                'nom' => 'nullable|string|max:255',
+                'email' => 'nullable|email|unique:users,email,' . $superviseurId,
+                'telephone' => 'nullable|string|max:20',
+                'ville' => 'nullable|string|max:255',
+                'password' => 'nullable|string|min:8',
+            ]);
+
+            // Remove empty fields
+            $validated = array_filter($validated, fn($value) => !is_null($value));
+
+            // Hash password if provided
+            if (isset($validated['password'])) {
+                $validated['password'] = bcrypt($validated['password']);
+            }
+
+            $user->update($validated);
+
+            // Update superviseur profile if ville is provided
+            if (isset($validated['ville'])) {
+                $user->superviseur?->update(['ville' => $validated['ville']]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Superviseur updated successfully',
+                'data' => $user->load('superviseur'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating superviseur: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete superviseur
+     */
+    public function deleteSuperviseur($superviseurId)
+    {
+        try {
+            $user = User::where('id', $superviseurId)
+                       ->where('user_type', 'Superviseur')
+                       ->first();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Superviseur not found'
+                ], 404);
+            }
+
+            // Delete superviseur profile first
+            $user->superviseur?->delete();
+
+            // Delete user
+            $user->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Superviseur deleted successfully',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting superviseur: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

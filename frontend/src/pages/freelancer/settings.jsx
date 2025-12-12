@@ -1014,15 +1014,6 @@ const SettingsFreelancer = () => {
                             )}
                           </button>
                           
-                          {/* Bouton de test pour simulation d'approbation (à supprimer en production) */}
-                          {formData.identityVerification.submittedToSupervisor && formData.identityVerification.supervisorStatus === 'pending' && (
-                            <button
-                              onClick={simulateSupervisorApproval}
-                              className="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-                            >
-                              Simuler approbation superviseur
-                            </button>
-                          )}
                         </div>
                       </div>
                     </div>

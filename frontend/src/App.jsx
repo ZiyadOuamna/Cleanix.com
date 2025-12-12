@@ -11,6 +11,7 @@ import RegisterPage from './pages/registerPage';
 import LoginPage from './pages/loginPage';
 import ForgotPasswordPage from './pages/forgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 
 // ( 1 ) les import des pages après la connexion de la page de superviseur 
 import DashboardSuperviseur from './pages/superviseur/superviseur';
@@ -24,6 +25,7 @@ import SuperviseurServiceValidation from './pages/superviseur/gestionServices/su
 // les imports des pages de la partie gestion des utilisateurs chez superviseur 
 import GestionClientsPage     from './pages/superviseur/gestionUsers/gestionClients';
 import GestionFreelancersPage from './pages/superviseur/gestionUsers/gestionFreelancers';
+import GestionSuperviseursPage from './pages/superviseur/gestionUsers/gestionSuperviseurs';
 
 // les imports des pages de la partie dashboard chez superviseur 
 import DashboardClients      from './pages/superviseur/gestionDashboard/dashboardClients-Superviseur';
@@ -96,6 +98,9 @@ export default function App() {
       <Route path="/forgot-password" element={<PublicRoute element={<ForgotPasswordPage />} isLoading={isLoading} />} />
       <Route path="/reset-password" element={<PublicRoute element={<ResetPasswordPage />} isLoading={isLoading} />} />
       
+      {/* Vérification d'email - Page semi-protégée (nécessite token mais pas email_verified_at) */}
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
+      
       {/* Routes pour Superviseur - Protégées */}
       
       <Route path="/superviseur/dashboard" element={<ProtectedRoute element={<DashboardSuperviseur />} requiredUserType="superviseur" isLoading={isLoading} />}>
@@ -114,6 +119,7 @@ export default function App() {
         {/* les routes de la partie gestion des utilisateurs */}
         <Route path="gestion-clients"       element={<GestionClientsPage />} />
         <Route path="gestion-freelancers"   element={<GestionFreelancersPage />} />
+        <Route path="gestion-superviseurs"  element={<GestionSuperviseursPage />} />
 
         {/* les routes de la partie vérification des freelancers */}
         <Route path="superviseur-verification" element={<SuperviseurFreelancerVerification />} />

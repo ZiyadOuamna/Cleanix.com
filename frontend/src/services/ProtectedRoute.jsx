@@ -3,8 +3,10 @@ import { Navigate } from 'react-router-dom';
 
 /**
  * ProtectedRoute - Composant qui protège les routes nécessitant une authentification
- * Redirige vers /login si pas authentifié
- * Redirige vers le bon dashboard si l'utilisateur essaie d'accéder à une mauvaise route
+ * Vérifie:
+ * 1. Token d'authentification
+ * 2. Email vérifié (email_verified_at) - SAUF pour les Superviseurs
+ * 3. Type d'utilisateur correct (user_type)
  */
 export const ProtectedRoute = ({ 
   element, 
@@ -13,8 +15,9 @@ export const ProtectedRoute = ({
 }) => {
   const token = localStorage.getItem('auth_token');
   const userType = localStorage.getItem('user_type');
+  const user = localStorage.getItem('user');
   
-  // Si chargement en cours, afficher rien ou spinner
+  // Si chargement en cours, afficher spinner
   if (isLoading) {
     return <div className="flex items-center justify-center h-screen">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
@@ -24,6 +27,22 @@ export const ProtectedRoute = ({
   // Pas de token = pas connecté
   if (!token) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Vérifier que l'email est vérifié (SAUF pour les Superviseurs)
+  let userData = null;
+  if (user) {
+    try {
+      userData = JSON.parse(user);
+      // Si email_verified_at est null ET ce n'est PAS un superviseur, rediriger vers vérification
+      if (!userData.email_verified_at && userType?.toLowerCase() !== 'superviseur') {
+        // Rediriger vers une page de vérification d'email
+        return <Navigate to="/verify-email" replace />;
+      }
+    } catch (e) {
+      console.error('Erreur lors du parsing de user:', e);
+      return <Navigate to="/login" replace />;
+    }
   }
 
   // Si une route spécifique est requise, vérifier si le user_type correspond

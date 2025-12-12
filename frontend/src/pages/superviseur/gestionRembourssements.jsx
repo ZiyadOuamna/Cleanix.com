@@ -1,174 +1,101 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { 
     Check, X, FileText, Search, DollarSign, Clock, CheckCircle, 
     XCircle, Filter, RefreshCcw, MessageSquare, Send, User, Shield,
     RotateCcw
 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { SuperviseurContext } from './superviseurContext';
-
-// Données fictives enrichies
-const MOCK_REFUNDS = [
-    { 
-        id: 'R-901', 
-        commande: '#CMD-442', 
-        client: 'Yassine A.', 
-        email: 'yassine@email.com',
-        montant: '150.00', 
-        motif: 'Annulation prestataire', 
-        description: 'Le prestataire n\'est pas venu au rendez-vous prévu',
-        date: '19 Nov 2024', 
-        statut: 'En attente',
-        messages: [
-            { id: 1, auteur: 'Client', message: "Bonjour, le prestataire ne s'est pas présenté à l'heure convenue. Je demande un remboursement.", date: '2024-11-19 10:30' },
-            { id: 2, auteur: 'Support', message: "Nous vérifions avec le prestataire. Nous vous tiendrons informé.", date: '2024-11-19 11:15' }
-        ]
-    },
-    { 
-        id: 'R-902', 
-        commande: '#CMD-331', 
-        client: 'Mouna L.', 
-        email: 'mouna@email.com',
-        montant: '300.50', 
-        motif: 'Service non rendu', 
-        description: 'Le service n\'a pas été effectué correctement',
-        date: '18 Nov 2024', 
-        statut: 'En attente',
-        messages: [
-            { id: 1, auteur: 'Client', message: "Le nettoyage n'a pas été fait correctement. Il reste de la saleté partout.", date: '2024-11-18 14:20' }
-        ]
-    },
-    { 
-        id: 'R-903', 
-        commande: '#CMD-210', 
-        client: 'Karim B.', 
-        email: 'karim@email.com',
-        montant: '45.00', 
-        motif: 'Erreur montant', 
-        description: 'Montant facturé incorrect',
-        date: '15 Nov 2024', 
-        statut: 'Validé',
-        messages: [
-            { id: 1, auteur: 'Client', message: "J'ai été facturé 450DH de trop sur ma commande.", date: '2024-11-15 09:45' },
-            { id: 2, auteur: 'Superviseur', message: "Nous avons vérifié et effectué le remboursement. Désolé pour cet erreur.", date: '2024-11-15 10:30' }
-        ]
-    },
-    { 
-        id: 'R-904', 
-        commande: '#CMD-105', 
-        client: 'Sara K.', 
-        email: 'sara@email.com',
-        montant: '120.00', 
-        motif: 'Insatisfaction', 
-        description: 'Client non satisfait du service',
-        date: '10 Nov 2024', 
-        statut: 'Refusé temporairement',
-        messages: [
-            { id: 1, auteur: 'Client', message: "Je ne suis pas satisfait de la qualité du service.", date: '2024-11-10 16:00' },
-            { id: 2, auteur: 'Superviseur', message: "Pouvez-vous nous expliquer plus en détail ce qui ne vous a pas convenu ? Nous voulons comprendre votre situation.", date: '2024-11-10 17:30' },
-            { id: 3, auteur: 'Client', message: "Le prestataire a utilisé des produits qui ont abîmé mes meubles.", date: '2024-11-11 09:15' }
-        ]
-    },
-];
+import superviseurService from '../../services/superviseurService';
 
 export default function RemboursementSuperviseurPage() {
     const { isDarkMode } = useContext(SuperviseurContext);
-    const [refunds, setRefunds] = useState(MOCK_REFUNDS);
-    const [filterStatus, setFilterStatus] = useState('En attente');
+    const [refunds, setRefunds] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [filterStatus, setFilterStatus] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRefund, setSelectedRefund] = useState(null);
     const [newMessage, setNewMessage] = useState('');
     const [selectedRefundIds, setSelectedRefundIds] = useState([]);
 
+    // Charger les remboursements au montage et lors du changement de page/recherche
+    useEffect(() => {
+        loadRefunds();
+    }, [currentPage, searchTerm, filterStatus]);
+
+    const loadRefunds = async () => {
+        try {
+            setLoading(true);
+            const response = await superviseurService.getPayments(currentPage, searchTerm, filterStatus);
+            if (response.success) {
+                setRefunds(response.data.data || []);
+                setTotalPages(response.data.last_page || 1);
+            } else {
+                Swal.fire('Erreur', response.message || 'Erreur lors du chargement des remboursements', 'error');
+            }
+        } catch (error) {
+            console.error('Erreur lors du chargement:', error);
+            Swal.fire('Erreur', error.message || 'Erreur lors du chargement des remboursements', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Filtrer les remboursements
-    const filteredRefunds = refunds.filter(r => {
-        const statusMatch = filterStatus === 'All' || r.statut === filterStatus;
-        const searchMatch = r.client.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            r.commande.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            r.id.toLowerCase().includes(searchTerm.toLowerCase());
-        return statusMatch && searchMatch;
-    });
+    const filteredRefunds = refunds;
 
     // Action de validation définitive
-    const handleApprove = (id) => {
-        if(window.confirm('Voulez-vous vraiment valider définitivement ce remboursement ?')) {
-            const updatedRefunds = refunds.map(r => {
-                if (r.id === id) {
-                    const messageSysteme = {
-                        id: r.messages.length + 1,
-                        auteur: 'Système',
-                        message: 'Le remboursement a été validé définitivement. Le montant sera crédité sur votre compte dans les 24-48h.',
-                        date: new Date().toLocaleString('fr-FR')
-                    };
-                    
-                    return { 
-                        ...r, 
-                        statut: 'Validé',
-                        messages: [...r.messages, messageSysteme]
-                    };
+    const handleApprove = async (id) => {
+        const result = await Swal.fire({
+            title: 'Êtes-vous sûr?',
+            text: "Vous allez valider définitivement ce remboursement",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Oui, valider!',
+            cancelButtonText: 'Annuler'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const response = await superviseurService.processRefund(id, { status: 'approved' });
+                if (response.success) {
+                    Swal.fire('Succès', 'Remboursement validé', 'success');
+                    loadRefunds();
                 }
-                return r;
-            });
-            
-            setRefunds(updatedRefunds);
-            
-            if (selectedRefund && selectedRefund.id === id) {
-                setSelectedRefund(updatedRefunds.find(r => r.id === id));
+            } catch (error) {
+                Swal.fire('Erreur', error.message || 'Erreur lors de la validation', 'error');
             }
         }
     };
 
-    // Action de refus temporaire (discussion reste ouverte)
-    const handleTemporaryReject = (id) => {
-        const updatedRefunds = refunds.map(r => {
-            if (r.id === id) {
-                const messageSysteme = {
-                    id: r.messages.length + 1,
-                    auteur: 'Système',
-                    message: 'Votre demande a été temporairement refusée. Vous pouvez fournir plus d\'informations pour que nous réévaluions votre situation.',
-                    date: new Date().toLocaleString('fr-FR')
-                };
-                
-                return { 
-                    ...r, 
-                    statut: 'Refusé temporairement',
-                    messages: [...r.messages, messageSysteme]
-                };
+    // Action de refus temporaire
+    const handleTemporaryReject = async (id) => {
+        try {
+            const response = await superviseurService.processRefund(id, { status: 'rejected' });
+            if (response.success) {
+                Swal.fire('Succès', 'Remboursement refusé temporairement', 'success');
+                loadRefunds();
             }
-            return r;
-        });
-        
-        setRefunds(updatedRefunds);
-        
-        if (selectedRefund && selectedRefund.id === id) {
-            setSelectedRefund(updatedRefunds.find(r => r.id === id));
+        } catch (error) {
+            Swal.fire('Erreur', error.message || 'Erreur lors du refus', 'error');
         }
     };
 
     // Réouvrir une demande refusée
-    const handleReopen = (id) => {
-        const updatedRefunds = refunds.map(r => {
-            if (r.id === id) {
-                const messageSysteme = {
-                    id: r.messages.length + 1,
-                    auteur: 'Système',
-                    message: 'La demande a été réouverte. Nous allons réexaminer votre cas.',
-                    date: new Date().toLocaleString('fr-FR')
-                };
-                
-                return { 
-                    ...r, 
-                    statut: 'En attente',
-                    messages: [...r.messages, messageSysteme]
-                };
+    const handleReopen = async (id) => {
+        try {
+            const response = await superviseurService.processRefund(id, { status: 'pending' });
+            if (response.success) {
+                Swal.fire('Succès', 'Demande réouverte', 'success');
+                loadRefunds();
             }
-            return r;
-        });
-        
-        setRefunds(updatedRefunds);
-        
-        if (selectedRefund && selectedRefund.id === id) {
-            setSelectedRefund(updatedRefunds.find(r => r.id === id));
+        } catch (error) {
+            Swal.fire('Erreur', error.message || 'Erreur lors de la réouverture', 'error');
         }
     };
 

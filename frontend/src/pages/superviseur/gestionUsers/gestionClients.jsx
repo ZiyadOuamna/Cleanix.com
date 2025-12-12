@@ -1,8 +1,9 @@
 // src/pages/GestionClients.jsx
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { SuperviseurContext } from '../superviseurContext';
 import { Search, Filter, Plus, Edit, Trash2, User, Mail, Phone, MapPin, Calendar, Copy, Check } from 'lucide-react';
 import Swal from 'sweetalert2';
+import superviseurService from '../../../services/superviseurService';
 
 const MAROC_VILLES = [
   "Agadir", "Casablanca", "Rabat", "Marrakech", "Fès", "Tanger", 
@@ -34,44 +35,12 @@ export default function GestionClients() {
   const { isDarkMode } = useContext(SuperviseurContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Données exemple des clients
-  const [clients, setClients] = useState([
-    {
-      id: 1,
-      nom: 'Martin Dupont',
-      email: 'martin.dupont@email.com',
-      telephone: '+33 1 23 45 67 89',
-      adresse: '12 Rue de la Paix, Paris',
-      dateInscription: '2024-01-15',
-      statut: 'actif',
-      commandesTotal: 12,
-      montantDepense: 1560.00
-    },
-    {
-      id: 2,
-      nom: 'Sophie Bernard',
-      email: 'sophie.bernard@email.com',
-      telephone: '+33 1 34 56 78 90',
-      adresse: '45 Avenue des Champs, Lyon',
-      dateInscription: '2024-02-20',
-      statut: 'inactif',
-      commandesTotal: 3,
-      montantDepense: 320.50
-    },
-    {
-      id: 3,
-      nom: 'Pierre Moreau',
-      email: 'pierre.moreau@email.com',
-      telephone: '+33 1 45 67 89 01',
-      adresse: '78 Boulevard Saint-Germain, Marseille',
-      dateInscription: '2024-03-10',
-      statut: 'actif',
-      commandesTotal: 8,
-      montantDepense: 890.75
-    }
-  ]);
-
+  // Données du modal
   const [showModal, setShowModal] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const [generatedPassword, setGeneratedPassword] = useState('');
@@ -81,17 +50,41 @@ export default function GestionClients() {
     email: '',
     telephone: '',
     genre: '',
+    adresse: '',
     ville: MAROC_VILLES[0],
-    statut: 'actif',
+    code_postal: '',
     password: ''
   });
 
-  // Filtrer les clients
+  // Charger les clients au montage et lors du changement de page/recherche
+  useEffect(() => {
+    loadClients();
+  }, [currentPage, searchTerm, statusFilter]);
+
+  const loadClients = async () => {
+    try {
+      setLoading(true);
+      const response = await superviseurService.getClients(currentPage, searchTerm, statusFilter);
+      if (response.success) {
+        setClients(response.data.data || []);
+        setTotalPages(response.data.last_page || 1);
+      } else {
+        Swal.fire('Erreur', response.message || 'Erreur lors du chargement des clients', 'error');
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement:', error);
+      Swal.fire('Erreur', error.message || 'Erreur lors du chargement des clients', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filtrer les clients localement
   const filteredClients = clients.filter(client => {
-    const matchesSearch = client.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         client.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = statusFilter === 'all' || client.statut === statusFilter;
-    return matchesSearch && matchesFilter;
+    const matchesSearch = (client.nom?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (client.prenom?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (client.email?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+    return matchesSearch;
   });
 
   // Ouvrir modal d'ajout
@@ -105,8 +98,9 @@ export default function GestionClients() {
       email: '',
       telephone: '',
       genre: '',
+      adresse: '',
       ville: MAROC_VILLES[0],
-      statut: 'actif',
+      code_postal: '',
       password: newPassword
     });
     setShowModal(true);
@@ -115,37 +109,90 @@ export default function GestionClients() {
   // Ouvrir modal d'édition
   const handleEditClient = (client) => {
     setEditingClient(client);
-    setFormData({ ...client });
+    setFormData({ 
+      prenom: client.prenom || '',
+      nom: client.nom || '',
+      email: client.email || '',
+      telephone: client.telephone || '',
+      genre: client.genre || '',
+      adresse: client.client?.adresse || '',
+      ville: client.client?.ville || MAROC_VILLES[0],
+      code_postal: client.client?.code_postal || '',
+    });
     setShowModal(true);
   };
 
   // Supprimer client
-  const handleDeleteClient = (id) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce client ?')) {
-      setClients(clients.filter(client => client.id !== id));
+  const handleDeleteClient = async (id) => {
+    const result = await Swal.fire({
+      title: 'Êtes-vous sûr?',
+      text: "Vous ne pourrez pas annuler cette action!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Oui, supprimer!',
+      cancelButtonText: 'Annuler'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const response = await superviseurService.deleteClient(id);
+        if (response.success) {
+          Swal.fire('Supprimé!', 'Le client a été supprimé.', 'success');
+          loadClients(); // Recharger la liste
+        }
+      } catch (error) {
+        Swal.fire('Erreur', error.message || 'Erreur lors de la suppression', 'error');
+      }
     }
   };
 
   // Soumettre le formulaire
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (editingClient) {
-      // Modification
-      setClients(clients.map(client => 
-        client.id === editingClient.id ? { ...formData, id: editingClient.id } : client
-      ));
-    } else {
-      // Ajout
-      const newClient = {
-        ...formData,
-        id: Date.now(),
-        dateInscription: new Date().toISOString().split('T')[0],
-        commandesTotal: 0,
-        montantDepense: 0
-      };
-      setClients([...clients, newClient]);
+    try {
+      setLoading(true);
+      if (editingClient) {
+        // Modification
+        const response = await superviseurService.updateClient(editingClient.id, {
+          prenom: formData.prenom,
+          nom: formData.nom,
+          email: formData.email,
+          telephone: formData.telephone,
+          genre: formData.genre,
+          adresse: formData.adresse,
+          ville: formData.ville,
+          code_postal: formData.code_postal,
+        });
+        if (response.success) {
+          Swal.fire('Succès', 'Client modifié avec succès', 'success');
+        }
+      } else {
+        // Création
+        const response = await superviseurService.createClient({
+          prenom: formData.prenom,
+          nom: formData.nom,
+          email: formData.email,
+          telephone: formData.telephone,
+          genre: formData.genre,
+          adresse: formData.adresse,
+          ville: formData.ville,
+          code_postal: formData.code_postal,
+          password: formData.password,
+          user_type: 'Client',
+        });
+        if (response.success) {
+          Swal.fire('Succès', 'Client créé avec succès', 'success');
+        }
+      }
+      setShowModal(false);
+      loadClients(); // Recharger la liste
+    } catch (error) {
+      Swal.fire('Erreur', error.message || 'Erreur lors de la sauvegarde', 'error');
+    } finally {
+      setLoading(false);
     }
-    setShowModal(false);
   };
 
   const getStatusColor = (statut) => {
@@ -209,7 +256,8 @@ export default function GestionClients() {
             {/* Bouton d'ajout */}
             <button
               onClick={handleAddClient}
-              className="w-full md:w-auto flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg"
+              disabled={loading}
+              className="w-full md:w-auto flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus size={20} />
               Ajouter Client
@@ -217,7 +265,28 @@ export default function GestionClients() {
           </div>
         </div>
 
+        {/* État de chargement */}
+        {loading && (
+          <div className={`rounded-2xl shadow-lg p-12 text-center ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p className={`mt-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              Chargement des clients...
+            </p>
+          </div>
+        )}
+
+        {/* Message si aucun client */}
+        {!loading && filteredClients.length === 0 && (
+          <div className={`rounded-2xl shadow-lg p-12 text-center ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <User className="mx-auto mb-4 opacity-50" size={48} />
+            <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              Aucun client trouvé. Créez votre premier client en cliquant sur le bouton ci-dessus.
+            </p>
+          </div>
+        )}
+
         {/* Tableau des clients */}
+        {!loading && filteredClients.length > 0 && (
         <div className={`rounded-2xl shadow-lg overflow-hidden ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -309,16 +378,31 @@ export default function GestionClients() {
               </tbody>
             </table>
           </div>
-
-          {filteredClients.length === 0 && (
-            <div className="text-center py-12">
-              <User size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className={`text-lg ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                Aucun client trouvé
-              </p>
-            </div>
-          )}
         </div>
+        )}
+
+        {/* Pagination */}
+        {!loading && totalPages > 1 && filteredClients.length > 0 && (
+          <div className="flex justify-center gap-2 mt-6">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Précédent
+            </button>
+            <span className={`px-4 py-2 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              Page {currentPage} sur {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Suivant
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Modal d'ajout/modification */}

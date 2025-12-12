@@ -240,12 +240,14 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Clients management
     Route::get('/superviseur/clients', [SuperviseurController::class, 'getClients']);
+    Route::post('/superviseur/clients', [SuperviseurController::class, 'createClient']);
     Route::get('/superviseur/clients/{clientId}', [SuperviseurController::class, 'getClientById']);
     Route::put('/superviseur/clients/{clientId}', [SuperviseurController::class, 'updateClient']);
     Route::delete('/superviseur/clients/{clientId}', [SuperviseurController::class, 'deleteClient']);
     
     // Freelancers management
     Route::get('/superviseur/freelancers', [SuperviseurController::class, 'getFreelancers']);
+    Route::post('/superviseur/freelancers', [SuperviseurController::class, 'createFreelancer']);
     Route::get('/superviseur/freelancers/{freelancerId}', [SuperviseurController::class, 'getFreelancerById']);
     Route::put('/superviseur/freelancers/{freelancerId}', [SuperviseurController::class, 'updateFreelancer']);
     Route::delete('/superviseur/freelancers/{freelancerId}', [SuperviseurController::class, 'deleteFreelancer']);
@@ -270,4 +272,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/superviseur/orders', [SuperviseurController::class, 'getOrders']);
     Route::get('/superviseur/orders/{orderId}', [SuperviseurController::class, 'getOrderById']);
     Route::put('/superviseur/orders/{orderId}', [SuperviseurController::class, 'updateOrderStatus']);
+    
+    // Superviseur management (only for main superviseur)
+    Route::get('/superviseur/superviseurs', [SuperviseurController::class, 'getSuperviseurs']);
+    Route::post('/superviseur/superviseurs', [SuperviseurController::class, 'createSuperviseur']);
+    Route::get('/superviseur/superviseurs/{superviseurId}', [SuperviseurController::class, 'getSuperviseurById']);
+    Route::put('/superviseur/superviseurs/{superviseurId}', [SuperviseurController::class, 'updateSuperviseur']);
+    Route::delete('/superviseur/superviseurs/{superviseurId}', [SuperviseurController::class, 'deleteSuperviseur']);
 });
