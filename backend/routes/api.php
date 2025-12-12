@@ -125,6 +125,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Commandes acceptées (Freelancer)
     Route::get('/orders/accepted', [OrderController::class, 'getAcceptedOrders']);
     
+    // Freelancer accepte une commande
+    Route::post('/orders/{order}/accept', [OrderController::class, 'acceptOrderAsFreelancer']);
+    
     // Historique des commandes
     Route::get('/orders/history', [OrderController::class, 'getOrderHistory']);
     

@@ -58,6 +58,54 @@ class OrderController extends Controller
     }
 
     /**
+     * Le freelancer accepte une commande reçue
+     */
+    public function acceptOrderAsFreelancer(Order $order): JsonResponse
+    {
+        $freelancer = Auth::user();
+
+        // Vérifier que c'est un freelancer
+        if ($freelancer->user_type !== 'Freelancer') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only freelancers can accept orders.'
+            ], 403);
+        }
+
+        // Vérifier que la commande est en attente ou en négociation
+        if (!in_array($order->status, ['pending', 'negotiating'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This order cannot be accepted. It must be pending or negotiating.'
+            ], 400);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Mettre à jour la commande
+            $order->update([
+                'freelancer_id' => $freelancer->id,
+                'status' => 'accepted'
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order accepted successfully',
+                'data' => $order->load('client')
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to accept order: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Récupérer l'historique des commandes
      */
     public function getOrderHistory(): JsonResponse
@@ -107,7 +155,7 @@ class OrderController extends Controller
                 'horaire_prefere' => 'nullable|in:Matin,Apres-midi,Soir',
                 'genre_freelancer_prefere' => 'nullable|in:Homme,Femme,Pas de preference',
                 'initial_price' => 'nullable|numeric|min:0',
-                'scheduled_date' => 'required|date_format:Y-m-d|after_or_equal:today',
+                'scheduled_date' => 'required|date',
                 'notes_speciales' => 'nullable|string',
             ]);
 
