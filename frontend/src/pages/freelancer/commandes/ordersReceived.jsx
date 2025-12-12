@@ -76,15 +76,8 @@ const OrdersReceived = () => {
       try {
         setIsLoading(true);
         const response = await getReceivedOrders();
-        if (response.success) {
-          setOrders(response.data);
-        } else {
-          showAlert({
-            title: 'Erreur',
-            text: response.message || 'Impossible de charger les commandes',
-            icon: 'error'
-          });
-        }
+        // response est directement les données du serveur
+        setOrders(Array.isArray(response) ? response : response.data || []);
       } catch (error) {
         console.error('Error loading orders:', error);
         showAlert({
@@ -185,37 +178,30 @@ const OrdersReceived = () => {
         estimated_completion_date: null
       });
 
-      if (response.success) {
-        showAlert({
-          title: 'Proposition envoyée !',
-          text: `Proposition de prix (${finalPrice}DH) envoyée au client pour la commande #${selectedOrder.id}`,
-          icon: 'success',
-          timer: 2000,
-          showConfirmButton: false,
-          iconColor: isDarkMode ? '#10B981' : '#059669',
-        });
+      // La réponse est directement les données, pas un objet avec .success
+      showAlert({
+        title: 'Proposition envoyée !',
+        text: `Proposition de prix (${finalPrice}DH) envoyée au client pour la commande #${selectedOrder.id}`,
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false,
+        iconColor: isDarkMode ? '#10B981' : '#059669',
+      });
 
-        // Mettre à jour la liste
-        setOrders(orders.map(order => 
-          order.id === selectedOrder.id 
-            ? { ...order, proposals: [...(order.proposals || []), response.data] }
-            : order
-        ));
+      // Mettre à jour la liste
+      setOrders(orders.map(order => 
+        order.id === selectedOrder.id 
+          ? { ...order, proposals: [...(order.proposals || []), response] }
+          : order
+      ));
 
-        setShowPriceProposal(false);
-        setSelectedOrder(null);
-      } else {
-        showAlert({
-          title: 'Erreur',
-          text: response.message || 'Impossible d\'envoyer la proposition',
-          icon: 'error'
-        });
-      }
+      setShowPriceProposal(false);
+      setSelectedOrder(null);
     } catch (error) {
       console.error('Error submitting proposal:', error);
       showAlert({
         title: 'Erreur',
-        text: 'Impossible d\'envoyer la proposition',
+        text: error.message || 'Impossible d\'envoyer la proposition',
         icon: 'error'
       });
     } finally {

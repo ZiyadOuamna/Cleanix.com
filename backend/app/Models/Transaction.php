@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class Transaction extends Model
 {
     protected $fillable = [
-        'portefeuille_id',
+        'wallet_id',
+        'user_id',
         'type',
         'montant',
         'compte_bancaire',
@@ -29,7 +30,19 @@ class Transaction extends Model
     const STATUT_VALIDEE = 'validee';
     const STATUT_REFUSEE = 'refusee';
 
-    // Relation vers Portefeuille
+    // Relation vers Wallet (nouveau système)
+    public function wallet()
+    {
+        return $this->belongsTo(Wallet::class);
+    }
+
+    // Relation vers User
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    // Support du vieux système pour compatibilité
     public function portefeuille()
     {
         return $this->belongsTo(Portefeuille::class);
@@ -41,12 +54,14 @@ class Transaction extends Model
         $this->statut = self::STATUT_VALIDEE;
         
         // Si c'est un retrait validé, débiter le portefeuille
-        if ($this->type === self::TYPE_RETRAIT) {
-            $this->portefeuille->debiter($this->montant);
+        if ($this->type === self::TYPE_RETRAIT && $this->wallet) {
+            $this->wallet->balance -= $this->montant;
+            $this->wallet->save();
         }
         
         $this->save();
     }
+
 
     public function refuser()
     {

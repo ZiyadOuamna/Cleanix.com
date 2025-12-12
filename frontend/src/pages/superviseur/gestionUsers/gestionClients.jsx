@@ -339,20 +339,20 @@ export default function GestionClients() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <Calendar size={16} className="text-gray-400" />
-                        <span>{new Date(client.dateInscription).toLocaleDateString()}</span>
+                        <span>{new Date(client.created_at).toLocaleDateString()}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="font-semibold">{client.commandesTotal}</span>
+                      <span className="font-semibold">-</span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="font-semibold text-green-600">
-                        {client.montantDepense.toFixed(2)}DH
+                        {(client.montantDepense || 0).toFixed(2)}DH
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(client.statut)}`}>
-                        {client.statut === 'actif' ? 'Actif' : 'Inactif'}
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor('actif')}`}>
+                        Actif
                       </span>
                     </td>
                     <td className="px-6 py-4">

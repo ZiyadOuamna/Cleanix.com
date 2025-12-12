@@ -4,10 +4,11 @@ import {
   Download, User, Mail, Phone, Calendar, FileText,
   Shield, AlertCircle, ChevronDown, ChevronUp,
   ExternalLink, MoreVertical, RefreshCw, ThumbsUp,
-  ThumbsDown, Briefcase, MapPin, CreditCard, Percent
+  ThumbsDown, Briefcase, MapPin, CreditCard, Percent, Loader
 } from 'react-feather';
 import { SuperviseurContext } from '../superviseurContext';
 import Swal from 'sweetalert2';
+import superviseurService from '../../../services/superviseurService';
 
 const SupervisorFreelancerVerification = () => {
   const { isDarkMode } = useContext(SuperviseurContext);
@@ -29,173 +30,96 @@ const SupervisorFreelancerVerification = () => {
     color: isDarkMode ? '#ffffff' : '#1f2937'
   };
 
-  // Données simulées de freelancers en attente de vérification
-  const [pendingFreelancers, setPendingFreelancers] = useState([
-    {
-      id: 3,
-      name: 'Karim Benjelloun',
-      email: 'karim.benjelloun@example.com',
-      phone: '+212 6 55 44 33 22',
-      specialty: 'Nettoyage vitres',
-      registrationDate: '2024-01-05',
-      verificationStatus: 'pending',
-      documents: {
-        cinNumber: 'CC345678',
-        cinFront: 'https://via.placeholder.com/300x200/3B82F6/FFFFFF?text=CIN+Recto',
-        cinBack: 'https://via.placeholder.com/300x200/10B981/FFFFFF?text=CIN+Verso',
-        selfie: 'https://via.placeholder.com/300x300/8B5CF6/FFFFFF?text=Selfie+CIN',
-      },
-      personalInfo: {
-        dateOfBirth: '1992-03-08',
-        gender: 'male',
-        nationality: 'Marocaine',
-        taxNumber: 'TAX567890123',
-      },
-      stats: {
-        totalServices: 5,
-        avgRating: 4.8,
-        completionRate: 100,
-      },
-      submittedAt: '2024-01-22T09:15:00Z',
-      supervisorNotes: 'Vérifier l\'authenticité du CIN',
-      priority: 'low',
-    },
-    {
-      id: 1,
-      name: 'Mohammed Alami',
-      email: 'mohammed.alami@example.com',
-      phone: '+212 6 12 34 56 78',
-      specialty: 'Nettoyage résidentiel',
-      registrationDate: '2024-01-15',
-      verificationStatus: 'pending',
-      documents: {
-        cinNumber: 'AA123456',
-        cinFront: 'https://via.placeholder.com/300x200/3B82F6/FFFFFF?text=CIN+Recto',
-        cinBack: 'https://via.placeholder.com/300x200/10B981/FFFFFF?text=CIN+Verso',
-        selfie: 'https://via.placeholder.com/300x300/8B5CF6/FFFFFF?text=Selfie+CIN',
-      },
-      personalInfo: {
-        dateOfBirth: '1990-05-15',
-        gender: 'male',
-        nationality: 'Marocaine',
-        taxNumber: 'TAX123456789',
-      },
-      stats: {
-        totalServices: 0,
-        avgRating: null,
-        completionRate: null,
-      },
-      submittedAt: '2024-01-20T10:30:00Z',
-      supervisorNotes: '',
-      priority: 'high',
-    },
-    {
-      id: 2,
-      name: 'Fatima Zahra',
-      email: 'fatima.zahra@example.com',
-      phone: '+212 6 87 65 43 21',
-      specialty: 'Nettoyage bureau',
-      registrationDate: '2024-01-10',
-      verificationStatus: 'pending',
-      documents: {
-        cinNumber: 'BB789012',
-        cinFront: 'https://via.placeholder.com/300x200/3B82F6/FFFFFF?text=CIN+Recto',
-        cinBack: 'https://via.placeholder.com/300x200/10B981/FFFFFF?text=CIN+Verso',
-        selfie: 'https://via.placeholder.com/300x300/8B5CF6/FFFFFF?text=Selfie+CIN',
-      },
-      personalInfo: {
-        dateOfBirth: '1988-11-22',
-        gender: 'female',
-        nationality: 'Marocaine',
-        taxNumber: 'TAX987654321',
-      },
-      stats: {
-        totalServices: 0,
-        avgRating: null,
-        completionRate: null,
-      },
-      submittedAt: '2024-01-18T14:45:00Z',
-      supervisorNotes: '',
-      priority: 'medium',
-    },
-  ]);
-
-  const [verifiedFreelancers, setVerifiedFreelancers] = useState([
-    {
-      id: 4,
-      name: 'Amina Touati',
-      email: 'amina.touati@example.com',
-      phone: '+212 6 99 88 77 66',
-      specialty: 'Nettoyage après travaux',
-      registrationDate: '2023-12-01',
-      verificationStatus: 'verified',
-      verifiedAt: '2023-12-05T11:20:00Z',
-      verifiedBy: 'Superviseur Ahmed',
-      documents: {
-        cinNumber: 'DD901234',
-      },
-      personalInfo: {
-        dateOfBirth: '1991-07-30',
-        gender: 'female',
-        nationality: 'Marocaine',
-      },
-      stats: {
-        totalServices: 42,
-        avgRating: 4.9,
-        completionRate: 98,
-      },
-    },
-  ]);
-
-  const [rejectedFreelancers, setRejectedFreelancers] = useState([
-    {
-      id: 5,
-      name: 'Hassan El Fassi',
-      email: 'hassan.elfassi@example.com',
-      phone: '+212 6 33 22 11 00',
-      specialty: 'Nettoyage résidentiel',
-      registrationDate: '2024-01-03',
-      verificationStatus: 'rejected',
-      rejectedAt: '2024-01-08T16:30:00Z',
-      rejectedBy: 'Superviseur Ahmed',
-      rejectionReason: 'Selfie ne correspond pas au CIN',
-      documents: {
-        cinNumber: 'EE567890',
-      },
-      stats: {
-        totalServices: 0,
-        avgRating: null,
-        completionRate: null,
-      },
-    },
-  ]);
-
+  const [pendingFreelancers, setPendingFreelancers] = useState([]);
+  const [verifiedFreelancers, setVerifiedFreelancers] = useState([]);
+  const [rejectedFreelancers, setRejectedFreelancers] = useState([]);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFreelancer, setSelectedFreelancer] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [expandedView, setExpandedView] = useState('documents');
+  const [loading, setLoading] = useState(true);
+
+  // Charger les freelancers au montage
+  useEffect(() => {
+    loadFreelancers();
+  }, []);
+
+  const loadFreelancers = async () => {
+    try {
+      setLoading(true);
+      const response = await superviseurService.getFreelancers(1, '', 'all');
+      if (response.success && response.data.data) {
+        const allFreelancers = response.data.data;
+        // Grouper les freelancers par statut de vérification
+        // Pour l'instant, tous sont considérés comme "pending"
+        setPendingFreelancers(allFreelancers.map((f, idx) => ({
+          id: f.id,
+          name: `${f.prenom} ${f.nom}`,
+          email: f.email,
+          phone: f.telephone,
+          specialty: 'Service de nettoyage',
+          registrationDate: f.created_at,
+          verificationStatus: 'pending',
+          documents: {
+            cinNumber: 'N/A',
+            cinFront: 'https://via.placeholder.com/300x200/3B82F6/FFFFFF?text=CIN+Recto',
+            cinBack: 'https://via.placeholder.com/300x200/10B981/FFFFFF?text=CIN+Verso',
+            selfie: 'https://via.placeholder.com/300x300/8B5CF6/FFFFFF?text=Selfie+CIN',
+          },
+          personalInfo: {
+            dateOfBirth: 'N/A',
+            gender: 'N/A',
+            nationality: 'Marocaine',
+            taxNumber: 'N/A',
+          },
+          stats: {
+            totalServices: f.freelancer?.nombre_missions || 0,
+            avgRating: f.freelancer?.note_moyenne || 0,
+            completionRate: 100,
+          },
+          submittedAt: f.created_at,
+          supervisorNotes: '',
+          priority: idx === 0 ? 'high' : idx === 1 ? 'medium' : 'low',
+        })));
+        setVerifiedFreelancers([]);
+        setRejectedFreelancers([]);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des freelancers:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: 'Impossible de charger les freelancers',
+        background: swalTheme.background,
+        color: swalTheme.color,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
 
   // Calculer les statistiques
   const [stats, setStats] = useState({
-    pending: 3,
-    verified: 1,
-    rejected: 1,
+    pending: 0,
+    verified: 0,
+    rejected: 0,
     approvalRate: 0,
-    todayVerifications: 2,
+    todayVerifications: 0,
   });
 
   useEffect(() => {
-    // Calculer le taux d'approbation
-    const totalProcessed = stats.verified + stats.rejected;
-    const approvalRate = totalProcessed > 0 
-      ? Math.round((stats.verified / totalProcessed) * 100) 
-      : 0;
-    
-    setStats(prev => ({
-      ...prev,
-      approvalRate
-    }));
-  }, [stats.verified, stats.rejected]);
+    // Calculer les stats basées sur les données réelles
+    setStats({
+      pending: pendingFreelancers.length,
+      verified: verifiedFreelancers.length,
+      rejected: rejectedFreelancers.length,
+      approvalRate: verifiedFreelancers.length + rejectedFreelancers.length > 0 
+        ? Math.round((verifiedFreelancers.length / (verifiedFreelancers.length + rejectedFreelancers.length)) * 100) 
+        : 0,
+      todayVerifications: 0,
+    });
+  }, [pendingFreelancers, verifiedFreelancers, rejectedFreelancers]);
 
   // Filtrer les freelancers par recherche
   const filteredPending = pendingFreelancers
@@ -398,6 +322,17 @@ const SupervisorFreelancerVerification = () => {
     });
   };
 
+  if (loading) {
+    return (
+      <div className={`${theme.bg} min-h-screen flex items-center justify-center`}>
+        <div className="flex flex-col items-center gap-4">
+          <Loader className="animate-spin" size={32} />
+          <p className={theme.textSecondary}>Chargement des freelancers...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`${theme.bg} min-h-screen p-4 md:p-6`}>
       {/* Header simplifié */}
@@ -462,15 +397,25 @@ const SupervisorFreelancerVerification = () => {
 
       {/* Search */}
       <div className={`${theme.cardBg} rounded-xl p-4 border ${theme.border} mb-6`}>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-          <input
-            type="text"
-            placeholder="Rechercher un freelancer par nom, email ou CIN..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={`w-full pl-10 pr-4 py-2 rounded-lg border ${theme.border} ${theme.inputBg} ${theme.inputText}`}
-          />
+        <div className="flex gap-3 items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Rechercher un freelancer par nom, email ou CIN..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`w-full pl-10 pr-4 py-2 rounded-lg border ${theme.border} ${theme.inputBg} ${theme.inputText}`}
+            />
+          </div>
+          <button
+            onClick={loadFreelancers}
+            disabled={loading}
+            className="p-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50 transition"
+            title="Rafraîchir les données"
+          >
+            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+          </button>
         </div>
       </div>
 

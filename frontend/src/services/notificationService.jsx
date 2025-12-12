@@ -48,6 +48,30 @@ export const getUnreadNotifications = async () => {
 };
 
 /**
+ * Récupérer le résumé des notifications par type
+ */
+export const getNotificationsSummary = async () => {
+  try {
+    const response = await apiClient.get('/notifications/summary');
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Récupérer les notifications par type spécifique
+ */
+export const getNotificationsByType = async (type, page = 1) => {
+  try {
+    const response = await apiClient.get(`/notifications/by-type/${type}?page=${page}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
  * Marquer une notification comme lue
  */
 export const markNotificationAsRead = async (notificationId) => {

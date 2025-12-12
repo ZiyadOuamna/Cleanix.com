@@ -71,8 +71,11 @@ const HistoriqueCommandes = () => {
         setError(null);
         const response = await getAcceptedOrders();
         
+        // response est directement l'array de commandes
+        const ordersData = Array.isArray(response) ? response : (response && response.data ? response.data : []);
+        
         // Filtrer et transformer les commandes complétées/validées
-        const completedOrders = response.data
+        const completedOrders = ordersData
           .filter(order => order.status === 'completed' || order.status === 'validated')
           .map((order) => ({
             id: order.id,
@@ -100,6 +103,9 @@ const HistoriqueCommandes = () => {
             createdAt: new Date(order.created_at).toLocaleString('fr-FR'),
             completedAt: new Date(order.updated_at).toLocaleString('fr-FR')
           }));
+        
+        console.log('Orders loaded:', ordersData);
+        console.log('Completed orders:', completedOrders);
         
         setOrderHistory(completedOrders);
       } catch (err) {

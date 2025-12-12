@@ -21,6 +21,17 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// ========== USER PROFILE ==========
+
+export const getCurrentUser = async () => {
+  try {
+    const response = await api.get('/user');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Erreur lors du chargement du profil' };
+  }
+};
+
 // ========== CLIENTS ==========
 
 export const getClients = async (page = 1, search = '', filter = 'all') => {
@@ -361,6 +372,9 @@ export const deleteSuperviseur = async (superviseurId) => {
 };
 
 export default {
+  // User
+  getCurrentUser,
+
   // Clients
   getClients,
   getClientById,

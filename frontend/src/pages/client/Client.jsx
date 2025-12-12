@@ -397,8 +397,8 @@ function InnerLayout() {
               >
                 <ICONS.notifications size={18} />
                 {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full text-[8px] text-white flex items-center justify-center border-2 border-slate-50 dark:border-gray-800">
-                    {unreadCount}
+                  <span className="absolute -top-1 -right-1 min-w-[20px] h-[20px] bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center border-2 border-slate-50 dark:border-gray-800 px-1">
+                    {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
               </button>

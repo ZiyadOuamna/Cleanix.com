@@ -101,8 +101,13 @@ const CommandesAcceptees = () => {
         setError(null);
         const response = await getAcceptedOrders();
         
+        // La réponse est un array directement, pas { data: [...] }
+        const ordersData = Array.isArray(response) ? response : (response?.data || []);
+        
+        console.log('✅ Accepted orders:', ordersData);
+        
         // Transformer les données de l'API au format du composant
-        const formattedOrders = response.data.map((order) => ({
+        const formattedOrders = ordersData.map((order) => ({
           id: order.id,
           clientName: order.client ? `${order.client.firstname} ${order.client.lastname}` : 'Client inconnu',
           clientPhone: order.client?.phone || 'Non fourni',

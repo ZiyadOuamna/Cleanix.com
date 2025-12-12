@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import {
   Calendar,
   MapPin,
@@ -9,7 +9,8 @@ import {
   Package,
   Sparkles,
   ChevronDown,
-  Eye
+  Eye,
+  Loader
 } from 'lucide-react';
 import { ClientContext } from './clientContext';
 import Swal from 'sweetalert2';
@@ -20,8 +21,20 @@ const CommandeHistory = () => {
   const [activeServiceFilter, setActiveServiceFilter] = useState('all');
   const [activeStatusFilter, setActiveStatusFilter] = useState('completed');
   const [expandedId, setExpandedId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState([]);
 
-  const [history] = useState([
+  // Charger l'historique des commandes au montage
+  useEffect(() => {
+    loadCommandeHistory();
+  }, []);
+
+  const loadCommandeHistory = async () => {
+    try {
+      setLoading(true);
+      // Charger depuis une API ici
+      // Pour l'instant, on utilise les données simulées
+      const mockData = [
     {
       id: 1,
       service: 'Nettoyage complet',
@@ -97,7 +110,14 @@ const CommandeHistory = () => {
       review: null,
       status: 'cancelled'
     }
-  ]);
+      ];
+      setHistory(mockData);
+      setLoading(false);
+    } catch (error) {
+      console.error('Erreur lors du chargement de l\'historique:', error);
+      setLoading(false);
+    }
+  };
 
   const theme = {
     bg: isDarkMode ? 'bg-gray-900' : 'bg-transparent',
@@ -198,6 +218,17 @@ const CommandeHistory = () => {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${theme.bg}`}>
+        <div className="flex flex-col items-center gap-4">
+          <Loader className="animate-spin" size={32} />
+          <p className={theme.textSecondary}>Chargement de l'historique...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`space-y-4 ${theme.bg}`}>

@@ -20,7 +20,6 @@ class OrderController extends Controller
         
         if ($freelancer->user_type !== 'Freelancer') {
             return response()->json([
-                'success' => false,
                 'message' => 'Unauthorized. Only freelancers can access this resource.'
             ], 403);
         }
@@ -33,10 +32,7 @@ class OrderController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $orders
-        ]);
+        return response()->json($orders);
     }
 
     /**
@@ -48,7 +44,6 @@ class OrderController extends Controller
         
         if ($freelancer->user_type !== 'Freelancer') {
             return response()->json([
-                'success' => false,
                 'message' => 'Unauthorized'
             ], 403);
         }
@@ -59,10 +54,7 @@ class OrderController extends Controller
             ->orderBy('scheduled_date', 'asc')
             ->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $orders
-        ]);
+        return response()->json($orders);
     }
 
     /**
@@ -127,8 +119,13 @@ class OrderController extends Controller
                 ], 401);
             }
 
+            // Chercher le service_id basé sur service_type
+            $service = \App\Models\Service::where('nom', $validated['service_type'])->first();
+            $service_id = $service ? $service->id : null;
+
             $order = Order::create([
                 'client_id' => Auth::id(),
+                'service_id' => $service_id, // Ajouter service_id
                 'service_type' => $validated['service_type'],
                 'description' => $validated['description'] ?? null,
                 'adresse' => $validated['adresse'],
@@ -243,6 +240,7 @@ class OrderController extends Controller
             $order = $proposal->order;
             $order->update([
                 'freelancer_id' => $proposal->freelancer_id,
+                'service_id' => $order->service_id, // S'assurer que service_id est défini
                 'agreed_price' => $proposal->proposed_price,
                 'status' => 'accepted'
             ]);
@@ -458,6 +456,126 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to cancel order: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Demander un remboursement pour une commande
+     */
+    public function requestRefund(Order $order, Request $request): JsonResponse
+    {
+        $client = Auth::user();
+
+        if ($order->client_id !== $client->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'reason' => 'required|string|max:1000',
+            'amount' => 'required|numeric|min:0|max:' . ($order->agreed_price ?? $order->initial_price)
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Créer une transaction de remboursement
+            $wallet = \App\Models\Wallet::firstOrCreate(
+                ['user_id' => $client->id],
+                ['balance' => 0, 'pending' => 0]
+            );
+
+            $refund = \App\Models\Transaction::create([
+                'wallet_id' => $wallet->id,
+                'user_id' => $client->id,
+                'type' => 'refund',
+                'montant' => $validated['amount'],
+                'description' => 'Remboursement - ' . $validated['reason'],
+                'statut' => 'en_attente',
+                'compte_bancaire' => null
+            ]);
+
+            // Mettre à jour la commande
+            $order->update([
+                'status' => 'refund_requested',
+                'notes' => $validated['reason']
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Remboursement demandé avec succès',
+                'data' => [
+                    'order' => $order,
+                    'transaction' => $refund
+                ]
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la demande de remboursement: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Approuver un remboursement (Admin/Superviseur)
+     */
+    public function approveRefund(Order $order): JsonResponse
+    {
+        $user = Auth::user();
+
+        if ($user->user_type !== 'Superviseur') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Mettre à jour la transaction associée
+            $transaction = \App\Models\Transaction::where('description', 'like', '%Remboursement%')
+                ->where('user_id', $order->client_id)
+                ->latest()
+                ->first();
+
+            if ($transaction) {
+                $transaction->update(['statut' => 'validee']);
+
+                // Créditer le wallet du client
+                $wallet = \App\Models\Wallet::where('user_id', $order->client_id)->first();
+                if ($wallet) {
+                    $wallet->update([
+                        'balance' => $wallet->balance + $transaction->montant,
+                        'pending' => max(0, $wallet->pending - $transaction->montant)
+                    ]);
+                }
+            }
+
+            // Mettre à jour la commande
+            $order->update([
+                'status' => 'refunded'
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Remboursement approuvé',
+                'data' => $order
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'approbation du remboursement: ' . $e->getMessage()
             ], 500);
         }
     }

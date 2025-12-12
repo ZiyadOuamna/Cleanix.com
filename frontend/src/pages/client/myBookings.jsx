@@ -27,8 +27,9 @@ import { getOrderHistory } from '../../services/orderService';
 
 const MyBookings = () => {
   const { isDarkMode, wallet } = useContext(ClientContext);
-  const [activeFilter, setActiveFilter] = useState('in_progress');
+  const [activeFilter, setActiveFilter] = useState('all');
   const [activeServiceFilter, setActiveServiceFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [showDetails, setShowDetails] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,10 +46,21 @@ const MyBookings = () => {
       try {
         setIsLoading(true);
         setError(null);
+        console.log('🔄 Fetching order history...');
         const response = await getOrderHistory();
         
+        console.log('📡 API Response:', response);
+        console.log('Response type:', typeof response);
+        console.log('Response.data exists:', !!response?.data);
+        
+        // La réponse du service est: { data: [...], current_page, last_page, total, per_page }
+        const ordersData = (response && response.data) ? response.data : [];
+        
+        console.log('✅ Orders data:', ordersData);
+        console.log('📊 Orders count:', ordersData.length);
+        
         // Transformer les données de l'API au format du composant
-        const formattedBookings = response.data.map((order) => ({
+        const formattedBookings = ordersData.map((order) => ({
           id: order.id,
           service: order.service?.nom || order.service_type,
           serviceType: order.service_type,
@@ -61,7 +73,7 @@ const MyBookings = () => {
           time: order.heure_execution ? new Date(order.heure_execution).toLocaleTimeString('fr-FR', {
             hour: '2-digit',
             minute: '2-digit'
-          }) + ' - À déterminer' : 'Horaire à déterminer',
+          }) : 'Horaire à déterminer',
           location: `${order.adresse}, ${order.code_postal} ${order.ville}`,
           price: `${order.agreed_price || order.initial_price}DH`,
           status: order.status,
@@ -79,6 +91,8 @@ const MyBookings = () => {
           review: order.review,
           orderId: order.id
         }));
+        
+        console.log('Formatted bookings:', formattedBookings);
         
         setBookings(formattedBookings);
       } catch (err) {
@@ -302,8 +316,14 @@ return gender === 'female' || gender === 'F' ? <User2 size={18}/> : <User size={
 
   const filteredBookings = bookings.filter(b => {
     const statusMatch = activeFilter === 'all' ? true : b.status === activeFilter;
-    const serviceMatch = activeServiceFilter === 'all' ? true : b.serviceType === activeServiceFilter;
-    return statusMatch && serviceMatch;
+    const serviceMatch = activeServiceFilter === 'all' ? true : b.serviceType?.toLowerCase() === activeServiceFilter.toLowerCase();
+    const searchMatch = searchTerm === '' ? true : 
+      b.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.freelancer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.id.toString().includes(searchTerm);
+    console.log(`Filtering booking ${b.id}: status=${b.status}, activeFilter=${activeFilter}, serviceType=${b.serviceType}, serviceMatch=${serviceMatch}`);
+    return statusMatch && serviceMatch && searchMatch;
   });
 
   // Fonction pour exporter les réservations
@@ -371,14 +391,41 @@ return gender === 'female' || gender === 'F' ? <User2 size={18}/> : <User size={
         </button>
       </div>
 
+      {/* Search Bar */}
+      <div className={`${theme.cardBg} rounded-xl p-4 shadow-sm border ${theme.border}`}>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Rechercher par service, freelancer, lieu ou ID..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={`w-full px-4 py-2 rounded-lg border ${theme.border} transition ${
+              isDarkMode 
+                ? 'bg-gray-700 text-white placeholder-gray-400 focus:bg-gray-600' 
+                : 'bg-white text-slate-900 placeholder-slate-400 focus:bg-slate-50'
+            } focus:outline-none focus:ring-2 focus:ring-cyan-600`}
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <X size={18} />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Filters */}
       <div className={`${theme.cardBg} rounded-xl p-4 shadow-sm border ${theme.border} space-y-3`}>
         {/* Filter par statut */}
         <div className="flex flex-wrap gap-2 items-center">
           <Filter size={20} className={theme.textMuted} />
           {[
+            { id: 'all', label: 'Tous les statuts' },
+            { id: 'pending', label: 'En attente' },
             { id: 'in_progress', label: 'En cours' },
-            { id: 'pending_approval', label: 'En attente' }
+            { id: 'completed', label: 'Complétée' }
           ].map(filter => (
             <button
               key={filter.id}

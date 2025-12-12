@@ -335,7 +335,7 @@ function InnerLayout() {
                   {[
                     { id: 'gestion-clients', label: 'Clients', icon: ICONS.users, path: 'gestion-clients' },
                     { id: 'gestion-freelancers', label: 'Freelancers', icon: ICONS.briefcase, path: 'gestion-freelancers' },
-                    { id: 'gestion-superviseurs', label: 'Superviseurs', icon: ICONS.shield, path: 'gestion-superviseurs' },
+                    { id: 'gestion-superviseurs', label: 'Superviseurs', icon: ICONS.verification, path: 'gestion-superviseurs' },
                   ].map(sub => {
                     const style = getMenuItemStyle(sub.id);
                     return (
@@ -423,8 +423,8 @@ function InnerLayout() {
               >
                 <ICONS.notifications size={18} />
                 {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full text-[8px] text-white flex items-center justify-center border-2 border-slate-50 dark:border-gray-800">
-                    {unreadCount}
+                  <span className="absolute -top-1 -right-1 min-w-[20px] h-[20px] bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center border-2 border-slate-50 dark:border-gray-800 px-1">
+                    {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
               </button>

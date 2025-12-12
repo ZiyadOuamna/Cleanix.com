@@ -109,12 +109,13 @@ class WalletController extends Controller
         }
 
         $withdrawal = Transaction::create([
+            'wallet_id' => $wallet->id,
             'user_id' => $user->id,
             'type' => 'withdrawal',
-            'amount' => $validated['amount'],
+            'montant' => $validated['amount'],
             'description' => 'Retrait de fonds',
-            'status' => 'pending',
-            'payment_method_id' => $validated['payment_method_id']
+            'statut' => 'en_attente',
+            'compte_bancaire' => $validated['payment_method_id'] ?? null
         ]);
 
         // Update wallet

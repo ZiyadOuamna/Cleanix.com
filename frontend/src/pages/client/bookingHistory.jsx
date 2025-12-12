@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import {
   Calendar,
   MapPin,
@@ -9,10 +9,12 @@ import {
   Package,
   Sparkles,
   ChevronDown,
-  Eye
+  Eye,
+  Loader
 } from 'lucide-react';
 import { ClientContext } from './clientContext';
 import Swal from 'sweetalert2';
+import { getOrderHistory } from '../../services/orderService';
 
 const BookingHistory = () => {
   const { isDarkMode } = useContext(ClientContext);
@@ -20,84 +22,70 @@ const BookingHistory = () => {
   const [activeServiceFilter, setActiveServiceFilter] = useState('all');
   const [activeStatusFilter, setActiveStatusFilter] = useState('completed');
   const [expandedId, setExpandedId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState([]);
 
-  const [history] = useState([
-    {
-      id: 1,
-      service: 'Nettoyage complet',
-      serviceType: 'nettoyage',
-      freelancer: 'Ahmed M.',
-      date: '10 Déc 2025',
-      price: '850DH',
-      rating: 4.5,
-      image: '✨',
-      freelancerAvatar: '👨',
-      location: '123 Rue de Paris, 75000 Paris',
-      completedDate: '10 Déc 2025 à 12:30',
-      review: 'Très bon travail, rapide et efficace!',
-      status: 'completed'
-    },
-    {
-      id: 2,
-      service: 'Nettoyage de vitres',
-      serviceType: 'nettoyage',
-      freelancer: 'Fatima K.',
-      date: '08 Déc 2025',
-      price: '450DH',
-      rating: 5,
-      image: '🪟',
-      freelancerAvatar: '👩',
-      location: '456 Avenue des Champs, 75008 Paris',
-      completedDate: '08 Déc 2025 à 15:45',
-      review: 'Parfait! Très professionnel.',
-      status: 'completed'
-    },
-    {
-      id: 3,
-      service: 'Nettoyage bureau',
-      serviceType: 'nettoyage',
-      freelancer: 'Hassan D.',
-      date: '01 Déc 2025',
-      price: '1200DH',
-      rating: 4.8,
-      image: '🏢',
-      freelancerAvatar: '👨',
-      location: '789 Boulevard Saint-Germain, 75005 Paris',
-      completedDate: '01 Déc 2025 à 11:00',
-      review: 'Impeccable! Meilleur que prévu.',
-      status: 'completed'
-    },
-    {
-      id: 4,
-      service: 'Nettoyage appartement',
-      serviceType: 'nettoyage',
-      freelancer: 'Mohammed A.',
-      date: '25 Nov 2025',
-      price: '950DH',
-      rating: 3.5,
-      image: '🏠',
-      freelancerAvatar: '👨',
-      location: '200 Rue Rivoli, 75001 Paris',
-      completedDate: '25 Nov 2025 à 13:15',
-      review: 'Correct mais quelques détails manqués.',
-      status: 'cancelled'
-    },
-    {
-      id: 5,
-      service: 'Nettoyage cuisine',
-      serviceType: 'nettoyage',
-      freelancer: 'Zainab M.',
-      date: '20 Nov 2025',
-      price: '600DH',
-      rating: null,
-      image: '🍳',
-      freelancerAvatar: '👩',
-      location: '88 Rue de Seine, 75006 Paris',
-      completedDate: '20 Nov 2025 à 10:00',
-      review: null,
-      status: 'cancelled'
+  // Charger l'historique des réservations au montage
+  useEffect(() => {
+    loadBookingHistory();
+  }, []);
+
+  const loadBookingHistory = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Fetching booking history from API...');
+      const response = await getOrderHistory();
+      
+      console.log('API Response:', response);
+      
+      // Extract the data from the response
+      const ordersData = (response && response.data) ? response.data : [];
+      
+      console.log('Orders data:', ordersData);
+      console.log('Orders count:', ordersData.length);
+      
+      // Transform the data to match the component's expectations
+      const formattedHistory = ordersData.map((order) => ({
+        id: order.id,
+        service: order.service?.nom || order.service_type || 'Service',
+        serviceType: order.service_type ? order.service_type.toLowerCase() : 'nettoyage',
+        freelancer: order.freelancer ? `${order.freelancer.firstname} ${order.freelancer.lastname}` : 'À assigner',
+        date: new Date(order.scheduled_date).toLocaleDateString('fr-FR', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }),
+        price: `${order.agreed_price || order.initial_price}DH`,
+        rating: order.rating || null,
+        image: '🧹', // Default cleaning emoji
+        freelancerAvatar: order.freelancer ? (order.freelancer.gender === 'female' || order.freelancer.gender === 'F' ? '👩' : '👨') : '❓',
+        location: `${order.adresse}, ${order.code_postal} ${order.ville}`,
+        completedDate: order.completed_at ? new Date(order.completed_at).toLocaleDateString('fr-FR', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : 'Non complétée',
+        review: order.review || null,
+        status: order.status || 'pending'
+      }));
+      
+      console.log('Formatted history:', formattedHistory);
+      setHistory(formattedHistory);
+      setLoading(false);
+    } catch (error) {
+      console.error('Erreur lors du chargement de l\'historique:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: 'Impossible de charger votre historique de réservations',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#1f2937',
+      });
+      setLoading(false);
     }
-  ]);
+  };
 
   const theme = {
     bg: isDarkMode ? 'bg-gray-900' : 'bg-transparent',
@@ -199,6 +187,17 @@ const BookingHistory = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${theme.bg}`}>
+        <div className="flex flex-col items-center gap-4">
+          <Loader className="animate-spin" size={32} />
+          <p className={theme.textSecondary}>Chargement de l'historique...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`space-y-4 ${theme.bg}`}>
       {/* Header */}
@@ -251,8 +250,7 @@ const BookingHistory = () => {
           <Filter size={16} className={theme.textMuted} />
           {[
             { id: 'all', label: 'Tous', icon: '⭐' },
-            { id: 'nettoyage', label: 'Nettoyage', icon: '✨' },
-            { id: 'cles', label: 'Gestion de Clés', icon: '🔑' }
+            { id: 'nettoyage', label: 'Nettoyage', icon: '✨' }
           ].map(filter => (
             <button
               key={filter.id}

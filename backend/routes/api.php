@@ -155,6 +155,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // Annuler une commande (Client)
     Route::post('/orders/{order}/cancel', [OrderController::class, 'cancelOrder']);
 
+    // Demander un remboursement (Client)
+    Route::post('/orders/{order}/refund', [OrderController::class, 'requestRefund']);
+
+    // Approuver un remboursement (Superviseur)
+    Route::post('/orders/{order}/approve-refund', [OrderController::class, 'approveRefund']);
+
     // ========== ROUTES SERVICES ==========
     
     // Lister tous les services

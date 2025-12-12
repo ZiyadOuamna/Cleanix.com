@@ -28,7 +28,9 @@ const RequestService = ({ onBack }) => {
   const [formData, setFormData] = useState({
     nom: '',
     description: '',
-    adresse: '',
+    adresse: user?.address || '',
+    ville: user?.city || '',
+    code_postal: user?.postal_code || '',
     
     // Champs spécifiques NettoyageResidential
     nombrePieces: '',
@@ -53,6 +55,9 @@ const RequestService = ({ onBack }) => {
     adresseAppartement: '',
     dateOperation: '',
     heureOperation: '',
+    horaire_prefere: null,
+    genre_freelancer_prefere: 'Pas de preference',
+    notes: ''
   });
 
   const [quote, setQuote] = useState(null);
@@ -215,21 +220,59 @@ const RequestService = ({ onBack }) => {
   };
 
   const handleConfirmAndPay = async () => {
+    // Validation des champs obligatoires
+    const missingFields = [];
+    if (!formData.adresse?.trim()) missingFields.push('Adresse');
+    if (!formData.ville?.trim()) missingFields.push('Ville');
+    if (!formData.dateOperation?.trim()) missingFields.push('Date');
+
+    if (missingFields.length > 0) {
+      showAlert('warning', 'Informations manquantes',
+        `Veuillez remplir les champs obligatoires: ${missingFields.join(', ')}`);
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
+      // Convertir la date au format YYYY-MM-DD si elle est en format autre
+      let scheduledDate = formData.dateOperation;
+      if (scheduledDate && typeof scheduledDate === 'string') {
+        // Si c'est un ISO string avec heure, prendre juste la date
+        if (scheduledDate.includes('T')) {
+          scheduledDate = scheduledDate.split('T')[0];
+        }
+        // Vérifier que c'est au format YYYY-MM-DD
+        if (!scheduledDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          throw new Error('Date invalide');
+        }
+      }
+
+      // Déterminer l'horaire préféré basé sur heureOperation
+      let horairePrefere = null;
+      if (formData.heureOperation) {
+        const hour = parseInt(formData.heureOperation.split(':')[0]);
+        if (hour >= 6 && hour < 12) {
+          horairePrefere = 'Matin';
+        } else if (hour >= 12 && hour < 17) {
+          horairePrefere = 'Apres-midi';
+        } else if (hour >= 17) {
+          horairePrefere = 'Soir';
+        }
+      }
+
       // Préparer les données de la commande
       const orderData = {
         service_type: selectedServiceType,
         description: formData.description || `Commande de ${selectedServiceType}`,
-        adresse: formData.adresse,
-        ville: formData.ville || 'Non spécifiée',
-        code_postal: formData.code_postal,
-        horaire_prefere: formData.horaire_prefere,
+        adresse: formData.adresse.trim(),
+        ville: formData.ville.trim(),
+        code_postal: formData.code_postal?.trim() || '',
+        horaire_prefere: horairePrefere,
         genre_freelancer_prefere: formData.genre_freelancer_prefere,
-        initial_price: quote?.total,
-        scheduled_date: formData.dateOperation || new Date().toISOString(),
-        notes_speciales: formData.notes || '',
+        initial_price: quote?.total || 0,
+        scheduled_date: scheduledDate,
+        notes_speciales: formData.notes?.trim() || '',
       };
 
       // Appeler l'API pour créer la commande
@@ -245,13 +288,26 @@ const RequestService = ({ onBack }) => {
       setQuote(null);
       
       setTimeout(() => {
-        navigate('my-bookings');
+        navigate('../my-bookings');
       }, 2000);
     } catch (error) {
       setIsProcessing(false);
       console.error('Erreur lors de la création de la commande:', error);
-      showAlert('error', 'Erreur', 
-        error.response?.data?.message || 'Une erreur s\'est produite lors de la création de la commande.');
+      
+      let errorMessage = 'Une erreur s\'est produite lors de la création de la commande.';
+      
+      // Afficher les erreurs de validation si disponibles
+      if (error.errors) {
+        const validationErrors = error.errors;
+        const errorList = Object.keys(validationErrors)
+          .map(field => `${field}: ${validationErrors[field].join(', ')}`)
+          .join('\n');
+        errorMessage = 'Erreurs de validation:\n' + errorList;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      showAlert('error', 'Erreur', errorMessage);
     }
   };
 
@@ -528,6 +584,22 @@ const RequestService = ({ onBack }) => {
                 />
               </div>
 
+              {/* City */}
+              <div>
+                <label className={`block text-xs font-medium ${theme.textMain} mb-1`}>
+                  Ville *
+                </label>
+                <input
+                  type="text"
+                  name="ville"
+                  value={formData.ville}
+                  onChange={handleInputChange}
+                  placeholder="Ex: Casablanca"
+                  className={`w-full px-2.5 py-1.5 text-xs rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
+                  required
+                />
+              </div>
+
               {/* Service Specific Fields */}
               <div className="border-t pt-2">
                 <h3 className={`font-semibold text-xs ${theme.textMain} mb-2`}>
@@ -548,6 +620,38 @@ const RequestService = ({ onBack }) => {
                   placeholder="Détails supplémentaires pour le freelancer..."
                   rows="2"
                   className={`w-full px-2.5 py-1.5 text-xs rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain} resize-none`}
+                />
+              </div>
+
+              {/* Date de réalisation */}
+              <div>
+                <label className={`block text-xs font-medium ${theme.textMain} mb-1`}>
+                  <Calendar size={12} className="inline mr-1" />
+                  Date préférée *
+                </label>
+                <input
+                  type="date"
+                  name="dateOperation"
+                  value={formData.dateOperation}
+                  onChange={handleInputChange}
+                  min={new Date().toISOString().split('T')[0]}
+                  className={`w-full px-2.5 py-1.5 text-xs rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
+                  required
+                />
+              </div>
+
+              {/* Heure de réalisation */}
+              <div>
+                <label className={`block text-xs font-medium ${theme.textMain} mb-1`}>
+                  <Clock size={12} className="inline mr-1" />
+                  Heure préférée
+                </label>
+                <input
+                  type="time"
+                  name="heureOperation"
+                  value={formData.heureOperation}
+                  onChange={handleInputChange}
+                  className={`w-full px-2.5 py-1.5 text-xs rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
                 />
               </div>
             </div>
