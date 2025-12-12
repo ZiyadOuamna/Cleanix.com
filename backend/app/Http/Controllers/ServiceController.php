@@ -401,4 +401,55 @@ class ServiceController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Récupère les catégories de services disponibles avec leurs infos
+     */
+    public function getCategories(): JsonResponse
+    {
+        try {
+            $categories = Service::where('est_actif', true)
+                ->select('category')
+                ->distinct()
+                ->get()
+                ->map(function ($service) {
+                    return [
+                        'id' => $service->category,
+                        'name' => $service->category,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $categories
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch categories: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Récupère les services par catégorie
+     */
+    public function getByCategory(string $category): JsonResponse
+    {
+        try {
+            $services = Service::where('est_actif', true)
+                ->where('category', $category)
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $services
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch services by category: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

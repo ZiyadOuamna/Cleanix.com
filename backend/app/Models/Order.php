@@ -21,6 +21,8 @@ class Order extends Model
         'ville',
         'code_postal',
         'location',
+        'square_meters',
+        'number_of_rooms',
         'horaire_prefere',
         'genre_freelancer_prefere',
         'initial_price',

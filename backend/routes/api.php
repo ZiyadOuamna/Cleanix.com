@@ -10,6 +10,7 @@ use App\Http\Controllers\PaiementController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\SuperviseurController;
+use App\Http\Controllers\ClientController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -105,6 +106,17 @@ Route::middleware('auth:sanctum')->group(function () {
     // Request withdrawal
     Route::post('/wallet/withdraw', [WalletController::class, 'requestWithdrawal']);
 
+    // ========== ROUTES CLIENT PROFILE ==========
+    
+    // Get following freelancers (Client)
+    Route::get('/client/following', [ClientController::class, 'getFollowing']);
+    
+    // Get followers (Client)
+    Route::get('/client/followers', [ClientController::class, 'getFollowers']);
+    
+    // Get reviews given by client
+    Route::get('/client/reviews', [ClientController::class, 'getReviews']);
+
     // ========== ROUTES COMMANDES (Orders) ==========
     
     // Commandes reçues (Freelancer)
@@ -148,6 +160,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // Lister tous les services
     Route::get('/services', [ServiceController::class, 'index']);
     
+    // Récupérer les catégories de services
+    Route::get('/services/categories', [ServiceController::class, 'getCategories']);
+    
+    // Récupérer les services par catégorie
+    Route::get('/services/category/{category}', [ServiceController::class, 'getByCategory']);
+    
     // Voir un service spécifique
     Route::get('/services/{service}', [ServiceController::class, 'show']);
     
@@ -181,6 +199,12 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Notifications non lues
     Route::get('/notifications/unread', [NotificationController::class, 'unread']);
+    
+    // Résumé des notifications par type
+    Route::get('/notifications/summary', [NotificationController::class, 'summary']);
+    
+    // Notifications par type spécifique
+    Route::get('/notifications/by-type/{type}', [NotificationController::class, 'getByType']);
     
     // Marquer comme lue
     Route::put('/notifications/{notification}', [NotificationController::class, 'markAsRead']);

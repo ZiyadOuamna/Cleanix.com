@@ -89,8 +89,11 @@ class OrderController extends Controller
         }
 
         return response()->json([
-            'success' => true,
-            'data' => $orders
+            'data' => $orders->items(),
+            'current_page' => $orders->currentPage(),
+            'last_page' => $orders->lastPage(),
+            'total' => $orders->total(),
+            'per_page' => $orders->perPage()
         ]);
     }
 
@@ -99,44 +102,63 @@ class OrderController extends Controller
      */
     public function createOrder(Request $request): JsonResponse
     {
-        $request->validate([
-            'service_type' => 'required|string',
-            'description' => 'nullable|string',
-            'adresse' => 'required|string',
-            'ville' => 'required|string',
-            'code_postal' => 'nullable|string',
-            'horaire_prefere' => 'nullable|in:Matin,Apres-midi,Soir',
-            'genre_freelancer_prefere' => 'nullable|in:Homme,Femme,Pas de preference',
-            'initial_price' => 'nullable|numeric|min:0',
-            'scheduled_date' => 'required|date|after:now',
-            'notes_speciales' => 'nullable|string',
-        ]);
-
         try {
+            // Valider les données reçues
+            $validated = $request->validate([
+                'service_type' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'adresse' => 'required|string|max:255',
+                'ville' => 'required|string|max:255',
+                'code_postal' => 'nullable|string|max:10',
+                'square_meters' => 'nullable|numeric|min:0',
+                'number_of_rooms' => 'nullable|integer|min:0',
+                'horaire_prefere' => 'nullable|in:Matin,Apres-midi,Soir',
+                'genre_freelancer_prefere' => 'nullable|in:Homme,Femme,Pas de preference',
+                'initial_price' => 'nullable|numeric|min:0',
+                'scheduled_date' => 'required|date_format:Y-m-d|after_or_equal:today',
+                'notes_speciales' => 'nullable|string',
+            ]);
+
+            // Assurer que client_id est défini
+            if (!Auth::id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authentification requise'
+                ], 401);
+            }
+
             $order = Order::create([
                 'client_id' => Auth::id(),
-                'service_type' => $request->service_type,
-                'description' => $request->description,
-                'adresse' => $request->adresse,
-                'ville' => $request->ville,
-                'code_postal' => $request->code_postal,
-                'horaire_prefere' => $request->horaire_prefere,
-                'genre_freelancer_prefere' => $request->genre_freelancer_prefere ?? 'Pas de preference',
-                'initial_price' => $request->initial_price,
-                'scheduled_date' => $request->scheduled_date,
-                'notes_speciales' => $request->notes_speciales,
+                'service_type' => $validated['service_type'],
+                'description' => $validated['description'] ?? null,
+                'adresse' => $validated['adresse'],
+                'ville' => $validated['ville'],
+                'code_postal' => $validated['code_postal'] ?? null,
+                'square_meters' => $validated['square_meters'] ?? null,
+                'number_of_rooms' => $validated['number_of_rooms'] ?? null,
+                'horaire_prefere' => $validated['horaire_prefere'] ?? null,
+                'genre_freelancer_prefere' => $validated['genre_freelancer_prefere'] ?? 'Pas de preference',
+                'initial_price' => $validated['initial_price'] ?? null,
+                'scheduled_date' => $validated['scheduled_date'],
+                'notes_speciales' => $validated['notes_speciales'] ?? null,
                 'status' => 'pending'
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Order created successfully',
+                'message' => 'Commande créée avec succès',
                 'data' => $order->load('client')
             ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create order: ' . $e->getMessage()
+                'message' => 'Erreur lors de la création de la commande: ' . $e->getMessage()
             ], 500);
         }
     }

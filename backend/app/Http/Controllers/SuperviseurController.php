@@ -771,8 +771,7 @@ class SuperviseurController extends Controller
             // Create client profile
             $client = Client::create([
                 'user_id' => $user->id,
-                'ville' => $validated['ville'] ?? 'Non spécifiée',
-                'solde' => 0,
+                'ville' => $validated['ville'] ?? null,
             ]);
 
             // Send email with login credentials
@@ -832,10 +831,7 @@ class SuperviseurController extends Controller
             // Create freelancer profile
             $freelancer = Freelancer::create([
                 'user_id' => $user->id,
-                'ville' => $validated['ville'] ?? 'Non spécifiée',
-                'solde' => 0,
-                'note' => 0,
-                'statut' => 'actif',
+                'statut_disponibilite' => 'Offline',
             ]);
 
             // Send email with login credentials
@@ -986,8 +982,6 @@ class SuperviseurController extends Controller
             // Create superviseur profile
             $superviseur = Superviseur::create([
                 'user_id' => $user->id,
-                'ville' => $validated['ville'] ?? 'Non spécifiée',
-                'statut' => 'actif',
             ]);
 
             // Send email with login credentials

@@ -24,6 +24,24 @@ class Notification extends Model
         'date_envoi' => 'datetime',
     ];
 
+    protected $appends = ['read'];
+
+    /**
+     * Accessor pour convertir est_lue en read pour le frontend
+     */
+    public function getReadAttribute()
+    {
+        return $this->est_lue;
+    }
+
+    /**
+     * Mutator pour convertir read en est_lue depuis le frontend
+     */
+    public function setReadAttribute($value)
+    {
+        $this->attributes['est_lue'] = $value;
+    }
+
     // Types de notification
     const TYPE_COMMANDE = 'Commande';
     const TYPE_PAIEMENT = 'Paiement';

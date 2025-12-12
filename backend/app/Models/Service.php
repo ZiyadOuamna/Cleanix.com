@@ -22,6 +22,7 @@ class Service extends Model
         'adresse',
         'zones',
         'availability',
+        'available_date',
         'included_items',
         'est_actif',
         'image',
@@ -36,6 +37,7 @@ class Service extends Model
         'duree_prevue' => 'integer',
         'zones' => 'array',
         'availability' => 'array',
+        'available_date' => 'date',
         'included_items' => 'array',
         'reviewed_at' => 'datetime',
     ];
