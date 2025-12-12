@@ -1,12 +1,13 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { 
   ArrowLeft, MapPin, Clock, Users, Check, AlertCircle,
-  ChevronRight, Home, KeyRound, Wind, Package,
+  ChevronRight, Home, Wind, Package,
   DoorOpen, Truck, Calendar, Zap
 } from 'lucide-react';
 import { ClientContext } from './clientContext';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
+import { createOrder } from '../../services/orderService';
 
 const RequestService = ({ onBack }) => {
   const { user, isDarkMode } = useContext(ClientContext);
@@ -27,7 +28,9 @@ const RequestService = ({ onBack }) => {
   const [formData, setFormData] = useState({
     nom: '',
     description: '',
-    adresse: '',
+    adresse: user?.address || '',
+    ville: user?.city || '',
+    code_postal: user?.postal_code || '',
     
     // Champs spécifiques NettoyageResidential
     nombrePieces: '',
@@ -52,24 +55,13 @@ const RequestService = ({ onBack }) => {
     adresseAppartement: '',
     dateOperation: '',
     heureOperation: '',
+    horaire_prefere: null,
+    genre_freelancer_prefere: 'Pas de preference',
+    notes: ''
   });
 
   const [quote, setQuote] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  // Generate ID for keys service
-  useEffect(() => {
-    if (selectedServiceType === 'gestion_cles' && !formData.chiLocataire) {
-      const year = new Date().getFullYear();
-      const idAppartement = user?.id || Math.random().toString(36).substring(2, 9).toUpperCase();
-      const generatedId = `Cle-${year}-${idAppartement}`;
-      setFormData(prev => ({ 
-        ...prev, 
-        chiLocataire: generatedId,
-        nomLocataire: user?.prenom && user?.nom ? `${user.prenom} ${user.nom}` : ''
-      }));
-    }
-  }, [selectedServiceType, user?.id, user?.prenom, user?.nom]);
 
   const serviceTypes = [
     { 
@@ -95,14 +87,6 @@ const RequestService = ({ onBack }) => {
       description: 'Nettoyage d\'objets spécifiques',
       color: 'from-purple-500 to-pink-500',
       category: 'nettoyage'
-    },
-    { 
-      id: 'gestion_cles', 
-      name: 'Gestion de Clés', 
-      icon: KeyRound, 
-      description: 'Service de gestion de clés',
-      color: 'from-orange-500 to-red-500',
-      category: 'cles'
     }
   ];
 
@@ -126,11 +110,6 @@ const RequestService = ({ onBack }) => {
     { id: 'meuble', label: 'Meuble', rate: 40 },
     { id: 'appareil', label: 'Appareil électroménager', rate: 30 },
     { id: 'lumiere', label: 'Lustre/Lumière', rate: 35 }
-  ];
-
-  const operationTypes = [
-    { id: 'remise', label: 'Remise de clés', rate: 50 },
-    { id: 'recuperation', label: 'Récupération', rate: 50 }
   ];
 
   const handleServiceSelect = (service) => {
@@ -210,17 +189,6 @@ const RequestService = ({ onBack }) => {
         ];
         break;
 
-      case 'gestion_cles':
-        const operationType = operationTypes.find(t => t.id === formData.typeOperation);
-        const prixBaseCles = operationType ? operationType.rate : 30;
-        
-        basePrice = prixBaseCles;
-        
-        details = [
-          { label: operationType?.label || 'Opération', value: basePrice }
-        ];
-        break;
-
       default:
         basePrice = 0;
     }
@@ -252,10 +220,66 @@ const RequestService = ({ onBack }) => {
   };
 
   const handleConfirmAndPay = async () => {
+    // Validation des champs obligatoires
+    const missingFields = [];
+    if (!formData.adresse?.trim()) missingFields.push('Adresse');
+    if (!formData.ville?.trim()) missingFields.push('Ville');
+    if (!formData.dateOperation?.trim()) missingFields.push('Date');
+
+    if (missingFields.length > 0) {
+      showAlert('warning', 'Informations manquantes',
+        `Veuillez remplir les champs obligatoires: ${missingFields.join(', ')}`);
+      return;
+    }
+
     setIsProcessing(true);
 
-    setTimeout(() => {
+    try {
+      // Convertir la date au format YYYY-MM-DD si elle est en format autre
+      let scheduledDate = formData.dateOperation;
+      if (scheduledDate && typeof scheduledDate === 'string') {
+        // Si c'est un ISO string avec heure, prendre juste la date
+        if (scheduledDate.includes('T')) {
+          scheduledDate = scheduledDate.split('T')[0];
+        }
+        // Vérifier que c'est au format YYYY-MM-DD
+        if (!scheduledDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          throw new Error('Date invalide');
+        }
+      }
+
+      // Déterminer l'horaire préféré basé sur heureOperation
+      let horairePrefere = null;
+      if (formData.heureOperation) {
+        const hour = parseInt(formData.heureOperation.split(':')[0]);
+        if (hour >= 6 && hour < 12) {
+          horairePrefere = 'Matin';
+        } else if (hour >= 12 && hour < 17) {
+          horairePrefere = 'Apres-midi';
+        } else if (hour >= 17) {
+          horairePrefere = 'Soir';
+        }
+      }
+
+      // Préparer les données de la commande
+      const orderData = {
+        service_type: selectedServiceType,
+        description: formData.description || `Commande de ${selectedServiceType}`,
+        adresse: formData.adresse.trim(),
+        ville: formData.ville.trim(),
+        code_postal: formData.code_postal?.trim() || '',
+        horaire_prefere: horairePrefere,
+        genre_freelancer_prefere: formData.genre_freelancer_prefere,
+        initial_price: quote?.total || 0,
+        scheduled_date: scheduledDate,
+        notes_speciales: formData.notes?.trim() || '',
+      };
+
+      // Appeler l'API pour créer la commande
+      const response = await createOrder(orderData);
+
       setIsProcessing(false);
+      
       showAlert('success', 'Demande envoyée!', 
         'Votre demande a été envoyée aux freelancers disponibles. Vous serez notifié dès qu\'un freelancer l\'acceptera.');
       
@@ -264,9 +288,27 @@ const RequestService = ({ onBack }) => {
       setQuote(null);
       
       setTimeout(() => {
-        navigate('my-bookings');
+        navigate('../my-bookings');
       }, 2000);
-    }, 2000);
+    } catch (error) {
+      setIsProcessing(false);
+      console.error('Erreur lors de la création de la commande:', error);
+      
+      let errorMessage = 'Une erreur s\'est produite lors de la création de la commande.';
+      
+      // Afficher les erreurs de validation si disponibles
+      if (error.errors) {
+        const validationErrors = error.errors;
+        const errorList = Object.keys(validationErrors)
+          .map(field => `${field}: ${validationErrors[field].join(', ')}`)
+          .join('\n');
+        errorMessage = 'Erreurs de validation:\n' + errorList;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      showAlert('error', 'Erreur', errorMessage);
+    }
   };
 
   const renderServiceForm = () => {
@@ -427,99 +469,6 @@ const RequestService = ({ onBack }) => {
           </div>
         );
 
-      case 'gestion_cles':
-        return (
-          <div className="space-y-6">
-            {/* Auto-Generated Request ID */}
-            <div className={`p-4 ${isDarkMode ? 'bg-gray-700' : 'bg-cyan-50'} rounded-lg border ${isDarkMode ? 'border-gray-600' : 'border-cyan-200'}`}>
-              <p className={`text-sm ${theme.textMuted} mb-2`}>ID de la clé (généré automatiquement)</p>
-              <p className={`text-2xl font-mono font-bold text-cyan-600`}>{formData.chiLocataire || 'Cle-2025-XXXXX'}</p>
-            </div>
-
-            {/* Full Name (Pre-filled, Disabled) */}
-            <div>
-              <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
-                Nom complet (par défaut) *
-              </label>
-              <input
-                type="text"
-                name="nomLocataire"
-                value={formData.nomLocataire || (user?.prenom && user?.nom ? `${user.prenom} ${user.nom}` : '')}
-                disabled
-                className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain} opacity-75 cursor-not-allowed`}
-              />
-              <p className={`text-xs ${theme.textMuted} mt-1`}>Ce champ est pré-rempli avec vos informations de compte</p>
-            </div>
-
-            {/* Type d'opération */}
-            <div>
-              <label className={`block text-sm font-medium ${theme.textMain} mb-3`}>
-                Type d'opération *
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                {operationTypes.map(type => (
-                  <button
-                    key={type.id}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, typeOperation: type.id }))}
-                    className={`p-4 rounded-lg border-2 transition text-left ${
-                      formData.typeOperation === type.id
-                        ? 'border-cyan-600 bg-cyan-600 bg-opacity-10'
-                        : `${theme.border} ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`
-                    }`}
-                  >
-                    <p className={`font-semibold ${theme.textMain} text-sm`}>{type.label}</p>
-                    <p className={`text-lg font-bold text-cyan-600`}>{type.rate}DH</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Date et Heure de l'opération */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
-                  Date de l'opération *
-                </label>
-                <input
-                  type="date"
-                  name="dateOperation"
-                  value={formData.dateOperation}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
-                />
-              </div>
-              <div>
-                <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
-                  Heure de l'opération *
-                </label>
-                <input
-                  type="time"
-                  name="heureOperation"
-                  value={formData.heureOperation}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
-                />
-              </div>
-            </div>
-
-            {/* Description des clés */}
-            <div>
-              <label className={`block text-sm font-medium ${theme.textMain} mb-2`}>
-                Description des clés
-              </label>
-              <input
-                type="text"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                placeholder="Ex: Clés de la porte principale, clés du garage..."
-                className={`w-full px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
-              />
-            </div>
-          </div>
-        );
-
       default:
         return null;
     }
@@ -635,6 +584,22 @@ const RequestService = ({ onBack }) => {
                 />
               </div>
 
+              {/* City */}
+              <div>
+                <label className={`block text-xs font-medium ${theme.textMain} mb-1`}>
+                  Ville *
+                </label>
+                <input
+                  type="text"
+                  name="ville"
+                  value={formData.ville}
+                  onChange={handleInputChange}
+                  placeholder="Ex: Casablanca"
+                  className={`w-full px-2.5 py-1.5 text-xs rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
+                  required
+                />
+              </div>
+
               {/* Service Specific Fields */}
               <div className="border-t pt-2">
                 <h3 className={`font-semibold text-xs ${theme.textMain} mb-2`}>
@@ -655,6 +620,38 @@ const RequestService = ({ onBack }) => {
                   placeholder="Détails supplémentaires pour le freelancer..."
                   rows="2"
                   className={`w-full px-2.5 py-1.5 text-xs rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain} resize-none`}
+                />
+              </div>
+
+              {/* Date de réalisation */}
+              <div>
+                <label className={`block text-xs font-medium ${theme.textMain} mb-1`}>
+                  <Calendar size={12} className="inline mr-1" />
+                  Date préférée *
+                </label>
+                <input
+                  type="date"
+                  name="dateOperation"
+                  value={formData.dateOperation}
+                  onChange={handleInputChange}
+                  min={new Date().toISOString().split('T')[0]}
+                  className={`w-full px-2.5 py-1.5 text-xs rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
+                  required
+                />
+              </div>
+
+              {/* Heure de réalisation */}
+              <div>
+                <label className={`block text-xs font-medium ${theme.textMain} mb-1`}>
+                  <Clock size={12} className="inline mr-1" />
+                  Heure préférée
+                </label>
+                <input
+                  type="time"
+                  name="heureOperation"
+                  value={formData.heureOperation}
+                  onChange={handleInputChange}
+                  className={`w-full px-2.5 py-1.5 text-xs rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
                 />
               </div>
             </div>

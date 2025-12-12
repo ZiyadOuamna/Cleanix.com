@@ -1,8 +1,9 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { 
   Edit, Trash2, Plus, Eye, EyeOff, Check, X, Star, DollarSign, Clock, Tag, Package, Search, Filter, AlertCircle, Save, Loader 
 } from 'lucide-react';
 import { FreelancerContext } from '../freelancerContext';
+import { getMyServices, updateService, deleteService } from '../../../services/serviceService';
 import Swal from 'sweetalert2';
 
 const GestionServices = () => {
@@ -51,67 +52,11 @@ const GestionServices = () => {
       toast.addEventListener('mouseleave', Swal.resumeTimer)
     }
   });
-
-  // Données simulées des services
-  const [services, setServices] = useState([
-    {
-      id: 1,
-      name: 'Nettoyage résidentiel complet',
-      category: 'Nettoyage résidentiel',
-      description: 'Nettoyage complet de votre maison ou appartement, toutes pièces incluses.',
-      price: 80,
-      priceType: 'par_heure',
-      duration: 3,
-      status: 'active',
-      rating: 4.8,
-      totalOrders: 124,
-      images: [],
-      createdAt: '2024-01-15'
-    },
-    {
-      id: 2,
-      name: 'Nettoyage de printemps',
-      category: 'Nettoyage saisonnier',
-      description: 'Nettoyage en profondeur pour le printemps, vitres et rideaux inclus.',
-      price: 150,
-      priceType: 'forfait',
-      duration: 5,
-      status: 'active',
-      rating: 4.9,
-      totalOrders: 89,
-      images: [],
-      createdAt: '2024-01-10'
-    },
-    {
-      id: 3,
-      name: 'Nettoyage de bureau',
-      category: 'Nettoyage commercial',
-      description: 'Nettoyage professionnel pour bureaux et espaces de travail.',
-      price: 120,
-      priceType: 'par_heure',
-      duration: 4,
-      status: 'inactive',
-      rating: 4.5,
-      totalOrders: 56,
-      images: [],
-      createdAt: '2024-01-05'
-    },
-    {
-      id: 4,
-      name: 'Nettoyage de vitres',
-      category: 'Nettoyage spécialisé',
-      description: 'Nettoyage intérieur et extérieur des vitres, équipement professionnel.',
-      price: 60,
-      priceType: 'forfait',
-      duration: 2,
-      status: 'active',
-      rating: 4.7,
-      totalOrders: 203,
-      images: [],
-      createdAt: '2024-01-01'
-    }
-  ]);
-
+  // Données depuis l'API
+  const [services, setServices] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   
@@ -122,6 +67,48 @@ const GestionServices = () => {
   const [originalService, setOriginalService] = useState(null);
   
   const [isSaving, setIsSaving] = useState(false);
+
+  // Charger les services du freelancer au montage
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await getMyServices();
+        
+        if (response.success && response.data) {
+          const formattedServices = response.data.map((service) => ({
+            id: service.id,
+            name: service.nom,
+            category: service.category || 'Non catégorisé',
+            description: service.description || '',
+            detailedDescription: service.detailed_description || '',
+            duration: service.duree_prevue || 0,
+            address: service.adresse || '',
+            zones: service.zones || [],
+            availability: service.availability || {},
+            includedItems: service.included_items || [],
+            status: service.status || 'pending_review',
+            estActif: service.est_actif,
+            image: service.image,
+            createdAt: new Date(service.created_at).toLocaleDateString('fr-FR'),
+            freelancerId: service.freelancer_id
+          }));
+          
+          setServices(formattedServices);
+        } else {
+          setError('Impossible de charger vos services');
+        }
+      } catch (err) {
+        console.error('Erreur lors du chargement des services:', err);
+        setError('Impossible de charger vos services');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
 
   // Catégories
   const categories = [
@@ -136,29 +123,66 @@ const GestionServices = () => {
   const filteredServices = services.filter(service => {
     const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           service.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || service.status === filterStatus;
+    
+    let matchesStatus = true;
+    if (filterStatus === 'all') {
+      matchesStatus = true;
+    } else if (filterStatus === 'active') {
+      matchesStatus = service.estActif === true;
+    } else if (filterStatus === 'inactive') {
+      matchesStatus = service.estActif === false;
+    } else if (filterStatus === 'pending_review') {
+      matchesStatus = service.status === 'pending_review';
+    } else if (filterStatus === 'approved') {
+      matchesStatus = service.status === 'approved';
+    } else if (filterStatus === 'rejected') {
+      matchesStatus = service.status === 'rejected';
+    }
+    
     return matchesSearch && matchesStatus;
   });
 
   // Toggle Status
-  const toggleServiceStatus = (serviceId) => {
-    setServices(services.map(service => 
-      service.id === serviceId 
-        ? { ...service, status: service.status === 'active' ? 'inactive' : 'active' }
-        : service
-    ));
-    
+  const toggleServiceStatus = async (serviceId) => {
     const service = services.find(s => s.id === serviceId);
-    const newStatus = service.status === 'active' ? 'désactivé' : 'activé';
+    const newStatus = !service.estActif;
     
-    Toast.fire({
-      icon: 'info',
-      title: `Service ${newStatus}`
-    });
+    try {
+      const response = await updateService(serviceId, { 
+        name: service.name,
+        category: service.category,
+        description: service.description,
+        detailedDescription: service.detailedDescription,
+        zones: service.zones,
+        availability: service.availability,
+        includedItems: service.includedItems,
+        est_actif: newStatus 
+      });
+      
+      if (response.success) {
+        setServices(services.map(s => 
+          s.id === serviceId 
+            ? { ...s, estActif: newStatus }
+            : s
+        ));
+        
+        Toast.fire({
+          icon: 'success',
+          title: `Service ${newStatus ? 'activé' : 'désactivé'}`
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
+      Toast.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: 'Impossible de mettre à jour le service'
+      });
+    }
   };
 
   // Delete Service
-  const handleDeleteService = (serviceId) => {
+  const handleDeleteService = async (serviceId) => {
     const service = services.find(s => s.id === serviceId);
     
     Swal.fire({
@@ -172,16 +196,30 @@ const GestionServices = () => {
       cancelButtonText: 'Annuler',
       background: swalColors.background,
       color: swalColors.color
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        setServices(services.filter(s => s.id !== serviceId));
-        Swal.fire({
-          title: 'Supprimé !',
-          text: 'Le service a été supprimé avec succès.',
-          icon: 'success',
-          background: swalColors.background,
-          color: swalColors.color
-        });
+        try {
+          const response = await deleteService(serviceId);
+          if (response.success) {
+            setServices(services.filter(s => s.id !== serviceId));
+            Swal.fire({
+              title: 'Supprimé !',
+              text: 'Le service a été supprimé avec succès.',
+              icon: 'success',
+              background: swalColors.background,
+              color: swalColors.color
+            });
+          }
+        } catch (error) {
+          console.error('Erreur lors de la suppression:', error);
+          Swal.fire({
+            title: 'Erreur',
+            text: 'Impossible de supprimer le service',
+            icon: 'error',
+            background: swalColors.background,
+            color: swalColors.color
+          });
+        }
       }
     });
   };
@@ -206,33 +244,57 @@ const GestionServices = () => {
   // Vérification des changements pour le bouton
   const hasChanges = JSON.stringify(editingService) !== JSON.stringify(originalService);
 
-  const handleUpdateService = (e) => {
+  const handleUpdateService = async (e) => {
     e.preventDefault();
     if (!hasChanges) return;
 
     setIsSaving(true);
+    
+    try {
+      const updateData = {
+        name: editingService.name,
+        category: editingService.category,
+        description: editingService.description,
+        detailedDescription: editingService.detailedDescription,
+        zones: editingService.zones,
+        availability: editingService.availability,
+        includedItems: editingService.includedItems,
+      };
 
-    setTimeout(() => {
-      setServices(prevServices => 
-        prevServices.map(s => 
-          s.id === editingService.id 
-            ? { ...editingService, status: 'pending_review' }
-            : s
-        )
-      );
-      setIsSaving(false);
-      setShowEditModal(false);
+      const response = await updateService(editingService.id, updateData);
       
+      if (response.success) {
+        setServices(prevServices => 
+          prevServices.map(s => 
+            s.id === editingService.id 
+              ? { ...editingService, status: 'pending_review' }
+              : s
+          )
+        );
+        setShowEditModal(false);
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Envoyé au superviseur !',
+          text: 'Les modifications ont été soumises pour validation.',
+          background: swalColors.background,
+          color: swalColors.color,
+          timer: 3000,
+          showConfirmButton: false
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
       Swal.fire({
-        icon: 'success',
-        title: 'Envoyé au superviseur !',
-        text: 'Les modifications ont été soumises pour validation.',
+        icon: 'error',
+        title: 'Erreur',
+        text: 'Impossible de mettre à jour le service',
         background: swalColors.background,
         color: swalColors.color,
-        timer: 3000,
-        showConfirmButton: false
       });
-    }, 1500);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Statistiques
@@ -247,6 +309,18 @@ const GestionServices = () => {
   return (
     <div className={`min-h-screen ${theme.bgMain} py-8 transition-colors duration-300`}>
       
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-cyan-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className={theme.textSecondary}>Chargement de vos services...</p>
+          </div>
+        </div>
+      )}
+
+      {!isLoading && (
+        <>
       {/* --- MODAL DE MODIFICATION --- */}
       {showEditModal && editingService && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
@@ -296,37 +370,6 @@ const GestionServices = () => {
                   className={`w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none ${theme.input}`}
                   required
                 />
-              </div>
-
-              {/* Prix et Type */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Prix (DH)</label>
-                  <div className="relative">
-                    <input 
-                      type="number" 
-                      name="price"
-                      value={editingService.price}
-                      onChange={handleEditChange}
-                      className={`w-full pl-8 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none ${theme.input}`}
-                      min="0"
-                      required
-                    />
-                    <DollarSign size={16} className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-500" />
-                  </div>
-                </div>
-                <div>
-                  <label className={`block text-sm font-medium mb-2 ${theme.textMain}`}>Type de tarification</label>
-                  <select 
-                    name="priceType"
-                    value={editingService.priceType}
-                    onChange={handleEditChange}
-                    className={`w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none ${theme.input}`}
-                  >
-                    <option value="par_heure">Par heure</option>
-                    <option value="forfait">Forfait</option>
-                  </select>
-                </div>
               </div>
 
               {/* Durée */}
@@ -449,7 +492,9 @@ const GestionServices = () => {
                 { id: 'all', label: 'Tous', icon: null },
                 { id: 'active', label: 'Actifs', icon: Check },
                 { id: 'inactive', label: 'Inactifs', icon: X },
-                { id: 'pending_review', label: 'En attente', icon: Clock }
+                { id: 'pending_review', label: 'En attente', icon: Clock },
+                { id: 'approved', label: 'Validés', icon: Check },
+                { id: 'rejected', label: 'Rejetés', icon: X }
               ].map(filter => (
                 <button
                   key={filter.id}
@@ -542,20 +587,20 @@ const GestionServices = () => {
                     <button
                       onClick={() => toggleServiceStatus(service.id)}
                       className={`px-4 py-2 rounded-lg transition flex items-center justify-center gap-2 font-medium ${
-                        service.status === 'active'
-                          ? `bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600`
-                          : 'bg-green-600 text-white hover:bg-green-700'
+                        service.estActif
+                          ? `bg-green-600 text-white hover:bg-green-700`
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
                       }`}
                     >
-                      {service.status === 'active' ? (
+                      {service.estActif ? (
                         <>
-                          <EyeOff size={16} />
-                          Désactiver
+                          <Eye size={16} />
+                          Actif
                         </>
                       ) : (
                         <>
-                          <Eye size={16} />
-                          Activer
+                          <EyeOff size={16} />
+                          Inactif
                         </>
                       )}
                     </button>
@@ -589,8 +634,8 @@ const GestionServices = () => {
               <p className={`text-xs ${theme.textSecondary}`}>Soyez précis sur ce qui est inclus.</p>
             </div>
             <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-yellow-900/20' : 'bg-yellow-50'} border ${isDarkMode ? 'border-yellow-800' : 'border-yellow-100'}`}>
-              <h4 className={`font-medium ${theme.textMain} mb-1`}>💰 Prix</h4>
-              <p className={`text-xs ${theme.textSecondary}`}>Restez compétitif avec le marché local.</p>
+              <h4 className={`font-medium ${theme.textMain} mb-1`}>💰 Tarification</h4>
+              <p className={`text-xs ${theme.textSecondary}`}>Les prix se négocient dans les propositions avec les clients.</p>
             </div>
             <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-purple-900/20' : 'bg-purple-50'} border ${isDarkMode ? 'border-purple-800' : 'border-purple-100'}`}>
               <h4 className={`font-medium ${theme.textMain} mb-1`}>⏱️ Durée</h4>
@@ -599,6 +644,8 @@ const GestionServices = () => {
           </div>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };

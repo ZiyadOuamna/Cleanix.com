@@ -1,9 +1,20 @@
-import React, { useState, useContext, useRef, useCallback } from 'react';
+import React, { useState, useContext, useRef, useCallback, useEffect } from 'react';
 import Swal from 'sweetalert2';
-import { Settings, Shield, Clock, Lock, RefreshCw, User, Bell, Camera, CheckCircle, XCircle, Upload, Eye, EyeOff, CreditCard, Mail, AtSign } from "react-feather";
+import { Settings, Shield, Clock, Lock, RefreshCw, User, Bell, Camera, CheckCircle, XCircle, Upload, Eye, EyeOff, CreditCard, Mail, AtSign, Loader } from "react-feather";
 
 // Assurez-vous que le chemin d'import est correct vers votre fichier context
 import { FreelancerContext } from './freelancerContext';
+import { 
+  sendVerificationEmail as sendVerificationEmailAPI,
+  confirmEmailCode as confirmEmailCodeAPI,
+  updatePassword as updatePasswordAPI,
+  updateNotificationSettings,
+  updatePrivacySettings,
+  updateAvailabilitySettings,
+  updateBankInfo,
+  getSettings,
+  uploadIdentityDocuments
+} from '../../services/settingsService';
 
 const SettingsFreelancer = () => {
   const { 
@@ -86,10 +97,53 @@ const SettingsFreelancer = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [showBankInfo, setShowBankInfo] = useState(false);
   const [emailCode, setEmailCode] = useState('');
+  const [loading, setLoading] = useState(true);
   
   const cinFrontRef = useRef(null);
   const cinBackRef = useRef(null);
   const selfieRef = useRef(null);
+
+  // Charger les données du profil utilisateur
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        setLoading(true);
+        
+        // Si l'utilisateur existe dans le contexte, mettre à jour les données
+        if (user) {
+          const userData = {
+            name: user.name || `${user.prenom || ''} ${user.nom || ''}`.trim() || '',
+            email: user.email || '',
+            phone: user.telephone || user.phone || '',
+            specialty: user.specialty || 'Non spécifié'
+          };
+          
+          setFormData(prev => ({
+            ...prev,
+            name: userData.name,
+            email: userData.email,
+            phone: userData.phone,
+            specialty: userData.specialty,
+            personalInfo: {
+              ...prev.personalInfo,
+              dateOfBirth: user.date_of_birth || user.dateOfBirth || '',
+              nationality: user.nationality || '',
+              gender: user.gender || '',
+              taxNumber: user.tax_number || user.taxNumber || ''
+            },
+            // Les paramètres de notification et confidentialité sont généralement gérés par l'utilisateur
+            // donc on les laisse avec les valeurs par défaut sauf s'ils sont fournis par le serveur
+          }));
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des données:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadUserData();
+  }, [user]);
 
   // --- THÈME "EYE-FRIENDLY" (Anti-Fatigue) ---
   const theme = {
@@ -138,6 +192,66 @@ const SettingsFreelancer = () => {
       }));
     }
   }, []);
+
+  const saveSettings = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      // Save profile info
+      const profileData = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        specialty: formData.specialty
+      };
+      
+      // Only call API if we have profile data to save
+      if (profileData.name || profileData.email || profileData.phone) {
+        const { updateUserProfile } = await import('../../services/authService');
+        await updateUserProfile(profileData);
+      }
+
+      // Save notification settings
+      if (formData.notifications && Object.keys(formData.notifications).length > 0) {
+        await updateNotificationSettings(formData.notifications);
+      }
+
+      // Save privacy settings
+      if (formData.privacy && Object.keys(formData.privacy).length > 0) {
+        await updatePrivacySettings(formData.privacy);
+      }
+
+      // Save availability settings
+      if (formData.availability && Object.keys(formData.availability).length > 0) {
+        await updateAvailabilitySettings(formData.availability);
+      }
+
+      // Save bank info if provided
+      if (formData.personalInfo?.bankInfo && Object.keys(formData.personalInfo.bankInfo).some(k => formData.personalInfo.bankInfo[k])) {
+        await updateBankInfo(formData.personalInfo.bankInfo);
+      }
+
+      setIsSaving(false);
+      Swal.fire({
+        icon: 'success',
+        title: 'Enregistré!',
+        text: 'Tous vos paramètres ont été sauvegardés avec succès!',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#000000',
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      setIsSaving(false);
+      console.error('Error saving settings:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: error?.response?.data?.message || 'Erreur lors de la sauvegarde des paramètres',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#000000',
+      });
+    }
+  }, [formData, isDarkMode]);
 
   const handleNestedChange = useCallback((section, subSection, field, value) => {
     setFormData(prev => ({
@@ -204,7 +318,7 @@ const SettingsFreelancer = () => {
     }));
   }, []);
 
-  const sendVerificationEmail = useCallback(() => {
+  const sendVerificationEmail = useCallback(async () => {
     if (!formData.email) {
       Swal.fire({
         icon: 'error',
@@ -216,16 +330,14 @@ const SettingsFreelancer = () => {
       return;
     }
 
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-    
     setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      const response = await sendVerificationEmailAPI(formData.email);
+      
       setFormData(prev => ({
         ...prev,
         emailVerification: {
           ...prev.emailVerification,
-          verificationCode: verificationCode,
           codeSent: true
         }
       }));
@@ -233,14 +345,24 @@ const SettingsFreelancer = () => {
       Swal.fire({
         icon: 'success',
         title: 'Code envoyé!',
-        html: `Un code de vérification a été envoyé à <strong>${formData.email}</strong><br><br>Code de test: <strong>${verificationCode}</strong>`,
+        html: `Un code de vérification a été envoyé à <strong>${formData.email}</strong>`,
         background: isDarkMode ? '#1f2937' : '#ffffff',
         color: isDarkMode ? '#ffffff' : '#000000',
       });
-    }, 1500);
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: error.response?.data?.message || 'Impossible d\'envoyer le code',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#000000',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   }, [formData.email, isDarkMode]);
 
-  const verifyEmailCode = useCallback(() => {
+  const verifyEmailCode = useCallback(async () => {
     if (!emailCode) {
       Swal.fire({
         icon: 'error',
@@ -252,7 +374,10 @@ const SettingsFreelancer = () => {
       return;
     }
 
-    if (emailCode === formData.emailVerification.verificationCode) {
+    setIsSaving(true);
+    try {
+      const response = await confirmEmailCodeAPI(emailCode, formData.email);
+      
       setFormData(prev => ({
         ...prev,
         emailVerification: {
@@ -262,6 +387,8 @@ const SettingsFreelancer = () => {
         }
       }));
       
+      setEmailCode('');
+      
       Swal.fire({
         icon: 'success',
         title: 'Email vérifié!',
@@ -269,19 +396,20 @@ const SettingsFreelancer = () => {
         background: isDarkMode ? '#1f2937' : '#ffffff',
         color: isDarkMode ? '#ffffff' : '#000000',
       });
-      setEmailCode('');
-    } else {
+    } catch (error) {
       Swal.fire({
         icon: 'error',
-        title: 'Code incorrect',
-        text: 'Le code de vérification est incorrect. Veuillez réessayer.',
+        title: 'Code invalide',
+        text: error.response?.data?.message || 'Le code saisi est incorrect',
         background: isDarkMode ? '#1f2937' : '#ffffff',
         color: isDarkMode ? '#ffffff' : '#000000',
       });
+    } finally {
+      setIsSaving(false);
     }
-  }, [emailCode, formData.emailVerification.verificationCode, isDarkMode]);
+  }, [emailCode, formData.email, isDarkMode]);
 
-  const submitVerificationToSupervisor = useCallback(() => {
+  const submitVerificationToSupervisor = useCallback(async () => {
     if (!formData.emailVerification.verified) {
       Swal.fire({
         icon: 'error',
@@ -328,8 +456,24 @@ const SettingsFreelancer = () => {
 
     setIsSaving(true);
     
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      // Upload des documents d'identité
+      const formDataUpload = new FormData();
+      if (formData.identityVerification.cinFront) {
+        formDataUpload.append('cin_front', formData.identityVerification.cinFront);
+      }
+      if (formData.identityVerification.cinBack) {
+        formDataUpload.append('cin_back', formData.identityVerification.cinBack);
+      }
+      if (formData.identityVerification.selfiePhoto) {
+        formDataUpload.append('selfie', formData.identityVerification.selfiePhoto);
+      }
+      
+      const response = await uploadIdentityDocuments(
+        formData.identityVerification.cinNumber,
+        formDataUpload
+      );
+      
       setFormData(prev => ({
         ...prev,
         identityVerification: {
@@ -360,43 +504,18 @@ const SettingsFreelancer = () => {
         color: isDarkMode ? '#ffffff' : '#000000',
         width: 500
       });
-    }, 2000);
-  }, [formData, isDarkMode]);
-
-  const simulateSupervisorApproval = useCallback(() => {
-    setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      setFormData(prev => ({
-        ...prev,
-        identityVerification: {
-          ...prev.identityVerification,
-          status: 'verified',
-          supervisorStatus: 'approved',
-          verificationDate: new Date().toISOString()
-        }
-      }));
-      
-      if (setIsAccountActive) {
-        setIsAccountActive(true);
-      }
-      
+    } catch (error) {
       Swal.fire({
-        icon: 'success',
-        title: 'Compte vérifié et activé!',
-        html: `
-          <div style="text-align: center;">
-            <div style="font-size: 48px; color: #10B981;">✓</div>
-            <p style="margin-top: 15px;"><strong>Félicitations !</strong></p>
-            <p>Votre compte a été vérifié et activé par le superviseur.</p>
-            <p>Vous avez maintenant accès à toutes les fonctionnalités.</p>
-          </div>
-        `,
+        icon: 'error',
+        title: 'Erreur',
+        text: error.response?.data?.message || 'Impossible de soumettre les documents',
         background: isDarkMode ? '#1f2937' : '#ffffff',
         color: isDarkMode ? '#ffffff' : '#000000',
       });
-    }, 1500);
-  }, [setIsAccountActive, isDarkMode]);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [formData, isDarkMode]);
 
   const getEmailVerificationBadge = () => {
     const { verified } = formData.emailVerification;
@@ -895,15 +1014,6 @@ const SettingsFreelancer = () => {
                             )}
                           </button>
                           
-                          {/* Bouton de test pour simulation d'approbation (à supprimer en production) */}
-                          {formData.identityVerification.submittedToSupervisor && formData.identityVerification.supervisorStatus === 'pending' && (
-                            <button
-                              onClick={simulateSupervisorApproval}
-                              className="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-                            >
-                              Simuler approbation superviseur
-                            </button>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -1203,6 +1313,18 @@ const SettingsFreelancer = () => {
     }
   };
 
+  // Afficher un loader pendant le chargement
+  if (loading) {
+    return (
+      <div className={`${theme.bg} min-h-screen py-8 flex items-center justify-center transition-colors duration-200`}>
+        <div className="text-center">
+          <Loader className={`animate-spin mx-auto ${theme.textMain}`} size={40} />
+          <p className={`mt-4 ${theme.textMain}`}>Chargement de vos paramètres...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`${theme.bg} min-h-screen py-8 transition-colors duration-200`}>
       <div className="max-w-6xl mx-auto px-4">
@@ -1276,21 +1398,7 @@ const SettingsFreelancer = () => {
                       Annuler
                     </button>
                     <button
-                      onClick={() => {
-                        setIsSaving(true);
-                        setTimeout(() => {
-                          setIsSaving(false);
-                          Swal.fire({
-                            icon: 'success',
-                            title: 'Sauvegardé!',
-                            text: 'Paramètres sauvegardés avec succès!',
-                            background: isDarkMode ? '#1f2937' : '#ffffff',
-                            color: isDarkMode ? '#ffffff' : '#000000',
-                            timer: 2000,
-                            showConfirmButton: false,
-                          });
-                        }, 1000);
-                      }}
+                      onClick={saveSettings}
                       disabled={isSaving}
                       className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >

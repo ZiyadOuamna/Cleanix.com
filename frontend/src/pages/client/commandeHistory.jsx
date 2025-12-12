@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import {
   Calendar,
   MapPin,
@@ -8,9 +8,9 @@ import {
   Filter,
   Package,
   Sparkles,
-  Key,
   ChevronDown,
-  Eye
+  Eye,
+  Loader
 } from 'lucide-react';
 import { ClientContext } from './clientContext';
 import Swal from 'sweetalert2';
@@ -21,8 +21,20 @@ const CommandeHistory = () => {
   const [activeServiceFilter, setActiveServiceFilter] = useState('all');
   const [activeStatusFilter, setActiveStatusFilter] = useState('completed');
   const [expandedId, setExpandedId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState([]);
 
-  const [history] = useState([
+  // Charger l'historique des commandes au montage
+  useEffect(() => {
+    loadCommandeHistory();
+  }, []);
+
+  const loadCommandeHistory = async () => {
+    try {
+      setLoading(true);
+      // Charger depuis une API ici
+      // Pour l'instant, on utilise les données simulées
+      const mockData = [
     {
       id: 1,
       service: 'Nettoyage complet',
@@ -55,21 +67,6 @@ const CommandeHistory = () => {
     },
     {
       id: 3,
-      service: 'Remise de clé',
-      serviceType: 'cles',
-      freelancer: 'Ali B.',
-      date: '05 Déc 2025',
-      price: '50DH',
-      rating: 4,
-      image: '🔑',
-      freelancerAvatar: '👨',
-      location: '321 Rue Saint-Antoine, 75011 Paris',
-      completedDate: '05 Déc 2025 à 16:00',
-      review: 'Service rapide et sécurisé.',
-      status: 'completed'
-    },
-    {
-      id: 4,
       service: 'Nettoyage bureau',
       serviceType: 'nettoyage',
       freelancer: 'Hassan D.',
@@ -84,22 +81,7 @@ const CommandeHistory = () => {
       status: 'completed'
     },
     {
-      id: 5,
-      service: 'Récupération de clé',
-      serviceType: 'cles',
-      freelancer: 'Sarah L.',
-      date: '28 Nov 2025',
-      price: '50DH',
-      rating: 5,
-      image: '🔑',
-      freelancerAvatar: '👩',
-      location: '654 Rue de Rivoli, 75004 Paris',
-      completedDate: '28 Nov 2025 à 14:30',
-      review: 'Excellent service!',
-      status: 'completed'
-    },
-    {
-      id: 6,
+      id: 4,
       service: 'Nettoyage appartement',
       serviceType: 'nettoyage',
       freelancer: 'Mohammed A.',
@@ -114,7 +96,7 @@ const CommandeHistory = () => {
       status: 'cancelled'
     },
     {
-      id: 7,
+      id: 5,
       service: 'Nettoyage cuisine',
       serviceType: 'nettoyage',
       freelancer: 'Zainab M.',
@@ -128,7 +110,14 @@ const CommandeHistory = () => {
       review: null,
       status: 'cancelled'
     }
-  ]);
+      ];
+      setHistory(mockData);
+      setLoading(false);
+    } catch (error) {
+      console.error('Erreur lors du chargement de l\'historique:', error);
+      setLoading(false);
+    }
+  };
 
   const theme = {
     bg: isDarkMode ? 'bg-gray-900' : 'bg-transparent',
@@ -229,6 +218,17 @@ const CommandeHistory = () => {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${theme.bg}`}>
+        <div className="flex flex-col items-center gap-4">
+          <Loader className="animate-spin" size={32} />
+          <p className={theme.textSecondary}>Chargement de l'historique...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`space-y-4 ${theme.bg}`}>

@@ -1,14 +1,17 @@
-import React, { useState, useContext } from 'react';
-import { Lock, DollarSign, Plus, TrendingDown, Calendar, ArrowDownLeft, ArrowUpRight, Download, AlertCircle, CheckCircle, Clock, X, RotateCcw, Send } from 'lucide-react';
+import React, { useState, useContext, useEffect } from 'react';
+import { Lock, DollarSign, Plus, TrendingDown, Calendar, ArrowDownLeft, ArrowUpRight, Download, AlertCircle, CheckCircle, Clock, X, RotateCcw, Send, Loader } from 'lucide-react';
 import { ClientContext } from './clientContext';
 import Swal from 'sweetalert2';
 import jsPDF from 'jspdf';
+import { getWallet, getTransactions, getPaymentMethods, addPaymentMethod, requestWithdrawal } from '../../services/walletService';
+import { requestRefund } from '../../services/refundService';
 
 const WalletClient = () => {
   const { isDarkMode } = useContext(ClientContext);
+  const [loading, setLoading] = useState(true);
   const [showAddFunds, setShowAddFunds] = useState(false);
   const [amount, setAmount] = useState('');
-  const [step, setStep] = useState(1); // 1: Amount & Method, 2: Payment Form, 3: Confirmation
+  const [step, setStep] = useState(1);
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [cardNumber, setCardNumber] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
@@ -31,6 +34,58 @@ const WalletClient = () => {
   const [refundReason, setRefundReason] = useState('');
   const [refundAmount, setRefundAmount] = useState('');
   const [refundDescription, setRefundDescription] = useState('');
+  
+  // States for wallet data from API
+  const [walletData, setWalletData] = useState(null);
+  const [transactions, setTransactions] = useState([]);
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [lockedFunds, setLockedFunds] = useState([]);
+
+  // Charger les données du portefeuille au montage
+  useEffect(() => {
+    loadWalletData();
+  }, []);
+
+  const loadWalletData = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Fetching wallet data...');
+      
+      // Charger tous les données en parallèle
+      const [walletRes, transactionsRes, methodsRes] = await Promise.all([
+        getWallet(),
+        getTransactions(),
+        getPaymentMethods()
+      ]);
+      
+      console.log('💰 Wallet response:', walletRes);
+      console.log('📊 Transactions response:', transactionsRes);
+      console.log('🔐 Payment methods response:', methodsRes);
+      
+      // Extraire les données
+      const wallet = walletRes.wallet || walletRes.data?.wallet || null;
+      const transactionsList = transactionsRes.transactions?.data || transactionsRes.data?.data || [];
+      const methods = methodsRes.methods || methodsRes.data?.methods || [];
+      
+      setWalletData(wallet);
+      setTransactions(Array.isArray(transactionsList) ? transactionsList : []);
+      setPaymentMethods(Array.isArray(methods) ? methods : []);
+      
+      // Extraire les fonds bloqués des commandes (seront chargés via orders API si nécessaire)
+      console.log('✅ Wallet data loaded successfully');
+      setLoading(false);
+    } catch (error) {
+      console.error('❌ Erreur lors du chargement du portefeuille:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: 'Impossible de charger votre portefeuille',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#1f2937',
+      });
+      setLoading(false);
+    }
+  }
 
   const theme = {
     bg: isDarkMode ? 'bg-gray-900' : 'bg-transparent',
@@ -43,132 +98,10 @@ const WalletClient = () => {
     inputText: isDarkMode ? 'text-white' : 'text-slate-900',
   };
 
-  // Commandes avec fonds bloqués (escrow)
-  const lockedFunds = [
-    {
-      id: 1,
-      service: 'Nettoyage complet',
-      freelancer: 'Ahmed M.',
-      amount: 850,
-      date: '15 Déc 2025',
-      status: 'pending',
-      image: '✨',
-      location: '123 Rue de Paris'
-    },
-    {
-      id: 2,
-      service: 'Nettoyage bureau',
-      freelancer: 'Hassan D.',
-      amount: 1200,
-      date: '12 Déc 2025',
-      status: 'in_progress',
-      image: '🏢',
-      location: '789 Boulevard Saint-Germain'
-    },
-    {
-      id: 3,
-      service: 'Remise de clé',
-      freelancer: 'Ali B.',
-      amount: 50,
-      date: '10 Déc 2025',
-      status: 'pending',
-      image: '🔑',
-      location: '321 Rue Saint-Antoine'
-    }
-  ];
-
-  // Transactions complétées
-  const transactions = [
-    {
-      id: 1,
-      type: 'released',
-      description: 'Paiement libéré - Nettoyage de vitres',
-      freelancer: 'Fatima K.',
-      clientAmount: -450,
-      freelancerGains: 405,
-      cleanixGains: 45,
-      date: '08 Déc 2025',
-      time: '15:45',
-      status: 'completed'
-    },
-    {
-      id: 2,
-      type: 'refund',
-      description: 'Remboursement - Service annulé',
-      freelancer: 'Service annulé',
-      clientAmount: 300,
-      freelancerGains: 0,
-      cleanixGains: 0,
-      date: '05 Déc 2025',
-      time: '11:20',
-      status: 'completed'
-    },
-    {
-      id: 3,
-      type: 'locked',
-      description: 'Fonds bloqués - Nettoyage complet',
-      freelancer: 'Ahmed M.',
-      clientAmount: -850,
-      freelancerGains: 765,
-      cleanixGains: 85,
-      date: '01 Déc 2025',
-      time: '09:00',
-      status: 'locked'
-    },
-    {
-      id: 4,
-      type: 'released',
-      description: 'Paiement libéré - Gestion de clés',
-      freelancer: 'Mohamed B.',
-      clientAmount: -50,
-      freelancerGains: 45,
-      cleanixGains: 5,
-      date: '28 Nov 2025',
-      time: '14:30',
-      status: 'completed'
-    },
-    {
-      id: 5,
-      type: 'locked',
-      description: 'Fonds bloqués - Nettoyage bureau',
-      freelancer: 'Hassan D.',
-      clientAmount: -1200,
-      freelancerGains: 1080,
-      cleanixGains: 120,
-      date: '25 Nov 2025',
-      time: '10:15',
-      status: 'locked'
-    },
-    {
-      id: 6,
-      type: 'released',
-      description: 'Paiement libéré - Nettoyage cuisine',
-      freelancer: 'Zahra M.',
-      clientAmount: -600,
-      freelancerGains: 540,
-      cleanixGains: 60,
-      date: '20 Nov 2025',
-      time: '16:20',
-      status: 'completed'
-    },
-    {
-      id: 7,
-      type: 'refund',
-      description: 'Remboursement - Freelancer non accepté',
-      freelancer: 'Service annulé',
-      clientAmount: 200,
-      freelancerGains: 0,
-      cleanixGains: 0,
-      date: '18 Nov 2025',
-      time: '09:45',
-      status: 'completed'
-    }
-  ];
-
-  // Calculs
-  const totalLockedAmount = lockedFunds.reduce((sum, f) => sum + f.amount, 0);
-  const totalAvailable = 5000;
-  const totalSpent = 2850;
+  // Calculs dynamiques du portefeuille
+  const totalLockedAmount = lockedFunds.reduce((sum, f) => sum + (f.amount || 0), 0);
+  const totalAvailable = walletData?.balance || 0;
+  const totalSpent = walletData?.total_spent || 0;
 
   const handleAddFunds = (e) => {
     e.preventDefault();
@@ -282,7 +215,7 @@ const WalletClient = () => {
   };
 
   // Submit refund request
-  const handleSubmitRefundRequest = () => {
+  const handleSubmitRefundRequest = async () => {
     if (!refundReason || !refundDescription) {
       showAlert({
         icon: 'warning',
@@ -292,19 +225,38 @@ const WalletClient = () => {
       return;
     }
 
-    showAlert({
-      icon: 'success',
-      title: 'Demande de remboursement envoyée',
-      text: `Votre demande de ${refundAmount}DH a été transmise au superviseur Cleanix pour examen.`,
-      confirmButtonColor: '#0891b2'
-    });
+    try {
+      setLoading(true);
+      const response = await requestRefund(refundData.order_id, refundDescription, parseFloat(refundAmount));
+      
+      console.log('✅ Refund request submitted:', response);
+      
+      showAlert({
+        icon: 'success',
+        title: 'Demande de remboursement envoyée',
+        text: `Votre demande de ${refundAmount}DH a été transmise au superviseur Cleanix pour examen.`,
+        confirmButtonColor: '#0891b2'
+      });
 
-    // Reset form
-    setShowRefundModal(false);
-    setRefundData(null);
-    setRefundReason('');
-    setRefundAmount('');
-    setRefundDescription('');
+      // Reload wallet data
+      await loadWalletData();
+      
+      // Reset form
+      setShowRefundModal(false);
+      setRefundData(null);
+      setRefundReason('');
+      setRefundAmount('');
+      setRefundDescription('');
+      setLoading(false);
+    } catch (error) {
+      console.error('❌ Erreur lors de la soumission du remboursement:', error);
+      setLoading(false);
+      showAlert({
+        icon: 'error',
+        title: 'Erreur',
+        text: error.message || 'Impossible de soumettre votre demande de remboursement'
+      });
+    }
   };
 
   // Helper pour SweetAlert2 avec thème dark/light
@@ -475,6 +427,17 @@ const WalletClient = () => {
         return '';
     }
   };
+
+  if (loading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${theme.bg}`}>
+        <div className="flex flex-col items-center gap-4">
+          <Loader className="animate-spin" size={32} />
+          <p className={theme.textSecondary}>Chargement du portefeuille...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`space-y-6 ${theme.bg}`}>

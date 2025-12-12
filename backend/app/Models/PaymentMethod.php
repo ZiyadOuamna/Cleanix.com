@@ -4,25 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Support extends Model
+class PaymentMethod extends Model
 {
-    protected $table = 'supports';
-    
+    protected $table = 'payment_methods';
     protected $fillable = [
         'user_id',
-        'departement',
-        'est_disponible',
-        'tickets_traites',
+        'type',
+        'details',
+        'verified'
     ];
 
     protected $casts = [
-        'est_disponible' => 'boolean',
+        'details' => 'json',
+        'verified' => 'boolean'
     ];
 
-    // Relation inverse vers User
     public function user()
     {
         return $this->belongsTo(User::class);
     }
-
 }

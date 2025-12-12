@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { registerUser } from '../services/authService';
+import { confirmEmailCode } from '../services/settingsService';
 
 // Liste des principales villes du Maroc pour la liste déroulante
 const MAROC_VILLES = [
@@ -51,6 +52,8 @@ export default function RegisterPage() {
     password: '',
     password_confirmation: '',
     acceptTerms: false,
+    showEmailVerification: false,
+    emailForVerification: '',
   });
   
   const [message, setMessage] = useState('');
@@ -58,6 +61,8 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [currentUserType, setCurrentUserType] = useState('Client');
+  const [emailCode, setEmailCode] = useState('');
+  const [verificationLoading, setVerificationLoading] = useState(false);
 
   // Rotation automatique du contenu marketing
   useEffect(() => {
@@ -148,7 +153,18 @@ export default function RegisterPage() {
         localStorage.setItem('user', JSON.stringify(response.data.user));
         localStorage.setItem('user_type', response.data.user.user_type);
         
-        // Redirection selon le type d'utilisateur
+        // Si vérification d'email requise, rester sur cette page et montrer le formulaire de vérification
+        if (response.data.email_verification_required) {
+          setFormData(prev => ({
+            ...prev,
+            showEmailVerification: true,
+            emailForVerification: response.data.user.email
+          }));
+          setIsLoading(false);
+          return;
+        }
+        
+        // Sinon, redirection normale
         setTimeout(() => {
           const userType = response.data.user.user_type.toLowerCase();
           switch (userType) {
@@ -171,6 +187,42 @@ export default function RegisterPage() {
       setMessage(`❌ Erreur: ${error.response?.data?.message || error.message || 'Problème de connexion'}`);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleVerifyEmail = async (e) => {
+    e.preventDefault();
+    
+    if (!emailCode || emailCode.length !== 6) {
+      setMessage('❌ Veuillez saisir un code valide (6 chiffres)');
+      return;
+    }
+
+    setVerificationLoading(true);
+    try {
+      await confirmEmailCode(emailCode, formData.emailForVerification);
+      
+      setMessage('✅ Email vérifié avec succès! Redirection...');
+      
+      // Attendre 2 secondes puis rediriger
+      setTimeout(() => {
+        const userType = JSON.parse(localStorage.getItem('user')).user_type.toLowerCase();
+        switch (userType) {
+          case 'client':
+            navigate('/client/dashboard');
+            break;
+          case 'freelancer':
+            navigate('/freelancer/dashboard');
+            break;
+          default:
+            navigate('/');
+        }
+      }, 2000);
+    } catch (error) {
+      console.error("Erreur lors de la vérification:", error);
+      setMessage(`❌ ${error.response?.data?.message || 'Code invalide ou expiré'}`);
+    } finally {
+      setVerificationLoading(false);
     }
   };
 
@@ -260,15 +312,67 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Right: Registration Form */}
+      {/* Right: Registration Form or Email Verification */}
       <div className="lg:w-1/2 w-full flex items-center justify-center p-5 lg:p-8 bg-white">
         <div className="w-full max-w-md">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-1">Créez votre compte</h2>
-            <p className="text-sm text-gray-600">Rejoignez la communauté Cleanix en quelques étapes</p>
-          </div>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email Verification Form - Shown after successful registration */}
+          {formData.showEmailVerification ? (
+            <>
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">Vérifiez votre Email</h2>
+                <p className="text-sm text-gray-600">Un code de vérification a été envoyé à <strong>{formData.emailForVerification}</strong></p>
+              </div>
+              
+              <form onSubmit={handleVerifyEmail} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Code de Vérification (6 chiffres) *</label>
+                  <input 
+                    type="text" 
+                    value={emailCode} 
+                    onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 6))} 
+                    maxLength="6"
+                    placeholder="000000"
+                    className="w-full px-3 py-2.5 text-center text-lg font-bold tracking-widest border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Vérifie ta boîte email ou le dossier spam</p>
+                </div>
+                
+                <button
+                  type="submit" 
+                  disabled={verificationLoading || emailCode.length !== 6} 
+                  className={`w-full py-2.5 px-4 rounded-lg font-semibold text-white text-sm transition-all duration-300 ${
+                    verificationLoading || emailCode.length !== 6
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
+                  }`}
+                >
+                  {verificationLoading ? (
+                    <div className="flex items-center justify-center">
+                      <svg className="animate-spin h-4 w-4 text-white mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Vérification en cours...
+                    </div>
+                  ) : 'Vérifier mon Email'}
+                </button>
+                
+                {message && (
+                  <div className={`p-3 rounded text-center text-xs ${message.includes('✅') ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+                    {message}
+                  </div>
+                )}
+              </form>
+            </>
+          ) : (
+            <>
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">Créez votre compte</h2>
+                <p className="text-sm text-gray-600">Rejoignez la communauté Cleanix en quelques étapes</p>
+              </div>
+              
+              <form onSubmit={handleSubmit} className="space-y-4">
             {/* Prénom et Nom */}
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -531,6 +635,8 @@ export default function RegisterPage() {
               <Link to="/privacy" className="text-teal-600 hover:text-teal-800">Politique de confidentialité</Link>
             </p>
           </div>
+            </>
+          )}
         </div>
       </div>
     </div>

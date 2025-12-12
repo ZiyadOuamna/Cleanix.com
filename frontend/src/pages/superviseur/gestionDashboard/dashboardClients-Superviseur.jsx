@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { SuperviseurContext } from '../superviseurContext';
+import Swal from 'sweetalert2';
+import superviseurService from '../../../services/superviseurService';
 import { 
     User, ShoppingBag, CreditCard, TrendingUp, MapPin, Star, 
     DollarSign, CheckCircle, XCircle, Smartphone, Search, 
@@ -12,9 +14,8 @@ import {
 
 // --- 1. UTILITAIRES & DONNÉES MOCK ---
 
-// Générateur de données multi-périodes (Pour Global et Client)
+// Générateur de données multi-périodes (Pour graphiques - en attente données API)
 const generateMultiPeriodData = (baseValue) => {
-    // Helper pour créer un tableau de données aléatoires
     const createData = (count, labels, variance) => 
         Array.from({ length: count }, (_, i) => {
             const val = Math.max(0, Math.floor(baseValue + (Math.random() * variance) - (variance / 2)));
@@ -25,7 +26,6 @@ const generateMultiPeriodData = (baseValue) => {
     const monthlyLabels = (i) => `J${i+1}`;
     const yearlyLabels = (i) => ['Jan','Fev','Mar','Avr','Mai','Juin','Juil','Aout','Sep','Oct','Nov','Dec'][i];
 
-    // On simule des échelles différentes selon la période
     const dailyData = createData(12, dailyLabels, baseValue * 0.5); 
     const monthlyData = createData(30, monthlyLabels, baseValue * 2);
     const yearlyData = createData(12, yearlyLabels, baseValue * 5);
@@ -37,14 +37,6 @@ const generateMultiPeriodData = (baseValue) => {
     };
 };
 
-// Liste Clients
-const CLIENTS_LIST = [
-    { id: 1, nom: 'Ahmed', prenom: 'Bennani', email: 'ahmed@test.com', phone: '0661234567', ville: 'Casablanca', dateInscription: '12/01/2023', solde: 120.50, stars: 4.8, evaluations: 15, commentaires: 5, commandes: 24 },
-    { id: 2, nom: 'Sara', prenom: 'Idrissi', email: 'sara@test.com', phone: '0661987654', ville: 'Rabat', dateInscription: '05/03/2023', solde: 0.00, stars: 5.0, evaluations: 3, commentaires: 1, commandes: 5 },
-    { id: 3, nom: 'Karim', prenom: 'Tazi', email: 'karim@test.com', phone: '0600000000', ville: 'Marrakech', dateInscription: '20/06/2023', solde: 45.00, stars: 4.2, evaluations: 8, commentaires: 2, commandes: 12 },
-    { id: 4, nom: 'Lina', prenom: 'Mansouri', email: 'lina@test.com', phone: '0611223344', ville: 'Tanger', dateInscription: '10/11/2023', solde: 200.00, stars: 4.9, evaluations: 20, commentaires: 8, commandes: 30 },
-];
-
 // --- 2. COMPOSANTS GRAPHIQUES ---
 
 const CustomTooltip = ({ active, payload, label, unit, isDarkMode }) => {
@@ -54,7 +46,7 @@ const CustomTooltip = ({ active, payload, label, unit, isDarkMode }) => {
         <p className="text-[10px] uppercase font-bold opacity-60 mb-1">{label}</p>
         {payload.map((entry, index) => (
             <p key={index} className="text-sm font-bold" style={{ color: entry.color }}>
-                {entry.name}: {entry.value.toLocaleString()} {unit}
+                {entry.name}: {(entry.value || 0).toLocaleString()} {unit}
             </p>
         ))}
       </div>
@@ -79,7 +71,7 @@ const FilterableChartCard = ({ title, data, type = "line", color = "#3b82f6", un
         <div>
           <h3 className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{title}</h3>
           <p className={`text-2xl font-bold mt-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            {currentView.total.toLocaleString()} <span className="text-xs font-normal text-gray-500">{unit}</span>
+            {(currentView.total || 0).toLocaleString()} <span className="text-xs font-normal text-gray-500">{unit}</span>
           </p>
         </div>
         
@@ -520,12 +512,18 @@ const ClientAnalytics = ({ client, onBack, isDarkMode }) => {
   );
 };
 // --- 4. LISTE CLIENTS (Vue par Défaut) ---
-const ClientList = ({ clients, onSelect, isDarkMode }) => {
+const ClientList = ({ clients, loading, currentPage, totalPages, onSelect, isDarkMode, onPageChange, onSearch }) => {
   const [searchTerm, setSearchTerm] = useState("");
+
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+    onSearch(value);
+  };
+
   const filteredClients = clients.filter(c => 
-    c.nom.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    c.prenom.toLowerCase().includes(searchTerm.toLowerCase())
-  
+    c.nom?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    c.prenom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -538,26 +536,65 @@ const ClientList = ({ clients, onSelect, isDarkMode }) => {
             type="text" 
             placeholder="Rechercher..." 
             value={searchTerm} 
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearch(e.target.value)}
             className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none transition-all ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-800'}`} />
         </div>
       </div>
-      <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
-        <table className="w-full text-left border-collapse">
-          <thead className="sticky top-0 z-10"><tr className={`text-xs uppercase tracking-wider ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-50 text-gray-500'}`}><th className="p-4">Client</th><th className="p-4">Ville</th><th className="p-4">Solde</th><th className="p-4">Commandes</th><th className="p-4 text-right">Action</th></tr></thead>
-          <tbody className="divide-y divide-gray-200/10 text-sm">
-            {filteredClients.map(client => (
-              <tr key={client.id} className={`group transition-colors ${isDarkMode ? 'hover:bg-gray-700/50' : 'hover:bg-blue-50'}`}>
-                <td className="p-4"><div className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{client.prenom} {client.nom}</div><div className="text-xs opacity-60">{client.email}</div></td>
-                <td className={`p-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{client.ville}</td>
-                <td className={`p-4 font-bold ${client.solde > 50 ? 'text-green-500' : 'text-yellow-500'}`}>{client.solde.toFixed(2)} DH</td>
-                <td className={`p-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{client.commandes}</td>
-                <td className="p-4 text-right"><button onClick={() => onSelect(client)} className="text-blue-600 hover:text-blue-800 font-medium text-xs border border-blue-200 hover:bg-blue-100 px-3 py-1.5 rounded-full transition-all">Détails</button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      
+      {loading ? (
+        <div className="p-12 text-center">
+          <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div>
+          <p className={`mt-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Chargement des clients...</p>
+        </div>
+      ) : clients.length === 0 ? (
+        <div className="p-12 text-center">
+          <User size={48} className="mx-auto text-gray-300 mb-3" />
+          <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Aucun client trouvé</p>
+        </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="sticky top-0 z-10"><tr className={`text-xs uppercase tracking-wider ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-50 text-gray-500'}`}><th className="p-4">Client</th><th className="p-4">Ville</th><th className="p-4">Email</th><th className="p-4 text-right">Action</th></tr></thead>
+              <tbody className="divide-y divide-gray-200/10 text-sm">
+                {filteredClients.map(client => (
+                  <tr key={client.id} className={`group transition-colors ${isDarkMode ? 'hover:bg-gray-700/50' : 'hover:bg-blue-50'}`}>
+                    <td className="p-4"><div className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{client.prenom} {client.nom}</div></td>
+                    <td className={`p-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{client.ville || 'N/A'}</td>
+                    <td className={`p-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{client.email}</td>
+                    <td className="p-4 text-right"><button onClick={() => onSelect(client)} className="text-blue-600 hover:text-blue-800 font-medium text-xs border border-blue-200 hover:bg-blue-100 px-3 py-1.5 rounded-full transition-all">Détails</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className={`p-4 border-t flex justify-between items-center ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+              <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Page {currentPage} sur {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1.5 rounded text-sm font-medium transition ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                >
+                  Précédent
+                </button>
+                <button 
+                  onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1.5 rounded text-sm font-medium transition ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                >
+                  Suivant
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };
@@ -566,6 +603,11 @@ const ClientList = ({ clients, onSelect, isDarkMode }) => {
 export default function DashboardClient() {
   const { isDarkMode } = useContext(SuperviseurContext); 
   const [selectedClient, setSelectedClient] = useState(null);
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Génération des données GLOBALES complètes (Multi-périodes)
   const [globalMetrics, setGlobalMetrics] = useState(null);
@@ -573,17 +615,53 @@ export default function DashboardClient() {
     { name: 'Carte', value: 65 }, { name: 'Espèces', value: 25 }, { name: 'Wallet', value: 10 },
   ]);
 
+  // Charger les clients depuis l'API au montage
   useEffect(() => {
-    setGlobalMetrics({
-        commandes: generateMultiPeriodData(15),
-        payees: generateMultiPeriodData(12),
-        annulees: generateMultiPeriodData(3),
-        ca: generateMultiPeriodData(2500),
-        connexions: generateMultiPeriodData(100)
-    });
-  }, []);
+    loadClients();
+    loadGlobalStats();
+  }, [currentPage, searchTerm]);
 
-  const refreshData = () => window.location.reload();
+  const loadClients = async () => {
+    try {
+      setLoading(true);
+      const response = await superviseurService.getClients(currentPage, searchTerm, 'all');
+      if (response.success) {
+        setClients(response.data.data || []);
+        setTotalPages(response.data.last_page || 1);
+      } else {
+        Swal.fire('Erreur', response.message || 'Erreur lors du chargement des clients', 'error');
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+      Swal.fire('Erreur', error.message || 'Erreur lors du chargement des clients', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadGlobalStats = async () => {
+    try {
+      const response = await superviseurService.getTransactionStats();
+      if (response.success) {
+        // Transformer les données pour les graphiques
+        const statsData = response.data;
+        setGlobalMetrics({
+          commandes: generateMultiPeriodData(statsData.total_orders || 15),
+          payees: generateMultiPeriodData(statsData.completed_orders || 12),
+          annulees: generateMultiPeriodData(statsData.cancelled_orders || 3),
+          ca: generateMultiPeriodData(statsData.total_revenue || 2500),
+          connexions: generateMultiPeriodData(statsData.total_connections || 100)
+        });
+      }
+    } catch (error) {
+      console.error('Erreur stats:', error);
+    }
+  };
+
+  const refreshData = () => {
+    loadClients();
+    loadGlobalStats();
+  };
 
   return (
     <div className="animate-fade-in space-y-8">
@@ -639,9 +717,14 @@ export default function DashboardClient() {
           />
         ) : (
           <ClientList 
-            clients={CLIENTS_LIST} 
+            clients={clients}
+            loading={loading}
+            currentPage={currentPage}
+            totalPages={totalPages}
             onSelect={(client) => setSelectedClient(client)} 
             isDarkMode={isDarkMode} 
+            onPageChange={(page) => setCurrentPage(page)}
+            onSearch={(term) => setSearchTerm(term)}
           />
         )}
       </div>

@@ -1,10 +1,11 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { 
   ArrowLeft, MapPin, Calendar, Clock, Users, Check, AlertCircle,
-  ChevronRight, Home, Briefcase, Zap
+  ChevronRight, Home, Briefcase, Zap, Loader
 } from 'lucide-react';
 import { ClientContext } from './clientContext';
 import Swal from 'sweetalert2';
+import axios from 'axios';
 
 const RequestService = ({ onBack }) => {
   const { user, isDarkMode } = useContext(ClientContext);
@@ -19,27 +20,76 @@ const RequestService = ({ onBack }) => {
     inputBg: isDarkMode ? 'bg-gray-700' : 'bg-white',
   };
 
-  const [step, setStep] = useState(1); // 1: Service selection, 2: Details, 3: Quote, 4: Payment
+  const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState(null);
+  const [services, setServices] = useState([]);
+  const [loadingServices, setLoadingServices] = useState(true);
   const [formData, setFormData] = useState({
     serviceType: '',
     address: user?.address || '',
+    city: '',
+    postalCode: '',
     squareMeters: '',
     numberOfRooms: '',
     preferredDate: '',
     preferredTime: '',
     specialRequests: '',
-    paymentMethod: 'card'
+    paymentMethod: 'card',
+    preferredFreelancerGender: 'Pas de preference'
   });
 
   const [quote, setQuote] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const services = [
-    { id: 'complete', name: 'Nettoyage Complet', icon: Home, price: 80, description: 'Nettoyage approfondi de toute la maison', color: 'from-blue-500 to-cyan-500' },
-    { id: 'spring', name: 'Nettoyage de Printemps', icon: Zap, price: 120, description: 'Nettoyage saisonnier intensif', color: 'from-green-500 to-emerald-500' },
-    { id: 'office', name: 'Nettoyage Bureau', icon: Briefcase, price: 100, description: 'Nettoyage professionnel d\'espaces commerciaux', color: 'from-orange-500 to-red-500' },
-  ];
+  // Charger les services disponibles depuis l'API
+  useEffect(() => {
+    loadServices();
+  }, []);
+
+  const loadServices = async () => {
+    try {
+      const response = await axios.get('http://localhost:8000/api/services/categories');
+      
+      if (response.data && response.data.success && response.data.data) {
+        // Transformer les catégories en services avec icônes et couleurs
+        const servicesData = response.data.data.map((category, index) => {
+          const icons = [Home, Briefcase, Zap];
+          const colors = [
+            'from-blue-500 to-cyan-500',
+            'from-green-500 to-emerald-500',
+            'from-orange-500 to-red-500',
+            'from-cyan-500 to-blue-500'
+          ];
+          
+          return {
+            id: category.id || category.name.toLowerCase().replace(/\s+/g, '-'),
+            name: category.name,
+            icon: icons[index % icons.length],
+            price: 80 + (index * 20), // Prix par défaut augmentant
+            description: `Service de ${category.name}`,
+            color: colors[index % colors.length],
+            availableDate: category.available_date || new Date().toISOString().split('T')[0]
+          };
+        });
+        
+        setServices(servicesData);
+      } else {
+        setServices([]);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des services:', error);
+      Swal.fire({
+        icon: 'warning',
+        title: 'Services indisponibles',
+        text: 'Impossible de charger les services. Veuillez réessayer.',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#1f2937',
+      });
+      setServices([]);
+    } finally {
+      setLoadingServices(false);
+    }
+  };
 
   const handleServiceSelect = (service) => {
     setSelectedService(service);
@@ -84,26 +134,143 @@ const RequestService = ({ onBack }) => {
   };
 
   const handleConfirmAndPay = async () => {
-    setIsProcessing(true);
-
-    // Simulation de validation de paiement
-    setTimeout(() => {
+    // Validation des champs obligatoires
+    if (!formData.address || !formData.city || !formData.preferredDate) {
       Swal.fire({
-        icon: 'success',
-        title: 'Commande Confirmée!',
-        text: `Votre commande pour "${selectedService.name}" a été confirmée. Le freelancer recevra votre demande dans quelques instants.`,
-        confirmButtonColor: '#0891b2',
+        icon: 'warning',
+        title: 'Informations manquantes',
+        text: 'Veuillez remplir tous les champs obligatoires (adresse, ville, date)',
         background: isDarkMode ? '#1f2937' : '#ffffff',
         color: isDarkMode ? '#ffffff' : '#1f2937',
-      }).then(() => {
-        setIsProcessing(false);
-        // Réinitialiser le formulaire
-        setStep(1);
-        setSelectedService(null);
-        setQuote(null);
-        onBack();
       });
-    }, 2000);
+      return;
+    }
+
+    // Valider que la date est au moins demain ou aujourd'hui
+    const selectedDate = new Date(formData.preferredDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (selectedDate < today) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Date invalide',
+        text: 'La date doit être aujourd\'hui ou dans le futur',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#1f2937',
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('Pas de token d\'authentification trouvé');
+      }
+
+      // Préparer les données pour l'API
+      // Déterminer l'horaire préféré basé sur l'heure saisie
+      let horairePrefere = null;
+      if (formData.preferredTime) {
+        const hour = parseInt(formData.preferredTime.split(':')[0]);
+        if (hour >= 6 && hour < 12) {
+          horairePrefere = 'Matin';
+        } else if (hour >= 12 && hour < 17) {
+          horairePrefere = 'Apres-midi';
+        } else if (hour >= 17) {
+          horairePrefere = 'Soir';
+        }
+      }
+
+      const orderData = {
+        service_type: selectedService.name,
+        description: formData.specialRequests,
+        adresse: formData.address,
+        ville: formData.city,
+        code_postal: formData.postalCode || '',
+        square_meters: formData.squareMeters ? parseFloat(formData.squareMeters) : null,
+        number_of_rooms: formData.numberOfRooms ? parseInt(formData.numberOfRooms) : null,
+        horaire_prefere: horairePrefere,
+        genre_freelancer_prefere: formData.preferredFreelancerGender,
+        initial_price: quote.total,
+        scheduled_date: formData.preferredDate, // Format: YYYY-MM-DD
+        notes_speciales: formData.specialRequests
+      };
+
+      // Appel API pour créer la commande
+      const response = await axios.post(
+        'http://localhost:8000/api/orders',
+        orderData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data && response.data.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Commande Confirmée!',
+          text: `Votre commande pour "${selectedService.name}" a été créée avec succès. Le freelancer recevra votre demande dans quelques instants.`,
+          confirmButtonColor: '#0891b2',
+          background: isDarkMode ? '#1f2937' : '#ffffff',
+          color: isDarkMode ? '#ffffff' : '#1f2937',
+        }).then(() => {
+          setIsProcessing(false);
+          // Réinitialiser le formulaire
+          setStep(1);
+          setSelectedService(null);
+          setQuote(null);
+          setFormData({
+            serviceType: '',
+            address: user?.address || '',
+            city: '',
+            postalCode: '',
+            squareMeters: '',
+            numberOfRooms: '',
+            preferredDate: '',
+            preferredTime: '',
+            specialRequests: '',
+            paymentMethod: 'card',
+            preferredFreelancerGender: 'Pas de preference'
+          });
+          onBack();
+        });
+      } else {
+        throw new Error(response.data.message || 'Erreur lors de la création de la commande');
+      }
+    } catch (error) {
+      setIsProcessing(false);
+      console.error('Erreur lors de la création de la commande:', error);
+      
+      let errorMessage = 'Erreur lors de la création de la commande';
+      
+      // Afficher les erreurs de validation si disponibles
+      if (error.response?.status === 422 && error.response?.data?.errors) {
+        const validationErrors = error.response.data.errors;
+        const errorList = Object.keys(validationErrors)
+          .map(field => `${field}: ${validationErrors[field].join(', ')}`)
+          .join('\n');
+        errorMessage = 'Erreurs de validation:\n' + errorList;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: errorMessage,
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#1f2937',
+      });
+    }
   };
 
   return (
@@ -138,28 +305,52 @@ const RequestService = ({ onBack }) => {
 
       {/* Step 1: Service Selection */}
       {step === 1 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {services.map((service) => {
-            const IconComponent = service.icon;
-            return (
-              <button
-                key={service.id}
-                onClick={() => handleServiceSelect(service)}
-                className={`${theme.bgCard} rounded-xl p-6 border-2 ${theme.border} hover:border-cyan-500 transition cursor-pointer transform hover:scale-105`}
-              >
-                <div className={`bg-gradient-to-tr ${service.color} rounded-lg p-4 mb-4 w-fit`}>
-                  <IconComponent size={32} className="text-white" />
-                </div>
-                <h3 className={`text-xl font-bold ${theme.textMain} mb-2`}>{service.name}</h3>
-                <p className={`${theme.textMuted} text-sm mb-4`}>{service.description}</p>
-                <div className="flex items-center justify-between">
-                  <span className={`text-2xl font-bold text-cyan-600`}>{service.price}DH</span>
-                  <ChevronRight size={20} className="text-cyan-600" />
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        <>
+          {loadingServices ? (
+            <div className="flex items-center justify-center min-h-96">
+              <div className="text-center">
+                <Loader className="animate-spin mx-auto mb-4 text-cyan-600" size={40} />
+                <p className={`${theme.textMuted}`}>Chargement des services...</p>
+              </div>
+            </div>
+          ) : services.length === 0 ? (
+            <div className="flex items-center justify-center min-h-96">
+              <div className="text-center">
+                <AlertCircle className="mx-auto mb-4 text-yellow-600" size={40} />
+                <p className={`${theme.textMain}`}>Aucun service disponible pour le moment</p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {services.map((service) => {
+                const IconComponent = service.icon;
+                return (
+                  <button
+                    key={service.id}
+                    onClick={() => handleServiceSelect(service)}
+                    className={`${theme.bgCard} rounded-xl p-6 border-2 ${theme.border} hover:border-cyan-500 transition cursor-pointer transform hover:scale-105`}
+                  >
+                    <div className={`bg-gradient-to-tr ${service.color} rounded-lg p-4 mb-4 w-fit`}>
+                      <IconComponent size={32} className="text-white" />
+                    </div>
+                    <h3 className={`text-xl font-bold ${theme.textMain} mb-2`}>{service.name}</h3>
+                    <p className={`${theme.textMuted} text-sm mb-4`}>{service.description}</p>
+                    <div className="space-y-3 mb-4">
+                      <div className="flex items-center text-sm">
+                        <Calendar size={14} className="mr-2 text-cyan-600" />
+                        <span className={theme.textMuted}>Disponible: {new Date(service.availableDate).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-2xl font-bold text-cyan-600`}>{service.price}DH</span>
+                      <ChevronRight size={20} className="text-cyan-600" />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {/* Step 2: Service Details */}
@@ -190,10 +381,40 @@ const RequestService = ({ onBack }) => {
               />
             </div>
 
+            {/* City */}
+            <div>
+              <label className={`block text-sm font-semibold ${theme.textMain} mb-2`}>
+                Ville *
+              </label>
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={handleInputChange}
+                placeholder="Ex: Casablanca"
+                className={`w-full px-4 py-3 rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
+              />
+            </div>
+
+            {/* Postal Code */}
+            <div>
+              <label className={`block text-sm font-semibold ${theme.textMain} mb-2`}>
+                Code Postal
+              </label>
+              <input
+                type="text"
+                name="postalCode"
+                value={formData.postalCode}
+                onChange={handleInputChange}
+                placeholder="Ex: 20000"
+                className={`w-full px-4 py-3 rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
+              />
+            </div>
+
             {/* Square Meters */}
             <div>
               <label className={`block text-sm font-semibold ${theme.textMain} mb-2`}>
-                Surface (m²) *
+                Surface (m²)
               </label>
               <input
                 type="number"
@@ -209,7 +430,7 @@ const RequestService = ({ onBack }) => {
             <div>
               <label className={`block text-sm font-semibold ${theme.textMain} mb-2`}>
                 <Users size={16} className="inline mr-2" />
-                Nombre de pièces *
+                Nombre de pièces
               </label>
               <input
                 type="number"
@@ -221,17 +442,35 @@ const RequestService = ({ onBack }) => {
               />
             </div>
 
+            {/* Preferred Gender */}
+            <div>
+              <label className={`block text-sm font-semibold ${theme.textMain} mb-2`}>
+                Préférence Genre du Freelancer
+              </label>
+              <select
+                name="preferredFreelancerGender"
+                value={formData.preferredFreelancerGender}
+                onChange={handleInputChange}
+                className={`w-full px-4 py-3 rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
+              >
+                <option value="Pas de preference">Pas de préférence</option>
+                <option value="Homme">Homme</option>
+                <option value="Femme">Femme</option>
+              </select>
+            </div>
+
             {/* Preferred Date */}
             <div>
               <label className={`block text-sm font-semibold ${theme.textMain} mb-2`}>
                 <Calendar size={16} className="inline mr-2" />
-                Date préférée
+                Date préférée *
               </label>
               <input
                 type="date"
                 name="preferredDate"
                 value={formData.preferredDate}
                 onChange={handleInputChange}
+                min={new Date().toISOString().split('T')[0]}
                 className={`w-full px-4 py-3 rounded-lg border ${theme.border} ${theme.inputBg} ${theme.textMain}`}
               />
             </div>

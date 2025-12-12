@@ -15,7 +15,6 @@ const ICONS = {
   dashboard: Home,
   orders: Package,
   services: Briefcase,
-  support: HelpCircle,
   profile: User,
   earnings: DollarSign,
   history: History,
@@ -45,7 +44,6 @@ const ACCENT_COLORS = {
   orders: '#8B5CF6', 
   services: '#06B6D4',
   earnings: '#10B981',
-  support: '#F59E0B',
   settings: '#64748b' 
 };
 
@@ -103,7 +101,6 @@ function InnerLayout() {
     else if (path.includes('historique-commandes-freelancer')) setActivePage('historique-commandes-freelancer');
     else if (path.includes('portefeuille-freelancer')) setActivePage('portefeuille-freelancer');
     else if (path.includes('settings-freelancer')) setActivePage('settings-freelancer');
-    else if (path.includes('support-freelancer')) setActivePage('support-freelancer');
     else if (path.includes('gestion-services-freelancer')) setActivePage('gestion-services-freelancer');
     else if (path.includes('publier-service-freelancer')) setActivePage('publier-service-freelancer');
     else if (path.includes('orders-received')) setActivePage('orders-received');
@@ -224,7 +221,6 @@ function InnerLayout() {
       'gestion-services-freelancer': ACCENT_COLORS.services,
       'publier-service-freelancer': ACCENT_COLORS.services,
       'earnings': ACCENT_COLORS.earnings,
-      'support': ACCENT_COLORS.support,
       'settings': ACCENT_COLORS.settings,
       'profile': ACCENT_COLORS.settings
     };
@@ -401,7 +397,6 @@ function InnerLayout() {
             {/* Autres Items */}
             {[
               { id: 'portefeuille-freelancer', label: 'Portefeuille', icon: ICONS.earnings, path: '/freelancer/dashboard/portefeuille-freelancer' },
-              { id: 'support-freelancer', label: 'Support', icon: ICONS.support, path: '/freelancer/dashboard/support-freelancer' },
               { id: 'settings-freelancer', label: 'Paramètres', icon: ICONS.settings, path: '/freelancer/dashboard/settings-freelancer' },
             ].map((item) => {
               const style = getMenuItemStyle(item.id);
@@ -463,8 +458,8 @@ function InnerLayout() {
               >
                 <ICONS.notifications size={18} />
                 {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full text-[8px] text-white flex items-center justify-center border-2 border-slate-50 dark:border-gray-800">
-                    {unreadCount}
+                  <span className="absolute -top-1 -right-1 min-w-[20px] h-[20px] bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center border-2 border-slate-50 dark:border-gray-800 px-1">
+                    {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
               </button>

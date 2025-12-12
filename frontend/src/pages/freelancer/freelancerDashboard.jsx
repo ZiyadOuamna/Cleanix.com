@@ -9,9 +9,11 @@ import {
   FileText, ClipboardCheck, Loader, Zap, Edit3,
   Trophy, TrendingUp as TrendingUpIcon, Target as TargetIcon,
   ChevronRight, Settings, BarChart2, TrendingUp as ChartUp,
-  Clock as ClockIcon, CheckCircle as CheckCircleIcon
+  Clock as ClockIcon, CheckCircle as CheckCircleIcon, Plus
 } from 'lucide-react';
 import { FreelancerContext } from './freelancerContext';
+import { getAcceptedOrders, getReceivedOrders } from '../../services/orderService';
+import { getMyServices } from '../../services/serviceService';
 import Swal from 'sweetalert2';
 
 const FreelancerDashboard = () => {
@@ -75,31 +77,26 @@ const FreelancerDashboard = () => {
     chartBorder: isDarkMode ? 'border-gray-600' : 'border-slate-200',
   };
 
-  // Données pour les graphiques
   const [performanceData, setPerformanceData] = useState({
     daily: [
-      { day: 'Lun', revenue: 120, jobs: 4 },
-      { day: 'Mar', revenue: 180, jobs: 6 },
-      { day: 'Mer', revenue: 150, jobs: 5 },
-      { day: 'Jeu', revenue: 220, jobs: 7 },
-      { day: 'Ven', revenue: 195, jobs: 6 },
-      { day: 'Sam', revenue: 160, jobs: 3 },
-      { day: 'Dim', revenue: 90, jobs: 2 }
+      { day: 'Lun', revenue: 0, jobs: 0 },
+      { day: 'Mar', revenue: 0, jobs: 0 },
+      { day: 'Mer', revenue: 0, jobs: 0 },
+      { day: 'Jeu', revenue: 0, jobs: 0 },
+      { day: 'Ven', revenue: 0, jobs: 0 },
+      { day: 'Sam', revenue: 0, jobs: 0 },
+      { day: 'Dim', revenue: 0, jobs: 0 }
     ],
-    weekly: [
-      { week: 'Sem 1', revenue: 850, jobs: 25 },
-      { week: 'Sem 2', revenue: 920, jobs: 28 },
-      { week: 'Sem 3', revenue: 780, jobs: 23 },
-      { week: 'Sem 4', revenue: 1100, jobs: 32 }
-    ],
-    monthly: [
-      { month: 'Jan', revenue: 2450, jobs: 75 },
-      { month: 'Fév', revenue: 2800, jobs: 82 },
-      { month: 'Mar', revenue: 3200, jobs: 94 },
-      { month: 'Avr', revenue: 2950, jobs: 86 },
-      { month: 'Mai', revenue: 3500, jobs: 102 },
-      { month: 'Juin', revenue: 3800, jobs: 110 }
-    ]
+    weekly: [],
+    monthly: []
+  });
+  
+  const [services, setServices] = useState([]);
+  const [servicesStats, setServicesStats] = useState({
+    total: 0,
+    active: 0,
+    pending: 0,
+    rejected: 0
   });
 
   // Données pour les objectifs
@@ -169,18 +166,124 @@ const FreelancerDashboard = () => {
     onTimeRate: 95
   });
 
-  // Simuler le chargement des données
+  // Charger les statistiques du dashboard depuis l'API
   useEffect(() => {
-    setLoading(true);
-    setTimeout(() => {
-      setQuickStats({
-        todayEarnings: 245,
-        todayJobs: 3,
-        responseTime: '45m',
-        acceptanceRate: 94
-      });
-      setLoading(false);
-    }, 1000);
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        
+        // Charger les services
+        const servicesResponse = await getMyServices();
+        const allServices = servicesResponse.data || [];
+        
+        // Charger les commandes
+        const acceptedResponse = await getAcceptedOrders();
+        const acceptedOrders = acceptedResponse.data || [];
+        
+        const receivedResponse = await getReceivedOrders();
+        const receivedOrders = receivedResponse.data || [];
+        
+        // Mettre à jour les services
+        setServices(allServices);
+        
+        // Calculer les statistiques des services
+        const totalServices = allServices.length;
+        const activeServices = allServices.filter(s => s.est_actif && s.status === 'approved').length;
+        const pendingServices = allServices.filter(s => s.status === 'pending_review').length;
+        const rejectedServices = allServices.filter(s => s.status === 'rejected').length;
+        
+        setServicesStats({
+          total: totalServices,
+          active: activeServices,
+          pending: pendingServices,
+          rejected: rejectedServices
+        });
+        
+        // Calculer les statistiques des commandes par jour
+        const dailyStats = [
+          { day: 'Lun', revenue: 0, jobs: 0 },
+          { day: 'Mar', revenue: 0, jobs: 0 },
+          { day: 'Mer', revenue: 0, jobs: 0 },
+          { day: 'Jeu', revenue: 0, jobs: 0 },
+          { day: 'Ven', revenue: 0, jobs: 0 },
+          { day: 'Sam', revenue: 0, jobs: 0 },
+          { day: 'Dim', revenue: 0, jobs: 0 }
+        ];
+        
+        // Grouper les commandes par jour de la semaine
+        const today = new Date();
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay());
+        
+        acceptedOrders.forEach(order => {
+          const orderDate = new Date(order.completed_at || order.created_at);
+          const dayDiff = Math.floor((orderDate - startOfWeek) / (1000 * 60 * 60 * 24));
+          
+          if (dayDiff >= 0 && dayDiff < 7) {
+            const price = order.agreed_price || order.initial_price || 0;
+            dailyStats[dayDiff].revenue += parseFloat(price);
+            dailyStats[dayDiff].jobs += 1;
+          }
+        });
+        
+        // Générer les données mensuelles
+        const monthlyStats = [];
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date();
+          d.setMonth(d.getMonth() - i);
+          const monthName = d.toLocaleDateString('fr-FR', { month: 'short' });
+          
+          const monthOrders = acceptedOrders.filter(order => {
+            const orderDate = new Date(order.completed_at || order.created_at);
+            return orderDate.getMonth() === d.getMonth() && orderDate.getFullYear() === d.getFullYear();
+          });
+          
+          const monthRevenue = monthOrders.reduce((sum, order) => 
+            sum + (parseFloat(order.agreed_price || order.initial_price || 0)), 0
+          );
+          
+          monthlyStats.push({
+            month: monthName.charAt(0).toUpperCase() + monthName.slice(1),
+            revenue: monthRevenue,
+            jobs: monthOrders.length
+          });
+        }
+        
+        setPerformanceData(prev => ({
+          ...prev,
+          daily: dailyStats,
+          monthly: monthlyStats,
+          weekly: monthlyStats // Utiliser les même données mensuelles pour les semaines
+        }));
+        
+        // Calculer les statistiques rapides
+        const todayOrders = acceptedOrders.filter(order => 
+          new Date(order.completed_at || order.created_at).toDateString() === new Date().toDateString()
+        );
+        
+        const todayEarnings = todayOrders.reduce((sum, order) => 
+          sum + (parseFloat(order.agreed_price || order.initial_price || 0)), 0
+        );
+        
+        const totalAccepted = acceptedOrders.length;
+        const totalReceived = receivedOrders.length;
+        const acceptanceRate = Math.round((totalAccepted / (totalAccepted + totalReceived)) * 100) || 0;
+        
+        setQuickStats({
+          todayEarnings,
+          todayJobs: todayOrders.length,
+          responseTime: '45m',
+          acceptanceRate
+        });
+        
+      } catch (error) {
+        console.error('Erreur lors du chargement des données du dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
   }, []);
 
   const getCurrentData = () => {
@@ -695,11 +798,11 @@ const FreelancerDashboard = () => {
         </div>
       </div>
 
-      {/* Cartes de statistiques principales */}
+      {/* Cartes de statistiques principales - DYNAMIQUES */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Revenu total"
-          value={formatCurrency(earnings?.total || 1250)}
+          value={formatCurrency(earnings?.total || 0)}
           change={12}
           icon={DollarSign}
           color="text-green-600"
@@ -707,18 +810,18 @@ const FreelancerDashboard = () => {
         />
         
         <StatCard
-          title="Ce mois-ci"
-          value={formatCurrency(earnings?.available || 930)}
-          change={8}
-          icon={TrendingUp}
+          title="Services actifs"
+          value={servicesStats.active}
+          change={servicesStats.total > 0 ? ((servicesStats.active / servicesStats.total) * 100).toFixed(0) : 0}
+          icon={Briefcase}
           color="text-blue-600"
           loading={loading}
         />
         
         <StatCard
-          title="En attente"
-          value={pendingOrders || 3}
-          change={-5}
+          title="En attente de validation"
+          value={servicesStats.pending}
+          change={pendingOrders || 0}
           icon={Package}
           color="text-orange-600"
           loading={loading}
@@ -733,6 +836,41 @@ const FreelancerDashboard = () => {
           loading={loading}
           unit="/5"
         />
+      </div>
+
+      {/* Résumé des services */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className={`rounded-xl border ${theme.border} ${isDarkMode ? 'bg-gray-800' : 'bg-white'} p-4 flex items-center justify-between`}>
+          <div>
+            <p className={`text-sm ${theme.textMuted}`}>Total services</p>
+            <p className={`text-2xl font-bold ${theme.textMain}`}>{servicesStats.total}</p>
+          </div>
+          <Briefcase size={24} className="text-blue-600" />
+        </div>
+        
+        <div className={`rounded-xl border ${theme.border} ${isDarkMode ? 'bg-gray-800' : 'bg-white'} p-4 flex items-center justify-between`}>
+          <div>
+            <p className={`text-sm ${theme.textMuted}`}>Services validés</p>
+            <p className={`text-2xl font-bold text-green-600`}>{servicesStats.active}</p>
+          </div>
+          <CheckCircle size={24} className="text-green-600" />
+        </div>
+        
+        <div className={`rounded-xl border ${theme.border} ${isDarkMode ? 'bg-gray-800' : 'bg-white'} p-4 flex items-center justify-between`}>
+          <div>
+            <p className={`text-sm ${theme.textMuted}`}>En attente</p>
+            <p className={`text-2xl font-bold text-yellow-600`}>{servicesStats.pending}</p>
+          </div>
+          <AlertCircle size={24} className="text-yellow-600" />
+        </div>
+        
+        <div className={`rounded-xl border ${theme.border} ${isDarkMode ? 'bg-gray-800' : 'bg-white'} p-4 flex items-center justify-between`}>
+          <div>
+            <p className={`text-sm ${theme.textMuted}`}>Rejetés</p>
+            <p className={`text-2xl font-bold text-red-600`}>{servicesStats.rejected}</p>
+          </div>
+          <XCircle size={24} className="text-red-600" />
+        </div>
       </div>
 
       {/* Graphique de performance */}
@@ -849,14 +987,11 @@ const FreelancerDashboard = () => {
             <div className="space-y-4">
               <QuickStatsItem
                 title="Aujourd'hui"
-                subtitle="Revenus & commandes"
-                value={quickStats.todayEarnings}
-                unit="DH"
+                subtitle="Revenus"
+                value={formatCurrency(quickStats.todayEarnings)}
                 icon={Clock}
                 color="text-blue-600"
                 bgColor={isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'}
-                secondValue={quickStats.todayJobs}
-                secondUnit="commandes"
               />
               
               <QuickStatsItem
@@ -915,16 +1050,50 @@ const FreelancerDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Derniers services ajoutés */}
+      {services.length > 0 && (
+        <div className={`rounded-2xl shadow-lg border ${theme.border} ${theme.cardBg} p-6`}>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className={`text-lg font-semibold ${theme.textMain}`}>Vos Services Récents</h3>
+              <p className={`text-sm ${theme.textMuted}`}>
+                Les {Math.min(5, services.length)} derniers services publiés
+              </p>
+            </div>
+            <Briefcase size={20} className={theme.textSecondary} />
+          </div>
+          
+          <div className="space-y-3">
+            {services.slice(0, 5).map((service, index) => (
+              <div key={service.id} className={`p-4 rounded-lg border ${theme.borderLight} hover:shadow-md transition flex items-center justify-between`}>
+                <div className="flex items-center gap-3 flex-1">
+                  <div className={`w-2 h-2 rounded-full ${
+                    service.status === 'approved' ? 'bg-green-500' : 
+                    service.status === 'pending_review' ? 'bg-yellow-500' : 
+                    'bg-red-500'
+                  }`} />
+                  <div className="flex-1">
+                    <p className={`font-medium ${theme.textMain}`}>{service.nom}</p>
+                    <p className={`text-sm ${theme.textMuted}`}>
+                      {service.category} • {service.est_actif ? '✅ Actif' : '❌ Inactif'}
+                    </p>
+                  </div>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  service.status === 'approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                  service.status === 'pending_review' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
+                  'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                }`}>
+                  {service.status === 'approved' ? 'Validé' : service.status === 'pending_review' ? 'En attente' : 'Rejeté'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-
-// Composant Plus pour le bouton
-const Plus = ({ size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <line x1="12" y1="5" x2="12" y2="19"></line>
-    <line x1="5" y1="12" x2="19" y2="12"></line>
-  </svg>
-);
 
 export default FreelancerDashboard;

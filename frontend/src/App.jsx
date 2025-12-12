@@ -11,6 +11,7 @@ import RegisterPage from './pages/registerPage';
 import LoginPage from './pages/loginPage';
 import ForgotPasswordPage from './pages/forgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 
 // ( 1 ) les import des pages après la connexion de la page de superviseur 
 import DashboardSuperviseur from './pages/superviseur/superviseur';
@@ -19,10 +20,12 @@ import DashboardSuperviseur from './pages/superviseur/superviseur';
 import Reclamations from './pages/superviseur/gestionReclamations';
 import RemboursementSuperviseurPage from './pages/superviseur/gestionRembourssements';
 import SettingsPage from './pages/superviseur/settings-Superviseur';
+import SuperviseurServiceValidation from './pages/superviseur/gestionServices/superviseurServiceValidation';
 
 // les imports des pages de la partie gestion des utilisateurs chez superviseur 
 import GestionClientsPage     from './pages/superviseur/gestionUsers/gestionClients';
 import GestionFreelancersPage from './pages/superviseur/gestionUsers/gestionFreelancers';
+import GestionSuperviseursPage from './pages/superviseur/gestionUsers/gestionSuperviseurs';
 
 // les imports des pages de la partie dashboard chez superviseur 
 import DashboardClients      from './pages/superviseur/gestionDashboard/dashboardClients-Superviseur';
@@ -37,10 +40,9 @@ import DashboardFreelancer from './pages/freelancer/freelancerDashboard';
 import SuperviseurFreelancerVerification from './pages/superviseur/verifications/verifierFreelancer';
 
 
-// les imports des pages de la partie : portefeuille , settings et support chez freelancer
+// les imports des pages de la partie : portefeuille et settings chez freelancer
 import PortefeuilleFreelancer from './pages/freelancer/portefeuille';
 import SettingsFreelancer     from './pages/freelancer/settings';
-import SupportFreelancer      from './pages/freelancer/support';
 
 // les imports des pages de la partie Mes Commandes chez freelancer
 import CommandesAcceptees from './pages/freelancer/commandes/acceptedCmd';
@@ -55,7 +57,6 @@ import PublierService from './pages/freelancer/services/publierService';
 import DashboardClient from './pages/client/Client';
 import ClientDashboard from './pages/client/clientDashboard';
 import ProfileClient from './pages/client/profileClient';
-import SupportClient from './pages/client/support';
 import SettingsClient from './pages/client/settings';
 import MyBookings from './pages/client/myBookings';
 import CommandeHistory from './pages/client/commandeHistory';
@@ -64,10 +65,7 @@ import WalletClient from './pages/client/walletClient';
 import RequestCleaning from './pages/client/requestCleaning';
 
 //----------------------------------------------------------------------//
-// ( 4 ) imports des pages après la connexion de la page de Support
-//import DashboardSupportAgent from './pages/support/supportDashboard';
 
-//import DashboardSupportAgent from './pages/support';
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -100,6 +98,9 @@ export default function App() {
       <Route path="/forgot-password" element={<PublicRoute element={<ForgotPasswordPage />} isLoading={isLoading} />} />
       <Route path="/reset-password" element={<PublicRoute element={<ResetPasswordPage />} isLoading={isLoading} />} />
       
+      {/* Vérification d'email - Page semi-protégée (nécessite token mais pas email_verified_at) */}
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
+      
       {/* Routes pour Superviseur - Protégées */}
       
       <Route path="/superviseur/dashboard" element={<ProtectedRoute element={<DashboardSuperviseur />} requiredUserType="superviseur" isLoading={isLoading} />}>
@@ -108,6 +109,9 @@ export default function App() {
         <Route path="gestion-rembourssements" element={<RemboursementSuperviseurPage />}/>
         <Route path="settings-superviseur"    element={<SettingsPage />}/>
 
+        {/* les routes de la partie validation des services */}
+        <Route path="validation-services"    element={<SuperviseurServiceValidation />}/>
+
         {/* les routes de la partie dashboard */}
         <Route path="dashboard-clients"     element={<DashboardClients/>} />
         <Route path="dashboard-freelancers" element={<DashboardFreelancers/>} />
@@ -115,6 +119,7 @@ export default function App() {
         {/* les routes de la partie gestion des utilisateurs */}
         <Route path="gestion-clients"       element={<GestionClientsPage />} />
         <Route path="gestion-freelancers"   element={<GestionFreelancersPage />} />
+        <Route path="gestion-superviseurs"  element={<GestionSuperviseursPage />} />
 
         {/* les routes de la partie vérification des freelancers */}
         <Route path="superviseur-verification" element={<SuperviseurFreelancerVerification />} />
@@ -144,9 +149,6 @@ export default function App() {
         {/* Profil */}
         <Route path='profile-client' element={<ProfileClient />} />
         
-        {/* Support */}
-        <Route path='support-client' element={<SupportClient />} />
-        
         {/* Paramètres */}
         <Route path='settings-client' element={<SettingsClient />} />
       </Route>
@@ -172,7 +174,6 @@ export default function App() {
         {/* Autres */}
         <Route path='portefeuille-freelancer' element={<PortefeuilleFreelancer />} />
         <Route path='settings-freelancer' element={<SettingsFreelancer />} />
-        <Route path='support-freelancer' element={<SupportFreelancer />} />
       </Route>
 
     </Routes>

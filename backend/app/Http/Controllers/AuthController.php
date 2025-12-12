@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Client;
 use App\Models\Freelancer;
-use App\Models\Support;
 use App\Models\Superviseur;
 use App\Models\Portefeuille;
 use Carbon\Carbon;
@@ -72,6 +71,45 @@ class AuthController extends Controller
 
             DB::commit();
 
+            // Generate verification code for email
+            $verificationCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            
+            \Log::info('Generated verification code for registration', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'code' => $verificationCode
+            ]);
+            
+            // Store in cache for 10 minutes
+            cache()->put("email_verification_{$user->id}", [
+                'code' => $verificationCode,
+                'email' => $user->email
+            ], now()->addMinutes(10));
+
+            // Send verification email
+            try {
+                \Log::info('Attempting to send verification email after registration', [
+                    'user_id' => $user->id,
+                    'email' => $user->email
+                ]);
+                
+                Mail::send('emails.verify-email', ['code' => $verificationCode], function($message) use ($user) {
+                    $message->to($user->email)
+                            ->subject('Code de Vérification Email - Cleanix.com');
+                });
+                
+                \Log::info('Verification email sent successfully after registration', [
+                    'user_id' => $user->id,
+                    'email' => $user->email
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Failed to send verification email after registration: ' . $e->getMessage(), [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'exception' => $e
+                ]);
+            }
+
             // Generate token
             $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -80,11 +118,12 @@ class AuthController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'User registered successfully',
+                'message' => 'User registered successfully. Please verify your email.',
                 'data' => [
                     'user' => $user,
                     'token' => $token,
                     'token_type' => 'Bearer',
+                    'email_verification_required' => true,
                 ]
             ], 201);
 
@@ -211,11 +250,14 @@ class AuthController extends Controller
         $validated = $request->validate([
             'nom' => 'sometimes|string|max:255',
             'prenom' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'phone' => 'sometimes|string|unique:users,telephone,' . $user->id,
             'telephone' => 'sometimes|string|unique:users,telephone,' . $user->id,
             'genre' => 'sometimes|in:Homme,Femme',
             'photo_profil' => 'sometimes|image|max:2048',
             
             // Client specific fields
+            'address' => 'sometimes|string|max:255',
             'adresse' => 'sometimes|string|max:255',
             'ville' => 'sometimes|string|max:100',
             'code_postal' => 'sometimes|string|max:10',
@@ -227,6 +269,18 @@ class AuthController extends Controller
         DB::beginTransaction();
         
         try {
+            // Normalize phone field (handle both 'phone' and 'telephone')
+            if (isset($validated['phone']) && !isset($validated['telephone'])) {
+                $validated['telephone'] = $validated['phone'];
+                unset($validated['phone']);
+            }
+
+            // Normalize address field (handle both 'address' and 'adresse')
+            if (isset($validated['address']) && !isset($validated['adresse'])) {
+                $validated['adresse'] = $validated['address'];
+                unset($validated['address']);
+            }
+
             // Handle photo upload
             if ($request->hasFile('photo_profil')) {
                 $validated['photo_profil'] = $request->file('photo_profil')->store('photos_profil', 'public');
@@ -234,7 +288,7 @@ class AuthController extends Controller
 
             // Update user table
             $user->update(array_intersect_key($validated, array_flip([
-                'nom', 'prenom', 'telephone', 'genre', 'photo_profil'
+                'nom', 'prenom', 'email', 'telephone', 'genre', 'photo_profil'
             ])));
 
             // Update profile specific table
@@ -535,14 +589,6 @@ class AuthController extends Controller
                 ]);
                 break;
 
-            case 'Support':
-                Support::create([
-                    'user_id' => $user->id,
-                    'est_disponible' => true,
-                    'tickets_traites' => 0,
-                ]);
-                break;
-
             case 'Superviseur':
                 Superviseur::create([
                     'user_id' => $user->id,
@@ -560,7 +606,6 @@ class AuthController extends Controller
         return match($userType) {
             'Client' => 'client.portefeuille',
             'Freelancer' => 'freelancer.portefeuille',
-            'Support' => 'support',
             'Superviseur' => 'superviseur',
             default => '',
         };

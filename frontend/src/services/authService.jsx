@@ -129,6 +129,37 @@ export const forgotPassword = async (data) => {
 };
 
 /**
+ * Récupère les données de l'utilisateur authentifié
+ * @returns {Promise<object>} Les données du user
+ */
+export const getAuthenticatedUser = async () => {
+    try {
+        const response = await apiClient.get('/user');
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+/**
+ * Met à jour le profil de l'utilisateur
+ * @param {FormData|object} data - Les données à mettre à jour (nom, prenom, email, etc.)
+ * @returns {Promise<object>} Les données mises à jour
+ */
+export const updateUserProfile = async (data) => {
+    try {
+        const response = await apiClient.put('/profile', data, {
+            headers: {
+                'Content-Type': data instanceof FormData ? 'multipart/form-data' : 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+/**
  * Envoie le nouveau mot de passe avec le token (Route /api/reset-password)
  * @param {object} data - { email, token, password, password_confirmation }
  * @returns {Promise<object>} La réponse du serveur
@@ -137,6 +168,26 @@ export const resetPassword = async (data) => {
     try {
         // Laravel attend généralement une route POST sur /reset-password avec ces 4 champs
         const response = await apiClient.post('/reset-password', data);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+/**
+ * Change le mot de passe de l'utilisateur
+ * @param {string} currentPassword - Le mot de passe actuel
+ * @param {string} newPassword - Le nouveau mot de passe
+ * @param {string} confirmPassword - Confirmation du nouveau mot de passe
+ * @returns {Promise<object>} La réponse du serveur
+ */
+export const updatePassword = async (currentPassword, newPassword, confirmPassword) => {
+    try {
+        const response = await apiClient.post('/change-password', {
+            current_password: currentPassword,
+            new_password: newPassword,
+            new_password_confirmation: confirmPassword
+        });
         return response.data;
     } catch (error) {
         throw error;

@@ -2,6 +2,8 @@ import React, { useState, useContext, useCallback } from 'react';
 import Swal from 'sweetalert2';
 import { Settings, Shield, Lock, User, Bell, Mail, Phone, MapPin, Eye, EyeOff } from 'lucide-react';
 import { ClientContext } from './clientContext';
+import { updateUserProfile, updatePassword } from '../../services/authService';
+import { updateNotificationSettings, updatePrivacySettings } from '../../services/settingsService';
 
 const SettingsClient = () => {
   const { 
@@ -95,7 +97,40 @@ const SettingsClient = () => {
 
   const saveSettings = useCallback(async () => {
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      // Prepare data to send
+      const profileData = {
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address
+      };
+
+      // Update personal info
+      if (formData.email || formData.phone || formData.address) {
+        await updateUserProfile(profileData);
+      }
+
+      // Transform and update notification settings
+      const notificationSettings = {
+        emailNotifications: formData.notifications.emailNotifications,
+        smsNotifications: formData.notifications.smsNotifications,
+        newProposals: formData.notifications.newProposals,
+        serviceReminders: formData.notifications.serviceReminders,
+        promotions: formData.notifications.promotions,
+        news: formData.notifications.news
+      };
+      await updateNotificationSettings(notificationSettings);
+
+      // Transform and update privacy settings
+      const privacySettings = {
+        profileVisible: formData.privacy.profileVisible,
+        showEmail: formData.privacy.showEmail,
+        showPhone: formData.privacy.showPhone,
+        allowMessages: formData.privacy.allowMessages,
+        shareLocation: formData.privacy.shareLocation
+      };
+      await updatePrivacySettings(privacySettings);
+
       setIsSaving(false);
       Swal.fire({
         icon: 'success',
@@ -105,10 +140,21 @@ const SettingsClient = () => {
         color: isDarkMode ? '#ffffff' : '#000000',
         confirmButtonColor: '#10B981'
       });
-    }, 1500);
-  }, [isDarkMode]);
+    } catch (error) {
+      setIsSaving(false);
+      console.error('Error saving settings:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: error?.response?.data?.message || 'Erreur lors de la sauvegarde des paramètres',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#000000',
+        confirmButtonColor: '#ef4444'
+      });
+    }
+  }, [formData, isDarkMode]);
 
-  const changePassword = useCallback(() => {
+  const changePassword = useCallback(async () => {
     const { currentPassword, newPassword, confirmPassword } = formData.security.passwordChange;
 
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -145,7 +191,8 @@ const SettingsClient = () => {
     }
 
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      await updatePassword(currentPassword, newPassword, confirmPassword);
       setIsSaving(false);
       setFormData(prev => ({
         ...prev,
@@ -166,7 +213,18 @@ const SettingsClient = () => {
         color: isDarkMode ? '#ffffff' : '#000000',
         confirmButtonColor: '#10B981'
       });
-    }, 1500);
+    } catch (error) {
+      setIsSaving(false);
+      console.error('Error changing password:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: error?.response?.data?.message || 'Erreur lors du changement de mot de passe',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#000000',
+        confirmButtonColor: '#ef4444'
+      });
+    }
   }, [formData.security.passwordChange, isDarkMode]);
 
   const tabs = [

@@ -6,11 +6,12 @@ import {
   MessageCircle, Share2, Bookmark, Heart, Trash2, Eye,
   Plus, ChevronRight, Image, Video, FileText, MoreVertical,
   EyeOff, MessageSquare, Send, CreditCard, History, TrendingUp, DollarSign,
-  ChevronDown, ChevronUp, MessageCircleReply
+  ChevronDown, ChevronUp, MessageCircleReply, Loader
 } from 'lucide-react';
 import { ClientContext } from './clientContext';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import axios from 'axios';
 
 const ProfileClient = () => {
   const { 
@@ -20,6 +21,32 @@ const ProfileClient = () => {
   } = useContext(ClientContext);
   
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+
+  // Charger les données du profil au montage
+  useEffect(() => {
+    loadProfileData();
+  }, []);
+
+  const loadProfileData = async () => {
+    try {
+      setLoading(true);
+      // Les données viennent du contexte (user) qui est déjà chargé
+      if (user) {
+        setProfileData(prev => ({
+          ...prev,
+          firstName: user.prenom || 'Client',
+          lastName: user.nom || 'Cleanix',
+          email: user.email || 'client@email.com',
+          phone: user.telephone || '+33 6 12 34 56 78',
+        }));
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement du profil:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   // Thème basé sur isDarkMode
   const theme = {
@@ -70,159 +97,25 @@ const ProfileClient = () => {
   const fileInputRef = useRef(null);
   const bannerInputRef = useRef(null);
 
-  // États pour les avis donnés
-  const [reviews, setReviews] = useState([
-    {
-      id: 1,
-      freelancerId: 1,
-      freelancerName: 'Marie Martin',
-      freelancerUsername: '@mariepro',
-      freelancerAvatar: 'MM',
-      rating: 5,
-      date: '15 Jan 2024',
-      comment: 'Excellent service ! Marie a nettoyé mon appartement impeccablement. Très professionnel et ponctuel.',
-      service: 'Nettoyage Complet',
-      clientComment: '',
-      clientCommentDate: '',
-      isClientCommenting: false
-    },
-    {
-      id: 2,
-      freelancerId: 2,
-      freelancerName: 'Pierre Dubois',
-      freelancerUsername: '@pierre_clean',
-      freelancerAvatar: 'PD',
-      rating: 4,
-      date: '10 Jan 2024',
-      comment: 'Bon nettoyage des vitres. Très rapide et efficace.',
-      service: 'Nettoyage Vitres',
-      clientComment: '',
-      clientCommentDate: '',
-      isClientCommenting: false
-    },
-    {
-      id: 3,
-      freelancerId: 3,
-      freelancerName: 'Sophie Laurent',
-      freelancerUsername: '@sophiel',
-      freelancerAvatar: 'SL',
-      rating: 5,
-      date: '8 Jan 2024',
-      comment: 'Service exceptionnel, je recommande vivement !',
-      service: 'Nettoyage Bureau',
-      clientComment: 'Merci pour votre service ! Je suis très satisfait.',
-      clientCommentDate: '9 Jan 2024',
-      isClientCommenting: false
-    },
-    {
-      id: 4,
-      freelancerId: 4,
-      freelancerName: 'Thomas Bernard',
-      freelancerUsername: '@thomas_b',
-      freelancerAvatar: 'TB',
-      rating: 5,
-      date: '5 Jan 2024',
-      comment: 'Très bon nettoyage après travaux.',
-      service: 'Nettoyage Après Travaux',
-      clientComment: '',
-      clientCommentDate: '',
-      isClientCommenting: false
-    },
-    {
-      id: 5,
-      freelancerId: 5,
-      freelancerName: 'Julie Moreau',
-      freelancerUsername: '@juliem',
-      freelancerAvatar: 'JM',
-      rating: 4,
-      date: '3 Jan 2024',
-      comment: 'Service ponctuel et efficace.',
-      service: 'Nettoyage Résidentiel',
-      clientComment: 'Je confirme, très bon service !',
-      clientCommentDate: '4 Jan 2024',
-      isClientCommenting: false
-    },
-    {
-      id: 6,
-      freelancerId: 6,
-      freelancerName: 'David Lefevre',
-      freelancerUsername: '@davidl',
-      freelancerAvatar: 'DL',
-      rating: 5,
-      date: '28 Dec 2023',
-      comment: 'Excellent travail de nettoyage.',
-      service: 'Nettoyage Complet',
-      clientComment: '',
-      clientCommentDate: '',
-      isClientCommenting: false
-    },
-    {
-      id: 7,
-      freelancerId: 7,
-      freelancerName: 'Catherine Petit',
-      freelancerUsername: '@catherinep',
-      freelancerAvatar: 'CP',
-      rating: 4,
-      date: '25 Dec 2023',
-      comment: 'Service rapide et de qualité.',
-      service: 'Nettoyage Vitres',
-      clientComment: 'Merci pour votre travail !',
-      clientCommentDate: '26 Dec 2023',
-      isClientCommenting: false
-    },
-    {
-      id: 8,
-      freelancerId: 8,
-      freelancerName: 'Nicolas Dubois',
-      freelancerUsername: '@nicolasd',
-      freelancerAvatar: 'ND',
-      rating: 5,
-      date: '20 Dec 2023',
-      comment: 'Service exceptionnel !',
-      service: 'Nettoyage Bureau',
-      clientComment: '',
-      clientCommentDate: '',
-      isClientCommenting: false
-    },
-    {
-      id: 9,
-      freelancerId: 9,
-      freelancerName: 'Isabelle Martin',
-      freelancerUsername: '@isabellem',
-      freelancerAvatar: 'IM',
-      rating: 4,
-      date: '15 Dec 2023',
-      comment: 'Très satisfait du service.',
-      service: 'Nettoyage Résidentiel',
-      clientComment: '',
-      clientCommentDate: '',
-      isClientCommenting: false
-    },
-    {
-      id: 10,
-      freelancerId: 10,
-      freelancerName: 'Marc Laurent',
-      freelancerUsername: '@marcl',
-      freelancerAvatar: 'ML',
-      rating: 5,
-      date: '10 Dec 2023',
-      comment: 'Excellent service de nettoyage.',
-      service: 'Nettoyage Après Travaux',
-      clientComment: 'Merci beaucoup !',
-      clientCommentDate: '11 Dec 2023',
-      isClientCommenting: false
-    }
-  ]);
+  // États pour les avis donnés - DONNÉES VIDES (chargées dynamiquement)
+  const [reviews, setReviews] = useState([]);
 
-  // États pour les freelancers suivis
+  // États pour les freelancers suivis - DONNÉES DYNAMIQUES
+  const [following, setFollowing] = useState([]);
+
+  /* Données statiques commentées - À remplacer par des appels API
   const [following, setFollowing] = useState([
     { id: 1, name: 'Marie Martin', username: '@mariepro', avatar: 'MM', specialty: 'Nettoyage Résidentiel', rating: 4.9, isFollowing: true },
     { id: 2, name: 'Pierre Dubois', username: '@pierre_clean', avatar: 'PD', specialty: 'Nettoyage Vitres', rating: 4.7, isFollowing: true },
     { id: 3, name: 'Sophie Laurent', username: '@sophiel', avatar: 'SL', specialty: 'Nettoyage Bureau', rating: 4.8, isFollowing: true },
     { id: 4, name: 'Thomas Bernard', username: '@thomas_b', avatar: 'TB', specialty: 'Nettoyage Après Travaux', rating: 4.6, isFollowing: false },
   ]);
+  */
 
-  // États pour les followers
+  // États pour les followers - DONNÉES DYNAMIQUES
+  const [followers, setFollowers] = useState([]);
+
+  /* Données statiques commentées - À remplacer par des appels API
   const [followers, setFollowers] = useState([
     { id: 1, name: 'Jean Dupont', username: '@jeand', avatar: 'JD', isFollowing: true },
     { id: 2, name: 'Sarah Cohen', username: '@sarahc', avatar: 'SC', isFollowing: false },
@@ -230,6 +123,7 @@ const ProfileClient = () => {
     { id: 4, name: 'Antoine Leroy', username: '@antoinel', avatar: 'AL', isFollowing: true },
     { id: 5, name: 'Emma Petit', username: '@emmap', avatar: 'EP', isFollowing: false },
   ]);
+  */
   
   const [searchFollowing, setSearchFollowing] = useState('');
   const [searchReviews, setSearchReviews] = useState('');
@@ -239,6 +133,97 @@ const ProfileClient = () => {
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [showAllFollowing, setShowAllFollowing] = useState(false);
   const [showAllFollowers, setShowAllFollowers] = useState(false);
+
+  // Charger les freelancers suivis, followers et reviews au montage
+  useEffect(() => {
+    loadFollowingFreelancers();
+    loadFollowers();
+    loadReviews();
+  }, []);
+
+  const loadFollowingFreelancers = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        console.error('Pas de token trouvé');
+        setFollowing([]);
+        return;
+      }
+
+      // Appel API pour récupérer les freelancers suivis
+      const response = await axios.get('http://localhost:8000/api/client/following', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (response.data && response.data.success) {
+        setFollowing(response.data.data || []);
+      } else {
+        setFollowing([]);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des freelancers suivis:', error);
+      setFollowing([]);
+    }
+  };
+
+  const loadFollowers = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        console.error('Pas de token trouvé');
+        setFollowers([]);
+        return;
+      }
+
+      // Appel API pour récupérer les followers
+      const response = await axios.get('http://localhost:8000/api/client/followers', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (response.data && response.data.success) {
+        setFollowers(response.data.data || []);
+      } else {
+        setFollowers([]);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des followers:', error);
+      setFollowers([]);
+    }
+  };
+
+  const loadReviews = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        console.error('Pas de token trouvé');
+        setReviews([]);
+        return;
+      }
+
+      // Appel API pour récupérer les avis donnés par le client
+      const response = await axios.get('http://localhost:8000/api/client/reviews', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (response.data && response.data.success) {
+        setReviews(response.data.data || []);
+      } else {
+        setReviews([]);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des avis:', error);
+      setReviews([]);
+    }
+  };
 
   // Ref pour les inputs de fichier dans le modal d'édition
   const modalFileInputRef = useRef(null);
@@ -598,107 +583,107 @@ const ProfileClient = () => {
           </div>
         );
 
-      case 'following':
-        return (
-          <div className="space-y-6">
-            {/* Liste des freelancers suivis */}
-            <div className={`${theme.cardBg} rounded-xl shadow-sm border ${theme.border} overflow-hidden`}>
-              <div className={`p-6 border-b ${theme.border}`}>
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <h3 className={`text-lg font-semibold ${theme.textMain}`}>
-                    Freelancers Suivis ({stats.following})
-                  </h3>
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme.textMuted}`} size={18} />
-                      <input
-                        type="text"
-                        placeholder="Rechercher un freelancer..."
-                        value={searchFollowing}
-                        onChange={(e) => setSearchFollowing(e.target.value)}
-                        className={`pl-10 pr-4 py-2 border ${theme.border} rounded-lg ${theme.inputBg} ${theme.textMain} w-full md:w-64`}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+      // case 'following':
+      //   return (
+      //     <div className="space-y-6">
+      //       {/* Liste des freelancers suivis */}
+      //       <div className={`${theme.cardBg} rounded-xl shadow-sm border ${theme.border} overflow-hidden`}>
+      //         <div className={`p-6 border-b ${theme.border}`}>
+      //           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      //             <h3 className={`text-lg font-semibold ${theme.textMain}`}>
+      //               Freelancers Suivis ({stats.following})
+      //             </h3>
+      //             <div className="flex items-center gap-4">
+      //               <div className="relative">
+      //                 <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme.textMuted}`} size={18} />
+      //                 <input
+      //                   type="text"
+      //                   placeholder="Rechercher un freelancer..."
+      //                   value={searchFollowing}
+      //                   onChange={(e) => setSearchFollowing(e.target.value)}
+      //                   className={`pl-10 pr-4 py-2 border ${theme.border} rounded-lg ${theme.inputBg} ${theme.textMain} w-full md:w-64`}
+      //                 />
+      //               </div>
+      //             </div>
+      //           </div>
+      //         </div>
 
-              <div className={`divide-y ${isDarkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
-                {displayedFollowing.map((freelancer) => (
-                  <div key={freelancer.id} className={`p-6 ${theme.hoverBg} transition-colors`}>
-                    <div className="flex items-center justify-between">
-                      <div 
-                        className="flex items-center gap-4 cursor-pointer"
-                        onClick={() => navigateToProfile(freelancer.id)}
-                      >
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-bold">
-                          {freelancer.avatar}
-                        </div>
-                        <div>
-                          <h4 className={`font-semibold ${theme.textMain} hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors`}>
-                            {freelancer.name}
-                          </h4>
-                          <p className={`text-sm ${theme.textMuted}`}>{freelancer.username}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <div className="flex items-center gap-1">
-                              {renderStars(freelancer.rating)}
-                            </div>
-                            <span className={`text-xs ${theme.textMuted}`}>{freelancer.rating}</span>
-                            <span className={`text-xs px-2 py-0.5 rounded ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
-                              {freelancer.specialty}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+      //         <div className={`divide-y ${isDarkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+      //           {displayedFollowing.map((freelancer) => (
+      //             <div key={freelancer.id} className={`p-6 ${theme.hoverBg} transition-colors`}>
+      //               <div className="flex items-center justify-between">
+      //                 <div 
+      //                   className="flex items-center gap-4 cursor-pointer"
+      //                   onClick={() => navigateToProfile(freelancer.id)}
+      //                 >
+      //                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-bold">
+      //                     {freelancer.avatar}
+      //                   </div>
+      //                   <div>
+      //                     <h4 className={`font-semibold ${theme.textMain} hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors`}>
+      //                       {freelancer.name}
+      //                     </h4>
+      //                     <p className={`text-sm ${theme.textMuted}`}>{freelancer.username}</p>
+      //                     <div className="flex items-center gap-2 mt-1">
+      //                       <div className="flex items-center gap-1">
+      //                         {renderStars(freelancer.rating)}
+      //                       </div>
+      //                       <span className={`text-xs ${theme.textMuted}`}>{freelancer.rating}</span>
+      //                       <span className={`text-xs px-2 py-0.5 rounded ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
+      //                         {freelancer.specialty}
+      //                       </span>
+      //                     </div>
+      //                   </div>
+      //                 </div>
                       
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleFollowToggle(freelancer.id);
-                        }}
-                        className={`px-4 py-2 rounded-lg font-medium transition ${
-                          freelancer.isFollowing
-                            ? `${isDarkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`
-                            : 'bg-cyan-600 text-white hover:bg-cyan-700'
-                        }`}
-                      >
-                        {freelancer.isFollowing ? '✓ Suivi' : 'Suivre'}
-                      </button>
-                    </div>
-                  </div>
-                ))}
+      //                 <button
+      //                   onClick={(e) => {
+      //                     e.stopPropagation();
+      //                     handleFollowToggle(freelancer.id);
+      //                   }}
+      //                   className={`px-4 py-2 rounded-lg font-medium transition ${
+      //                     freelancer.isFollowing
+      //                       ? `${isDarkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`
+      //                       : 'bg-cyan-600 text-white hover:bg-cyan-700'
+      //                   }`}
+      //                 >
+      //                   {freelancer.isFollowing ? '✓ Suivi' : 'Suivre'}
+      //                 </button>
+      //               </div>
+      //             </div>
+      //           ))}
                 
-                {filteredFollowing.length === 0 && (
-                  <div className="p-6 text-center">
-                    <Users className="mx-auto text-gray-400 mb-2" size={32} />
-                    <p className={theme.textMuted}>Aucun freelancer trouvé</p>
-                  </div>
-                )}
-              </div>
+      //           {filteredFollowing.length === 0 && (
+      //             <div className="p-6 text-center">
+      //               <Users className="mx-auto text-gray-400 mb-2" size={32} />
+      //               <p className={theme.textMuted}>Aucun freelancer trouvé</p>
+      //             </div>
+      //           )}
+      //         </div>
 
-              {filteredFollowing.length > 5 && (
-                <div className={`p-4 border-t ${theme.border} flex justify-center`}>
-                  <button
-                    onClick={() => setShowAllFollowing(!showAllFollowing)}
-                    className="flex items-center gap-2 text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300"
-                  >
-                    {showAllFollowing ? (
-                      <>
-                        <ChevronUp size={16} />
-                        Voir moins
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown size={16} />
-                        Voir tous ({filteredFollowing.length})
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        );
+      //         {filteredFollowing.length > 5 && (
+      //           <div className={`p-4 border-t ${theme.border} flex justify-center`}>
+      //             <button
+      //               onClick={() => setShowAllFollowing(!showAllFollowing)}
+      //               className="flex items-center gap-2 text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300"
+      //             >
+      //               {showAllFollowing ? (
+      //                 <>
+      //                   <ChevronUp size={16} />
+      //                   Voir moins
+      //                 </>
+      //               ) : (
+      //                 <>
+      //                   <ChevronDown size={16} />
+      //                   Voir tous ({filteredFollowing.length})
+      //                 </>
+      //               )}
+      //             </button>
+      //           </div>
+      //         )}
+      //       </div>
+      //     </div>
+      //   );
 
       case 'reviews':
         return (
@@ -908,103 +893,103 @@ const ProfileClient = () => {
           </div>
         );
 
-      case 'followers':
-        return (
-          <div className="space-y-6">
-            <div className={`${theme.cardBg} rounded-xl shadow-sm border ${theme.border} overflow-hidden`}>
-              <div className={`p-6 border-b ${theme.border}`}>
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <h3 className={`text-lg font-semibold ${theme.textMain}`}>
-                    Followers ({stats.followers})
-                  </h3>
-                  <div className="relative">
-                    <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme.textMuted}`} size={18} />
-                    <input
-                      type="text"
-                      placeholder="Rechercher un follower..."
-                      value={searchFollowers}
-                      onChange={(e) => setSearchFollowers(e.target.value)}
-                      className={`pl-10 pr-4 py-2 border ${theme.border} rounded-lg ${theme.inputBg} ${theme.textMain} w-full md:w-64`}
-                    />
-                  </div>
-                </div>
-              </div>
+      // case 'followers':
+      //   return (
+      //     <div className="space-y-6">
+      //       <div className={`${theme.cardBg} rounded-xl shadow-sm border ${theme.border} overflow-hidden`}>
+      //         <div className={`p-6 border-b ${theme.border}`}>
+      //           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      //             <h3 className={`text-lg font-semibold ${theme.textMain}`}>
+      //               Followers ({stats.followers})
+      //             </h3>
+      //             <div className="relative">
+      //               <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme.textMuted}`} size={18} />
+      //               <input
+      //                 type="text"
+      //                 placeholder="Rechercher un follower..."
+      //                 value={searchFollowers}
+      //                 onChange={(e) => setSearchFollowers(e.target.value)}
+      //                 className={`pl-10 pr-4 py-2 border ${theme.border} rounded-lg ${theme.inputBg} ${theme.textMain} w-full md:w-64`}
+      //               />
+      //             </div>
+      //           </div>
+      //         </div>
 
-              <div className={`divide-y ${isDarkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
-                {displayedFollowers
-                  .filter(follower => 
-                    follower.name.toLowerCase().includes(searchFollowers.toLowerCase()) ||
-                    follower.username.toLowerCase().includes(searchFollowers.toLowerCase())
-                  )
-                  .map((follower) => (
-                    <div key={follower.id} className={`p-6 ${theme.hoverBg} transition-colors`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white font-bold">
-                            {follower.avatar}
-                          </div>
-                          <div>
-                            <h4 className={`font-semibold ${theme.textMain}`}>
-                              {follower.name}
-                            </h4>
-                            <p className={`text-sm ${theme.textMuted}`}>{follower.username}</p>
-                          </div>
-                        </div>
+      //         <div className={`divide-y ${isDarkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+      //           {displayedFollowers
+      //             .filter(follower => 
+      //               follower.name.toLowerCase().includes(searchFollowers.toLowerCase()) ||
+      //               follower.username.toLowerCase().includes(searchFollowers.toLowerCase())
+      //             )
+      //             .map((follower) => (
+      //               <div key={follower.id} className={`p-6 ${theme.hoverBg} transition-colors`}>
+      //                 <div className="flex items-center justify-between">
+      //                   <div className="flex items-center gap-4">
+      //                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white font-bold">
+      //                       {follower.avatar}
+      //                     </div>
+      //                     <div>
+      //                       <h4 className={`font-semibold ${theme.textMain}`}>
+      //                         {follower.name}
+      //                       </h4>
+      //                       <p className={`text-sm ${theme.textMuted}`}>{follower.username}</p>
+      //                     </div>
+      //                   </div>
                         
-                        <button
-                          onClick={() => {
-                            const newIsFollowing = !follower.isFollowing;
-                            setFollowers(followers.map(f => 
-                              f.id === follower.id ? { ...f, isFollowing: newIsFollowing } : f
-                            ));
-                            setStats(prev => ({
-                              ...prev,
-                              followers: newIsFollowing ? prev.followers + 1 : prev.followers - 1
-                            }));
-                          }}
-                          className={`px-4 py-2 rounded-lg font-medium transition ${
-                            follower.isFollowing
-                              ? `${isDarkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`
-                              : 'bg-cyan-600 text-white hover:bg-cyan-700'
-                          }`}
-                        >
-                          {follower.isFollowing ? '✓ Suivi' : 'Suivre'}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+      //                   <button
+      //                     onClick={() => {
+      //                       const newIsFollowing = !follower.isFollowing;
+      //                       setFollowers(followers.map(f => 
+      //                         f.id === follower.id ? { ...f, isFollowing: newIsFollowing } : f
+      //                       ));
+      //                       setStats(prev => ({
+      //                         ...prev,
+      //                         followers: newIsFollowing ? prev.followers + 1 : prev.followers - 1
+      //                       }));
+      //                     }}
+      //                     className={`px-4 py-2 rounded-lg font-medium transition ${
+      //                       follower.isFollowing
+      //                         ? `${isDarkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`
+      //                         : 'bg-cyan-600 text-white hover:bg-cyan-700'
+      //                     }`}
+      //                   >
+      //                     {follower.isFollowing ? '✓ Suivi' : 'Suivre'}
+      //                   </button>
+      //                 </div>
+      //               </div>
+      //             ))}
                 
-                {followers.length === 0 && (
-                  <div className="p-6 text-center">
-                    <Users className="mx-auto text-gray-400 mb-2" size={32} />
-                    <p className={theme.textMuted}>Aucun follower</p>
-                  </div>
-                )}
-              </div>
+      //           {followers.length === 0 && (
+      //             <div className="p-6 text-center">
+      //               <Users className="mx-auto text-gray-400 mb-2" size={32} />
+      //               <p className={theme.textMuted}>Aucun follower</p>
+      //             </div>
+      //           )}
+      //         </div>
 
-              {followers.length > 5 && (
-                <div className={`p-4 border-t ${theme.border} flex justify-center`}>
-                  <button
-                    onClick={() => setShowAllFollowers(!showAllFollowers)}
-                    className="flex items-center gap-2 text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300"
-                  >
-                    {showAllFollowers ? (
-                      <>
-                        <ChevronUp size={16} />
-                        Voir moins
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown size={16} />
-                        Voir tous ({followers.length})
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        );
+      //         {followers.length > 5 && (
+      //           <div className={`p-4 border-t ${theme.border} flex justify-center`}>
+      //             <button
+      //               onClick={() => setShowAllFollowers(!showAllFollowers)}
+      //               className="flex items-center gap-2 text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300"
+      //             >
+      //               {showAllFollowers ? (
+      //                 <>
+      //                   <ChevronUp size={16} />
+      //                   Voir moins
+      //                 </>
+      //               ) : (
+      //                 <>
+      //                   <ChevronDown size={16} />
+      //                   Voir tous ({followers.length})
+      //                 </>
+      //               )}
+      //             </button>
+      //           </div>
+      //         )}
+      //       </div>
+      //     </div>
+      //   );
 
       default:
         return null;
@@ -1337,9 +1322,9 @@ const ProfileClient = () => {
           <div className="flex space-x-6 overflow-x-auto">
             {[
               { id: 'about', label: 'À propos' },
-              { id: 'following', label: 'Freelancers suivis' },
+              // { id: 'following', label: 'Freelancers suivis' },
               { id: 'reviews', label: 'Mes avis' },
-              { id: 'followers', label: 'Followers' }
+              // { id: 'followers', label: 'Followers' }
             ].map((tab) => (
               <button
                 key={tab.id}

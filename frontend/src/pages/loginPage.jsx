@@ -29,18 +29,6 @@ const USER_TYPES_CONTENT = {
     color: 'from-blue-600 to-indigo-700',
     icon: '💼'
   },
-  Support: {
-    title: 'Bienvenue, Support Agent !',
-    description: 'Accédez à votre interface d\'administration pour gérer les tickets clients et assurer la satisfaction de nos utilisateurs.',
-    benefits: [
-      { icon: '📞', title: 'Support Réactif', desc: 'Gérez efficacement les demandes clients' },
-      { icon: '📊', title: 'Dashboard Complet', desc: 'Accédez aux statistiques en temps réel' },
-      { icon: '⚡', title: 'Outils Performants', desc: 'Gestion simplifiée des opérations' },
-    ],
-    testimonial: '"Grâce à cette plateforme, je peux aider les clients rapidement et efficacement!" - Support Team',
-    color: 'from-purple-600 to-pink-600',
-    icon: '👨‍💼'
-  },
   Superviseur: {
     title: 'Bienvenue, Superviseur !',
     description: 'Connectez-vous à votre interface de supervision pour analyser les performances et prendre des décisions stratégiques.',
@@ -128,9 +116,6 @@ export default function LoginPage() {
             break;
           case 'freelancer':
             navigate('/freelancer/dashboard');
-            break;
-          case 'support':
-            navigate('/support/dashboard');
             break;
           case 'superviseur':
             navigate('/superviseur/dashboard');

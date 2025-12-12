@@ -5,11 +5,14 @@ import {
   Download, Upload, Check, Settings, Shield, UserPlus,
   MessageCircle, Share2, Bookmark, Heart, Trash2, Eye,
   Plus, ChevronRight, Image, Video, FileText, MoreVertical,
-  EyeOff, MessageSquare, Send
+  EyeOff, MessageSquare, Send, Loader
 } from 'lucide-react';
 import { FreelancerContext } from './freelancerContext';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { getMyServices } from '../../services/serviceService';
+import { getAcceptedOrders, getReceivedOrders } from '../../services/orderService';
+import { updateUserProfile } from '../../services/authService';
 
 const ProfileFreelancer = () => {
   const { 
@@ -36,31 +39,32 @@ const ProfileFreelancer = () => {
 
   const [activeTab, setActiveTab] = useState('about');
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState({
-    firstName: 'Marie',
-    lastName: 'Martin',
-    title: 'Spécialiste en Nettoyage Résidentiel & Bureau',
-    bio: 'Freelance passionnée par le nettoyage avec 5 ans d\'expérience. J\'aime rendre les espaces propres et accueillants. Qualité et satisfaction client sont mes priorités.',
-    location: 'Paris, France',
-    email: 'marie.martin@email.com',
-    phone: '+33 6 12 34 56 78',
-    website: 'www.cleanix-pro.fr',
-    joinDate: 'Mars 2023',
-    languages: ['Français', 'Anglais', 'Espagnol'],
+    firstName: user?.prenom || 'N/A',
+    lastName: user?.nom || 'N/A',
+    title: user?.specialty || 'Spécialiste en nettoyage',
+    bio: user?.bio || 'Freelance passionnée par le nettoyage',
+    location: user?.localisation || 'Non spécifiée',
+    email: user?.email || '',
+    phone: user?.telephone || '',
+    website: user?.website || '',
+    joinDate: user?.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long' }) : 'N/A',
+    languages: ['Français'],
     availability: 'Disponible maintenant',
     workingDays: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'],
-    workZones: ['Paris 1er', 'Paris 2e', 'Paris 3e', 'Paris 4e', 'Paris 5e', 'Paris 6e'],
+    workZones: [],
     responseTime: 'Moins de 2h'
   });
 
   const [stats, setStats] = useState({
-    completedJobs: 156,
-    repeatClients: 42,
-    responseRate: 98,
-    onTimeRate: 96,
-    satisfaction: 99,
-    followers: 245,
-    following: 128
+    completedJobs: 0,
+    repeatClients: 0,
+    responseRate: 0,
+    onTimeRate: 0,
+    satisfaction: rating || 0,
+    followers: 0,
+    following: 0
   });
 
   // États pour les images
@@ -92,93 +96,10 @@ const ProfileFreelancer = () => {
   const [searchFollowers, setSearchFollowers] = useState('');
 
   // États pour les services - ajout d'un champ visible
-  const [services, setServices] = useState([
-    {
-      id: 1,
-      title: 'Nettoyage Complet',
-      description: 'Nettoyage approfondi de toute la maison, incluant toutes les pièces et surfaces. Service complet et minutieux.',
-      category: 'Résidentiel',
-      status: 'active',
-      visible: true,
-      serviceZones: ['Paris 1er', 'Paris 2e', 'Paris 3e', 'Paris 4e', 'Paris 5e'],
-      workingDays: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'],
-      includedItems: ['Produits de nettoyage écologiques', 'Matériel professionnel', 'Désinfection des surfaces', 'Nettoyage des sols et vitres']
-    },
-    {
-      id: 2,
-      title: 'Nettoyage Bureau',
-      description: 'Nettoyage professionnel pour espaces de travail, adapté aux besoins spécifiques des entreprises.',
-      category: 'Commercial',
-      status: 'active',
-      visible: true,
-      serviceZones: ['Paris 6e', 'Paris 7e', 'Paris 8e', 'La Défense'],
-      workingDays: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'],
-      includedItems: ['Nettoyage des postes de travail', 'Sanitaires professionnels', 'Cuisine d\'entreprise', 'Désinfection']
-    },
-    {
-      id: 3,
-      title: 'Nettoyage Vitres',
-      description: 'Nettoyage intérieur et extérieur des vitres avec équipement professionnel. Résultats impeccables garantis.',
-      category: 'Résidentiel',
-      status: 'active',
-      visible: true,
-      serviceZones: ['Paris 1er à 20e', 'Banlieue proche'],
-      workingDays: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'],
-      includedItems: ['Équipement de sécurité', 'Produits anti-trace', 'Nettoyage intérieur et extérieur', 'Éponges professionnelles']
-    },
-  ]);
+  const [services, setServices] = useState([]);
 
   // États pour les avis - ajout des réponses
-  const [reviews, setReviews] = useState([
-    {
-      id: 1,
-      clientId: 1,
-      clientName: 'Jean Dupont',
-      clientUsername: '@jeandupont',
-      clientAvatar: 'JD',
-      rating: 5,
-      date: '15 Jan 2024',
-      comment: 'Marie est exceptionnelle ! Mon appartement n\'a jamais été aussi propre. Professionnalisme et attention aux détails. Je recommande à 100% !',
-      service: 'Nettoyage Complet',
-      likes: 12,
-      comments: 3,
-      userLiked: false,
-      response: null,
-      isResponding: false
-    },
-    {
-      id: 2,
-      clientId: 2,
-      clientName: 'Sophie Laurent',
-      clientUsername: '@sophiel',
-      clientAvatar: 'SL',
-      rating: 5,
-      date: '12 Jan 2024',
-      comment: 'Service impeccable. Marie est très minutieuse et respectueuse de l\'espace. Les vitres sont parfaitement propres !',
-      service: 'Nettoyage Vitres',
-      likes: 8,
-      comments: 1,
-      userLiked: true,
-      response: 'Merci Sophie pour votre retour ! Je suis ravie que le résultat vous plaise. À très bientôt !',
-      isResponding: false
-    },
-    {
-      id: 3,
-      clientId: 3,
-      clientName: 'Pierre Bernard',
-      clientUsername: '@pierre_b',
-      clientAvatar: 'PB',
-      rating: 4,
-      date: '10 Jan 2024',
-      comment: 'Très bon travail de nettoyage du bureau. Ponctuelle et efficace. Je ferai appel à ses services régulièrement.',
-      service: 'Nettoyage Bureau',
-      likes: 5,
-      comments: 0,
-      userLiked: false,
-      response: null,
-      isResponding: false
-    },
-  ]);
+  const [reviews, setReviews] = useState([]);
   
   const [searchReviews, setSearchReviews] = useState('');
   const [reviewFilter, setReviewFilter] = useState('all');
@@ -244,6 +165,51 @@ const ProfileFreelancer = () => {
   const modalFileInputRef = useRef(null);
   const modalBannerInputRef = useRef(null);
   const portfolioImageRefs = useRef({});
+
+  // Charger les données du profil depuis la base de données
+  useEffect(() => {
+    const loadProfileData = async () => {
+      try {
+        setLoading(true);
+        
+        // Charger les services
+        const servicesResponse = await getMyServices();
+        if (servicesResponse && Array.isArray(servicesResponse)) {
+          const formattedServices = servicesResponse.map(service => ({
+            id: service.id,
+            title: service.nom || 'Sans titre',
+            description: service.detailed_description || service.description || '',
+            category: service.category || 'Général',
+            status: service.est_actif ? 'active' : 'inactive',
+            visible: service.est_actif,
+            serviceZones: service.localisation ? [service.localisation] : [],
+            workingDays: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'],
+            includedItems: service.included_items ? JSON.parse(service.included_items) : []
+          }));
+          setServices(formattedServices);
+        }
+        
+        // Charger les commandes acceptées pour calculer les statistiques
+        const acceptedOrdersResponse = await getAcceptedOrders();
+        const receivedOrdersResponse = await getReceivedOrders();
+        
+        if (acceptedOrdersResponse && Array.isArray(acceptedOrdersResponse)) {
+          setStats(prev => ({
+            ...prev,
+            completedJobs: acceptedOrdersResponse.length,
+            satisfaction: rating || prev.satisfaction
+          }));
+        }
+        
+      } catch (error) {
+        console.error('Erreur lors du chargement des données du profil:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadProfileData();
+  }, [user, rating]);
 
   // SweetAlert configuration
   const showAlert = (title, text, icon = 'success') => {
@@ -390,24 +356,54 @@ const ProfileFreelancer = () => {
     }
   };
 
-  // Sauvegarder le profil
+  // Sauvegarder le profil avec le backend
   const handleSaveProfile = async () => {
-    const result = await Swal.fire({
-      title: 'Enregistrer les modifications ?',
-      text: 'Voulez-vous sauvegarder les modifications de votre profil ?',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#10b981',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Enregistrer',
-      cancelButtonText: 'Annuler',
-      background: isDarkMode ? '#1f2937' : '#ffffff',
-      color: isDarkMode ? '#ffffff' : '#1f2937',
-    });
+    try {
+      const result = await Swal.fire({
+        title: 'Enregistrer les modifications ?',
+        text: 'Voulez-vous sauvegarder les modifications de votre profil ?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Enregistrer',
+        cancelButtonText: 'Annuler',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#1f2937',
+      });
 
-    if (result.isConfirmed) {
-      setIsEditing(false);
-      showAlert('Profil mis à jour', 'Votre profil a été mis à jour avec succès !');
+      if (result.isConfirmed) {
+        // Préparer les données à envoyer au backend
+        const updateData = {
+          prenom: profileData.firstName || user?.prenom || '',
+          nom: profileData.lastName || user?.nom || '',
+          bio: profileData.bio || ''
+        };
+        
+        try {
+          // Appeler l'API pour mettre à jour le profil
+          const response = await updateUserProfile(updateData);
+          
+          // Mettre à jour le user dans le contexte
+          if (response.data || response.user) {
+            const updatedUser = response.data || response.user;
+            // Mettre à jour localStorage
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            // Recharger la page pour rafraîchir les données
+            window.location.reload();
+          }
+          
+          setIsEditing(false);
+          showAlert('Profil mis à jour', 'Votre profil a été mis à jour avec succès !');
+        } catch (apiError) {
+          console.error('Erreur API:', apiError);
+          setIsEditing(false);
+          showAlert('Profil mis à jour localement', 'Votre profil a été mis à jour. Les données seront synchronisées avec le serveur.', 'info');
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      showAlert('Erreur', 'Une erreur est survenue lors de la sauvegarde.', 'error');
     }
   };
 
@@ -428,6 +424,27 @@ const ProfileFreelancer = () => {
     }
   };
 
+  // ============================================
+  // FONCTIONS DES FOLLOWERS - COMMENTÉES
+  // ============================================
+  // Les fonctions suivantes sont commentées car la gestion des followers
+  // sera implémentée ultérieurement avec le backend
+  //
+  // - handleFollowToggle: Permet de suivre/ne plus suivre un utilisateur
+  // - filteredFollowers: Filtre les followers selon la recherche
+  //
+  // TODO: Créer les endpoints API pour:
+  //   - GET /api/followers/:userId
+  //   - POST /api/follow/:userId
+  //   - DELETE /api/unfollow/:userId
+  // ============================================
+
+  // Navigation vers le profil d'un utilisateur
+  const navigateToProfile = (userId) => {
+    navigate(`/profile/${userId}`);
+  };
+
+  /*
   // Gestion des followers
   const filteredFollowers = followers.filter(follower => 
     follower.name.toLowerCase().includes(searchFollowers.toLowerCase()) ||
@@ -468,6 +485,7 @@ const ProfileFreelancer = () => {
   const navigateToProfile = (userId) => {
     navigate(`/profile/${userId}`);
   };
+  */
 
   // Gestion des avis et réponses
   const handleReviewLike = (reviewId) => {
@@ -704,55 +722,68 @@ const ProfileFreelancer = () => {
   };
 
   // Composant pour l'aperçu du service
-  const ServicePreview = ({ service }) => (
-    <div className={`${theme.cardBg} rounded-xl shadow-lg border ${theme.border} p-6`}>
-      <h3 className={`text-lg font-bold ${theme.textMain} mb-4`}>Aperçu du service</h3>
-      <div className="space-y-6">
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h4 className={`text-lg font-semibold ${theme.textMain}`}>{service.title || "Nom du service"}</h4>
-            <span className={`px-3 py-1 text-xs rounded-full ${isDarkMode ? 'bg-orange-900/50 text-orange-300' : 'bg-orange-100 text-orange-800'}`}>
-              {service.status === 'active' ? 'Actif' : 'Inactif'}
-            </span>
+  const ServicePreview = ({ service }) => {
+    // Si aucun service n'est passé ou les services ne sont pas chargés, afficher un message
+    if (!service) {
+      return (
+        <div className={`${theme.cardBg} rounded-xl shadow-lg border ${theme.border} p-6`}>
+          <h3 className={`text-lg font-bold ${theme.textMain} mb-4`}>Aperçu du service</h3>
+          <div className={`${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'} rounded-lg p-6 text-center`}>
+            <p className={theme.textMuted}>Aucun service disponible pour l'aperçu</p>
           </div>
-          <span className={`px-2 py-1 text-xs rounded ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-slate-200 text-slate-700'}`}>
-            {service.category || "Catégorie"}
-          </span>
-          <p className={`mt-3 text-sm ${theme.textSecondary}`}>{service.description || "Description courte..."}</p>
         </div>
-
-        <div>
-          <p className={`text-sm font-medium ${theme.textMain} mb-2 flex items-center gap-2`}>
-            <MapPin size={14} /> Zones desservies
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {service.serviceZones && service.serviceZones.length > 0 ? (
-              service.serviceZones.slice(0, 3).map((z, i) => (
-                <span key={i} className="px-2 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded">
-                  {z}
-                </span>
-              ))
-            ) : (
-              <span className="text-xs text-gray-500">Aucune zone sélectionnée</span>
-            )}
-            {service.serviceZones && service.serviceZones.length > 3 && (
-              <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded">
-                +{service.serviceZones.length - 3} autres
+      );
+    }
+    
+    return (
+      <div className={`${theme.cardBg} rounded-xl shadow-lg border ${theme.border} p-6`}>
+        <h3 className={`text-lg font-bold ${theme.textMain} mb-4`}>Aperçu du service</h3>
+        <div className="space-y-6">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className={`text-lg font-semibold ${theme.textMain}`}>{service.title || "Nom du service"}</h4>
+              <span className={`px-3 py-1 text-xs rounded-full ${isDarkMode ? 'bg-orange-900/50 text-orange-300' : 'bg-orange-100 text-orange-800'}`}>
+                {service.status === 'active' ? 'Actif' : 'Inactif'}
               </span>
-            )}
+            </div>
+            <span className={`px-2 py-1 text-xs rounded ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-slate-200 text-slate-700'}`}>
+              {service.category || "Catégorie"}
+            </span>
+            <p className={`mt-3 text-sm ${theme.textSecondary}`}>{service.description || "Description courte..."}</p>
           </div>
-        </div>
 
-        <div>
-          <p className={`text-sm font-medium ${theme.textMain} mb-2 flex items-center gap-2`}>
-            <Calendar size={14} /> Jours de travail
-          </p>
-          <div className="flex flex-wrap gap-1">
-            {service.workingDays && service.workingDays.map((day) => (
-              <span key={day} className={`px-2 py-1 text-xs rounded ${
-                isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800'
-              }`}>
-                {day}
+          <div>
+            <p className={`text-sm font-medium ${theme.textMain} mb-2 flex items-center gap-2`}>
+              <MapPin size={14} /> Zones desservies
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {service.serviceZones && service.serviceZones.length > 0 ? (
+                service.serviceZones.slice(0, 3).map((z, i) => (
+                  <span key={i} className="px-2 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded">
+                    {z}
+                  </span>
+                ))
+              ) : (
+                <span className="text-xs text-gray-500">Aucune zone sélectionnée</span>
+              )}
+              {service.serviceZones && service.serviceZones.length > 3 && (
+                <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded">
+                  +{service.serviceZones.length - 3} autres
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <p className={`text-sm font-medium ${theme.textMain} mb-2 flex items-center gap-2`}>
+              <Calendar size={14} /> Jours de travail
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {service.workingDays && service.workingDays.map((day) => (
+                <span key={day} className={`px-2 py-1 text-xs rounded ${
+                  isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800'
+                }`}>
+                  {day}
               </span>
             ))}
           </div>
@@ -776,9 +807,10 @@ const ProfileFreelancer = () => {
             </ul>
           </div>
         )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Rendu des étoiles
   const renderStars = (rating) => {
@@ -827,35 +859,35 @@ const ProfileFreelancer = () => {
                   </button>
                 </div>
                 
-                <p className={`${theme.textSecondary} mb-6`}>{profileData.bio}</p>
+                <p className={`${theme.textSecondary} mb-6`}>{profileData.bio || user?.bio || 'Aucune description fournie'}</p>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-center gap-3">
                     <Briefcase size={18} className={theme.textMuted} />
                     <div>
                       <p className={`text-sm ${theme.textMuted}`}>Spécialité</p>
-                      <p className={`font-medium ${theme.textMain}`}>Nettoyage Résidentiel</p>
+                      <p className={`font-medium ${theme.textMain}`}>{user?.specialty || profileData.specialty || 'Spécialiste en nettoyage'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <Calendar size={18} className={theme.textMuted} />
                     <div>
-                      <p className={`text-sm ${theme.textMuted}`}>Expérience</p>
-                      <p className={`font-medium ${theme.textMain}`}>5 ans</p>
+                      <p className={`text-sm ${theme.textMuted}`}>Membre depuis</p>
+                      <p className={`font-medium ${theme.textMain}`}>{profileData.joinDate}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <Award size={18} className={theme.textMuted} />
                     <div>
-                      <p className={`text-sm ${theme.textMuted}`}>Certifications</p>
-                      <p className={`font-medium ${theme.textMain}`}>HACCP, Éco-certifié</p>
+                      <p className={`text-sm ${theme.textMuted}`}>Services</p>
+                      <p className={`font-medium ${theme.textMain}`}>{services.length} service(s)</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <Globe size={18} className={theme.textMuted} />
                     <div>
-                      <p className={`text-sm ${theme.textMuted}`}>Langues</p>
-                      <p className={`font-medium ${theme.textMain}`}>{profileData.languages.join(', ')}</p>
+                      <p className={`text-sm ${theme.textMuted}`}>Localisation</p>
+                      <p className={`font-medium ${theme.textMain}`}>{user?.localisation || profileData.location || 'Non spécifiée'}</p>
                     </div>
                   </div>
                 </div>
@@ -941,11 +973,22 @@ const ProfileFreelancer = () => {
           </div>
         );
 
-      case 'followers':
-        return (
-          <div className="space-y-6">
+      // case 'followers':
+      //   return (
+      //     <div className="space-y-6">
+          
+            
+      //       <div className={`${theme.cardBg} rounded-xl p-6 border ${theme.border} text-center`}>
+      //         <Users className={`mx-auto ${theme.textMuted} mb-4`} size={48} />
+      //         <h3 className={`text-lg font-semibold ${theme.textMain} mb-2`}>Followers</h3>
+      //         <p className={theme.textSecondary}>
+      //           La gestion des followers sera disponible très prochainement. 
+      //         </p>
+      //       </div>
+
+            {/* 
             {/* Statistiques followers */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className={`${theme.cardBg} rounded-xl p-6 border ${theme.border}`}>
                 <div className="flex items-center gap-4">
                   <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
@@ -982,7 +1025,7 @@ const ProfileFreelancer = () => {
             </div>
 
             {/* Liste des followers */}
-            <div className={`${theme.cardBg} rounded-xl shadow-sm border ${theme.border} overflow-hidden`}>
+            {/* <div className={`${theme.cardBg} rounded-xl shadow-sm border ${theme.border} overflow-hidden`}>
               <div className={`p-6 border-b ${theme.border}`}>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <h3 className={`text-lg font-semibold ${theme.textMain}`}>Liste des Followers</h3>
@@ -1044,9 +1087,9 @@ const ProfileFreelancer = () => {
                   </div>
                 )}
               </div>
-            </div>
-          </div>
-        );
+            </div> */}
+        //   </div>
+        // );
 
       case 'reviews':
         return (
@@ -1499,17 +1542,31 @@ const ProfileFreelancer = () => {
           </div>
         );
 
-      case 'services':
-        return (
-          <div className="space-y-6">
+      // case 'services':
+      //   return (
+      //     <div className="space-y-6">
+            
+            
+            {/* <div className={`${theme.cardBg} rounded-xl p-6 border ${theme.border} text-center`}>
+              <Briefcase className={`mx-auto ${theme.textMuted} mb-4`} size={48} />
+              <h3 className={`text-lg font-semibold ${theme.textMain} mb-2`}>Services</h3>
+              <p className={theme.textSecondary}>
+                Les services sont gérés dans la section "Services" de la barre latérale.
+              </p>
+              <p className={`text-sm ${theme.textMuted} mt-2`}>
+                Cliquez sur "Services" dans le menu pour créer, modifier ou gérer vos services.
+              </p>
+            </div> */}
+
+            {/* 
             {/* Liste des services avec aperçu */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Liste des services */}
-              <div className="lg:col-span-2 space-y-6">
+            {/* <div className="lg:col-span-2 space-y-6">
                 {services.map((service) => (
                   <div key={service.id} className={`${theme.cardBg} rounded-xl shadow-sm border ${service.visible ? theme.border : 'border-gray-200 dark:border-gray-800 opacity-70'} overflow-hidden hover:shadow-md transition-shadow`}>
                     {/* En-tête du service */}
-                    <div className="p-6">
+                    {/* <div className="p-6">
                       <div className="flex justify-between items-start mb-4">
                         <div>
                           <h4 className={`font-semibold ${theme.textMain} mb-2`}>{service.title}</h4>
@@ -1535,7 +1592,7 @@ const ProfileFreelancer = () => {
                       
                       <div className="space-y-3">
                         {/* Zones de service */}
-                        <div>
+                        {/* <div>
                           <p className={`text-xs font-medium ${theme.textMuted} mb-1`}>Zones de service</p>
                           <div className="flex flex-wrap gap-1">
                             {service.serviceZones.slice(0, 3).map((zone, idx) => (
@@ -1552,7 +1609,7 @@ const ProfileFreelancer = () => {
                         </div>
                         
                         {/* Jours de travail */}
-                        <div>
+                        {/* <div>
                           <p className={`text-xs font-medium ${theme.textMuted} mb-1`}>Jours de travail</p>
                           <div className="flex flex-wrap gap-1">
                             {service.workingDays.map((day, idx) => (
@@ -1564,7 +1621,7 @@ const ProfileFreelancer = () => {
                         </div>
                         
                         {/* Inclus dans le service */}
-                        <div>
+                        {/* <div>
                           <p className={`text-xs font-medium ${theme.textMuted} mb-1`}>Inclus</p>
                           <ul className="text-xs space-y-1 text-gray-500 dark:text-gray-400">
                             {service.includedItems.slice(0, 2).map((item, idx) => (
@@ -1584,7 +1641,7 @@ const ProfileFreelancer = () => {
                     </div>
                     
                     {/* Footer avec statut */}
-                    <div className={`px-6 py-4 border-t ${theme.border} ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
+                    {/* <div className={`px-6 py-4 border-t ${theme.border} ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full ${service.visible ? 'bg-green-500' : 'bg-gray-400'}`}></div>
@@ -1613,7 +1670,7 @@ const ProfileFreelancer = () => {
               </div>
 
               {/* Aperçu du service sélectionné */}
-              <div className="space-y-6">
+              {/* <div className="space-y-6">
                 <ServicePreview service={services[0]} />
                 <div className={`${theme.cardBg} rounded-xl shadow-sm border ${theme.border} p-6`}>
                   <h4 className={`font-semibold ${theme.textMain} mb-4`}>Statut des services</h4>
@@ -1632,9 +1689,9 @@ const ProfileFreelancer = () => {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        );
+            </div> */}
+        //   </div>
+        // );
 
       default:
         return null;
@@ -1995,7 +2052,7 @@ const ProfileFreelancer = () => {
                   <label className={`text-sm ${theme.textMuted}`}>Prénom</label>
                   <input
                     type="text"
-                    value={profileData.firstName}
+                    value={profileData.firstName || user?.prenom || ''}
                     onChange={(e) => setProfileData({...profileData, firstName: e.target.value})}
                     className={`w-full px-3 py-2 border ${theme.border} rounded-lg ${theme.inputBg} ${theme.textMain}`}
                   />
@@ -2004,7 +2061,7 @@ const ProfileFreelancer = () => {
                   <label className={`text-sm ${theme.textMuted}`}>Nom</label>
                   <input
                     type="text"
-                    value={profileData.lastName}
+                    value={profileData.lastName || user?.nom || ''}
                     onChange={(e) => setProfileData({...profileData, lastName: e.target.value})}
                     className={`w-full px-3 py-2 border ${theme.border} rounded-lg ${theme.inputBg} ${theme.textMain}`}
                   />
@@ -2012,21 +2069,55 @@ const ProfileFreelancer = () => {
               </div>
               
               <div>
-                <label className={`text-sm ${theme.textMuted}`}>Titre</label>
+                <label className={`text-sm ${theme.textMuted}`}>Email</label>
+                <input
+                  type="email"
+                  value={user?.email || ''}
+                  disabled
+                  className={`w-full px-3 py-2 border ${theme.border} rounded-lg ${theme.inputBg} ${theme.textMain} opacity-50 cursor-not-allowed`}
+                />
+                <p className={`text-xs ${theme.textMuted} mt-1`}>L'email ne peut pas être modifié</p>
+              </div>
+              
+              <div>
+                <label className={`text-sm ${theme.textMuted}`}>Téléphone</label>
+                <input
+                  type="tel"
+                  value={user?.telephone || ''}
+                  disabled
+                  className={`w-full px-3 py-2 border ${theme.border} rounded-lg ${theme.inputBg} ${theme.textMain} opacity-50 cursor-not-allowed`}
+                />
+                <p className={`text-xs ${theme.textMuted} mt-1`}>Contactez le support pour modifier le téléphone</p>
+              </div>
+              
+              <div>
+                <label className={`text-sm ${theme.textMuted}`}>Spécialité</label>
                 <input
                   type="text"
-                  value={profileData.title}
-                  onChange={(e) => setProfileData({...profileData, title: e.target.value})}
-                  className={`w-full px-3 py-2 border ${theme.border} rounded-lg ${theme.inputBg} ${theme.textMain}`}
+                  value={user?.specialty || ''}
+                  disabled
+                  className={`w-full px-3 py-2 border ${theme.border} rounded-lg ${theme.inputBg} ${theme.textMain} opacity-50 cursor-not-allowed`}
+                />
+                <p className={`text-xs ${theme.textMuted} mt-1`}>Modifiez votre spécialité dans les paramètres</p>
+              </div>
+              
+              <div>
+                <label className={`text-sm ${theme.textMuted}`}>Localisation</label>
+                <input
+                  type="text"
+                  value={user?.localisation || ''}
+                  disabled
+                  className={`w-full px-3 py-2 border ${theme.border} rounded-lg ${theme.inputBg} ${theme.textMain} opacity-50 cursor-not-allowed`}
                 />
               </div>
               
               <div>
                 <label className={`text-sm ${theme.textMuted}`}>Bio</label>
                 <textarea
-                  value={profileData.bio}
+                  value={profileData.bio || user?.bio || ''}
                   onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
                   rows={4}
+                  placeholder="Décrivez-vous en quelques mots..."
                   className={`w-full px-3 py-2 border ${theme.border} rounded-lg ${theme.inputBg} ${theme.textMain} resize-none`}
                 />
               </div>
@@ -2125,7 +2216,16 @@ const ProfileFreelancer = () => {
   }
 
   return (
-    <div className={`max-w-7xl mx-auto pb-12 ${theme.bgMain}`}>
+    <>
+      {loading ? (
+        <div className={`${theme.bgMain} min-h-screen flex items-center justify-center`}>
+          <div className="text-center">
+            <Loader className={`animate-spin mx-auto ${theme.textMain} mb-4`} size={40} />
+            <p className={`${theme.textMain}`}>Chargement de votre profil...</p>
+          </div>
+        </div>
+      ) : (
+        <div className={`max-w-7xl mx-auto pb-12 ${theme.bgMain}`}>
       {/* Inputs fichiers cachés pour la bannière et photo de profil principales */}
       <input
         type="file"
@@ -2258,10 +2358,10 @@ const ProfileFreelancer = () => {
           <div className="flex space-x-6 overflow-x-auto">
             {[
               { id: 'about', label: 'À propos' },
-              { id: 'followers', label: 'Followers' },
+              // { id: 'followers', label: 'Followers' },
               { id: 'reviews', label: 'Avis' },
               { id: 'portfolio', label: 'Portfolio' },
-              { id: 'services', label: 'Services' }
+              // { id: 'services', label: 'Services' }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -2293,7 +2393,9 @@ const ProfileFreelancer = () => {
           </div>
         </div>
       </div>
-    </div>
+        </div>
+      )}
+    </>
   );
 };
 

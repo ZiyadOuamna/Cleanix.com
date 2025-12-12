@@ -1,21 +1,44 @@
 // src/pages/client/clientContext.js
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../../services/notificationService';
 
 const ClientContext = createContext();
 
 export const ClientProvider = ({ children }) => {
   const { isDarkMode, setIsDarkMode } = useTheme();
   
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: 'Votre service de nettoyage est confirmé', date: 'Il y a 5 min', read: false },
-    { id: 2, message: 'Freelancer a accepté votre demande', date: 'Il y a 1 heure', read: true },
-    { id: 3, message: 'Service terminé avec succès', date: 'Il y a 2 heures', read: true }
-  ]);
+  const [notifications, setNotifications] = useState([]);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
   
   const [isMenuOpen, setIsMenuOpen] = useState(true);
   const [isOnline, setIsOnline] = useState(true);
   const [isAccountActive, setIsAccountActive] = useState(false);
+
+  // Charger les notifications depuis l'API
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        setIsLoadingNotifications(true);
+        const response = await getNotifications();
+        // La réponse du backend est: { data: [...], current_page, last_page, ... }
+        const notificationsData = (response && response.data) ? response.data : [];
+        setNotifications(notificationsData);
+      } catch (error) {
+        console.error('Erreur lors du chargement des notifications:', error);
+        setNotifications([]);
+      } finally {
+        setIsLoadingNotifications(false);
+      }
+    };
+
+    loadNotifications();
+    
+    // Recharger les notifications chaque 30 secondes
+    const interval = setInterval(loadNotifications, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Charger les données du client depuis localStorage
   useEffect(() => {
@@ -55,14 +78,24 @@ export const ClientProvider = ({ children }) => {
   const pendingOrders = 1;
   const rating = 4.8;
 
-  const markAsRead = (id) => {
-    setNotifications(notifications.map(notif => 
-      notif.id === id ? { ...notif, read: true } : notif
-    ));
+  const markAsRead = async (id) => {
+    try {
+      await markNotificationAsRead(id);
+      setNotifications(notifications.map(notif => 
+        notif.id === id ? { ...notif, read: true } : notif
+      ));
+    } catch (error) {
+      console.error('Erreur lors du marquage de la notification:', error);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(notif => ({ ...notif, read: true })));
+  const markAllAsRead = async () => {
+    try {
+      await markAllNotificationsAsRead();
+      setNotifications(notifications.map(notif => ({ ...notif, read: true })));
+    } catch (error) {
+      console.error('Erreur lors du marquage de toutes les notifications:', error);
+    }
   };
 
   const value = {

@@ -1,6 +1,7 @@
-import React, { useContext,useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { SuperviseurContext } from './superviseurContext';
-import { User, Lock, Globe, Save, XCircle } from 'lucide-react';
+import { User, Lock, Globe, Save, XCircle, Loader } from 'lucide-react';
+import superviseurService from '../../services/superviseurService';
 
 const COLORS = {
     primary: '#2d2c86',
@@ -8,10 +9,11 @@ const COLORS = {
 
 export default function SettingsSuperviseurPage() {
     const { isDarkMode } = useContext(SuperviseurContext);
+    const [loading, setLoading] = useState(true);
 
     const [settingsForm, setSettingsForm] = useState({
-        fullName: 'Superviseur Admin',
-        email: 'admin@cleanix.ma',
+        fullName: '',
+        email: '',
         newPassword: '',
         confirmPassword: '',
         language: 'fr'
@@ -19,6 +21,31 @@ export default function SettingsSuperviseurPage() {
 
     const [pwdStrength, setPwdStrength] = useState(0);
     const [message, setMessage] = useState('');
+
+    // Charger les données du superviseur connecté
+    useEffect(() => {
+        loadSuperviseurData();
+    }, []);
+
+    const loadSuperviseurData = async () => {
+        try {
+            setLoading(true);
+            const response = await superviseurService.getCurrentUser();
+            if (response.success && response.data) {
+                const user = response.data;
+                setSettingsForm(prev => ({
+                    ...prev,
+                    fullName: `${user.prenom || ''} ${user.nom || ''}`.trim() || 'Superviseur',
+                    email: user.email || ''
+                }));
+            }
+        } catch (error) {
+            console.error('Erreur lors du chargement des données:', error);
+            setMessage('Erreur lors du chargement des données');
+        } finally {
+            setLoading(false);
+        }
+    }
 
     // --- Helpers ---
     const calculateStrength = (pwd) => {
@@ -54,21 +81,43 @@ export default function SettingsSuperviseurPage() {
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setMessage('');
         if (settingsForm.newPassword && settingsForm.newPassword !== settingsForm.confirmPassword) {
-            alert("Les mots de passe ne correspondent pas.");
+            setMessage('❌ Les mots de passe ne correspondent pas.');
             return;
         }
-        setMessage("✅ Modifications enregistrées avec succès !");
-        setTimeout(() => setMessage(''), 3000);
+        
+        try {
+            setLoading(true);
+            // Pour l'instant, on affiche un message de succès
+            // Un vrai appel API pour update viendrait ici
+            setMessage("✅ Modifications enregistrées avec succès !");
+            setTimeout(() => setMessage(''), 3000);
+        } catch (error) {
+            console.error('Erreur lors de la sauvegarde:', error);
+            setMessage('❌ Erreur lors de la sauvegarde');
+        } finally {
+            setLoading(false);
+        }
     };
 
     // Classes dynamiques pour le mode sombre/clair
     const cardClass = `rounded-2xl shadow-sm border p-6 h-full transition-colors ${isDarkMode ? 'bg-gray-800 border-gray-500' : 'bg-white border-gray-300'}`;
     const labelClass = `block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`;
     const inputClass = `w-full px-4 py-2.5 rounded-lg border focus:ring-2 outline-none transition text-sm ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white focus:ring-indigo-500' : 'bg-white border-gray-200 text-gray-900 focus:ring-blue-100 focus:border-blue-400'}`;
+
+    if (loading && !settingsForm.email) {
+        return (
+            <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-[#f0fafe]'}`}>
+                <div className="flex flex-col items-center gap-4">
+                    <Loader className="animate-spin" size={32} />
+                    <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>Chargement des données...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-7xl mx-auto h-full flex flex-col">

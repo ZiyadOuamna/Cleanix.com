@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { SuperviseurContext } from '../superviseurContext';
 import { useOutletContext } from 'react-router-dom';
+import Swal from 'sweetalert2';
+import superviseurService from '../../../services/superviseurService';
 import { 
     CreditCard,
     Briefcase, Star, ShieldCheck, DollarSign, Users, TrendingUp, 
     Search, ArrowLeft, MapPin, Smartphone, Mail, Calendar, CheckCircle, 
-    AlertTriangle, FileText, Award, Clock, Wallet, Power, Building, Activity, UserCheck, XCircle, BarChart2,
-    Hash, Home, Key, Scissors, Wrench
+    AlertTriangle, FileText, Clock, Wallet, Power, Building, Activity, UserCheck, XCircle, BarChart2,
+    Hash, Home, Scissors, Wrench
 } from 'lucide-react';
 import { 
     LabelList,
@@ -14,22 +16,13 @@ import {
     PieChart, Pie, Cell, BarChart, Bar, AreaChart, Area
 } from 'recharts';
 
-// --- 1. DONNÉES FICTIVES (MOCK DATA) ---
-
-const GLOBAL_STATS = {
-    totalFreelancers: 342,
-    enLigne: 85, 
-    enAttenteValidation: 12,
-    revenuGlobal: 450000
-};
+// --- 1. DONNÉES GÉNÉRIQUES ---
 
 // Types de services basés sur votre diagramme de classes
 const TYPES_SERVICES = {
     NETTOYAGE_RESIDENTIEL: 'Nettoyage Résidentiel',
     NETTOYAGE_SUPERFICIE: 'Nettoyage de Surface',
-    NETTOYAGE_UNITAIRE: 'Nettoyage Unitaire',
-    GESTION_CLES: 'Gestion de Clés',
-    JARDINAGE: 'Jardinage'
+    NETTOYAGE_UNITAIRE: 'Nettoyage Unitaire'
 };
 
 // Fonction pour générer les services basés sur la spécialité
@@ -53,22 +46,6 @@ const getServicesBySpecialite = (specialite) => {
                 description: 'Nettoyage par unité',
                 tarifBase: 50,
                 options: ['Par pièce', 'Par surface']
-            }
-        ],
-        'Gestion Clés': [
-            {
-                type: TYPES_SERVICES.GESTION_CLES,
-                description: 'Gestion et remise de clés',
-                tarifBase: 30,
-                options: ['Garde de clés', 'Remise sécurisée', 'Dépannage serrurerie']
-            }
-        ],
-        'Jardinage': [
-            {
-                type: TYPES_SERVICES.JARDINAGE,
-                description: 'Entretien d\'espaces verts',
-                tarifBase: 100,
-                options: ['Tonte', 'Taille', 'Plantation']
             }
         ]
     };
@@ -254,7 +231,7 @@ const CustomTooltip = ({ active, payload, label, unit, isDarkMode }) => {
                 <p className="text-[10px] uppercase font-bold opacity-60 mb-1">{label}</p>
                 {payload.map((entry, index) => (
                     <p key={index} className="text-sm font-bold" style={{ color: entry.color }}>
-                        {entry.name}: {Number(entry.value).toLocaleString()} {unit}
+                        {entry.name}: {(Number(entry.value) || 0).toLocaleString()} {unit}
                     </p>
                 ))}
             </div>
@@ -275,7 +252,7 @@ const ChartCard = ({ title, data, type = 'area', unit, isDarkMode, dataKey1 = 'v
                 <div>
                     <h3 className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{title}</h3>
                     <span className={`text-2xl font-bold mt-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {currentView.total.toLocaleString()} <span className="text-xs font-normal text-gray-500">{unit}</span>
+                        {(currentView.total || 0).toLocaleString()} <span className="text-xs font-normal text-gray-500">{unit}</span>
                     </span>
                 </div>
                 <div className={`flex p-0.5 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
@@ -543,9 +520,7 @@ const ServiceIcon = ({ serviceType }) => {
     const icons = {
         [TYPES_SERVICES.NETTOYAGE_RESIDENTIEL]: <Home size={16} className="text-blue-600" />,
         [TYPES_SERVICES.NETTOYAGE_SUPERFICIE]: <Wrench size={16} className="text-green-600" />,
-        [TYPES_SERVICES.NETTOYAGE_UNITAIRE]: <Scissors size={16} className="text-purple-600" />,
-        [TYPES_SERVICES.GESTION_CLES]: <Key size={16} className="text-orange-600" />,
-        [TYPES_SERVICES.JARDINAGE]: <Award size={16} className="text-green-600" />
+        [TYPES_SERVICES.NETTOYAGE_UNITAIRE]: <Scissors size={16} className="text-purple-600" />
     };
     
     return icons[serviceType] || <Briefcase size={16} className="text-gray-600" />;
@@ -977,7 +952,7 @@ const FreelancerList = ({ freelancers, onSelect, isDarkMode }) => {
                                         {f.noteMoyenne} <Star size={12} fill="currentColor"/>
                                     </div>
                                 </td>
-                                <td className={`p-4 font-mono text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{f.solde.toLocaleString()} DH</td>
+                                <td className={`p-4 font-mono text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{(f.solde || 0).toLocaleString()} DH</td>
                                 <td className="p-4">
                                     <span className={`text-[10px] font-bold px-2 py-1 rounded-full 
                                         ${f.statut === 'Disponible' ? 'bg-green-100 text-green-700' : 
@@ -999,17 +974,92 @@ const FreelancerList = ({ freelancers, onSelect, isDarkMode }) => {
 
 // --- 5. DASHBOARD PRINCIPAL ---
 export default function DashboardFreelancer() {
-    const isDarkMode = useOutletContext(SuperviseurContext);   
+    const { isDarkMode } = useContext(SuperviseurContext);   
     const [selectedFreelancer, setSelectedFreelancer] = useState(null);
+    const [freelancers, setFreelancers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
     const [globalMetrics, setGlobalMetrics] = useState(null);
+    const [globalStats, setGlobalStats] = useState({
+        totalFreelancers: 0,
+        enLigne: 0,
+        enAttenteValidation: 0,
+        revenuGlobal: 0
+    });
 
     useEffect(() => {
-        setGlobalMetrics({
-            revenu: generateMultiPeriodData(125000),
-            activite: generateMultiPeriodData(85),
-            inscriptions: generateMultiPeriodData(10)
-        });
-    }, []);
+        loadFreelancers();
+        loadGlobalStats();
+    }, [currentPage, searchTerm]);
+
+    const loadFreelancers = async () => {
+        try {
+            setLoading(true);
+            const response = await superviseurService.getFreelancers(currentPage, searchTerm, 'all');
+            if (response.success) {
+                setFreelancers(response.data.data || []);
+                setTotalPages(response.data.last_page || 1);
+            } else {
+                Swal.fire('Erreur', response.message || 'Erreur lors du chargement', 'error');
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+            Swal.fire('Erreur', error.message || 'Erreur lors du chargement', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadGlobalStats = async () => {
+        try {
+            const usersResponse = await superviseurService.getUsersStats();
+            const transResponse = await superviseurService.getTransactionStats();
+            
+            if (usersResponse.success && transResponse.success) {
+                const userData = usersResponse.data;
+                const transData = transResponse.data;
+                
+                setGlobalStats({
+                    totalFreelancers: userData.total_freelancers || 0,
+                    enLigne: userData.online_freelancers || 0,
+                    enAttenteValidation: userData.pending_validation || 0,
+                    revenuGlobal: transData.total_revenue || 0
+                });
+
+                setGlobalMetrics({
+                    revenu: generateMultiPeriodData(transData.total_revenue || 125000),
+                    activite: generateMultiPeriodData(userData.online_freelancers || 85),
+                    inscriptions: generateMultiPeriodData(userData.new_freelancers_this_month || 10)
+                });
+            }
+        } catch (error) {
+            console.error('Erreur stats:', error);
+        }
+    };
+
+    const generateMultiPeriodData = (baseValue) => {
+        const createData = (count, labels, variance) => 
+            Array.from({ length: count }, (_, i) => {
+                const val = Math.max(0, Math.floor(baseValue + (Math.random() * variance) - (variance / 2)));
+                return { name: labels(i), value: val };
+            });
+
+        const dailyLabels = (i) => `${8+i}h`;
+        const monthlyLabels = (i) => `J${i+1}`;
+        const yearlyLabels = (i) => ['Jan','Fev','Mar','Avr','Mai','Juin','Juil','Aout','Sep','Oct','Nov','Dec'][i];
+
+        const dailyData = createData(12, dailyLabels, baseValue * 0.5);
+        const monthlyData = createData(30, monthlyLabels, baseValue * 2);
+        const yearlyData = createData(12, yearlyLabels, baseValue * 5);
+
+        return {
+            daily: { total: dailyData.reduce((a,b)=>a+b.value,0), chartData: dailyData },
+            monthly: { total: monthlyData.reduce((a,b)=>a+b.value,0), chartData: monthlyData },
+            yearly: { total: yearlyData.reduce((a,b)=>a+b.value,0), chartData: yearlyData }
+        };
+    };
 
     if (!globalMetrics) return <div>Chargement...</div>;
 
@@ -1028,19 +1078,19 @@ export default function DashboardFreelancer() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className={`p-5 rounded-2xl shadow-sm border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
                             <p className="text-xs text-gray-500 uppercase font-bold">Total Freelancers</p>
-                            <h3 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{GLOBAL_STATS.totalFreelancers}</h3>
+                            <h3 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{globalStats.totalFreelancers}</h3>
                         </div>
                         <div className={`p-5 rounded-2xl shadow-sm border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
                             <p className="text-xs text-gray-500 uppercase font-bold">En Ligne (Actifs)</p>
-                            <h3 className="text-3xl font-bold text-green-500 flex items-center gap-2"><Power size={20}/> {GLOBAL_STATS.enLigne}</h3>
+                            <h3 className="text-3xl font-bold text-green-500 flex items-center gap-2"><Power size={20}/> {globalStats.enLigne}</h3>
                         </div>
                         <div className={`p-5 rounded-2xl shadow-sm border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
                             <p className="text-xs text-gray-500 uppercase font-bold">En Attente de Validation</p>
-                            <h3 className="text-3xl font-bold text-orange-500">{GLOBAL_STATS.enAttenteValidation}</h3>
+                            <h3 className="text-3xl font-bold text-orange-500">{globalStats.enAttenteValidation}</h3>
                         </div>
                         <div className={`p-5 rounded-2xl shadow-sm border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
                             <p className="text-xs text-gray-500 uppercase font-bold">Revenus Totaux</p>
-                            <h3 className={`text-2xl font-bold text-indigo-500`}>{GLOBAL_STATS.revenuGlobal.toLocaleString()} DH</h3>
+                            <h3 className={`text-2xl font-bold text-indigo-500`}>{(globalStats.revenuGlobal || 0).toLocaleString()} DH</h3>
                         </div>
                     </div>
 

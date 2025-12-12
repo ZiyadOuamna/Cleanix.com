@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import {
   Package,
   Calendar,
@@ -18,107 +18,100 @@ import {
   ImagePlus,
   Send,
   Sparkles,
-  Key
+  User,
+  User2
 } from 'lucide-react';
 import { ClientContext } from './clientContext';
 import Swal from 'sweetalert2';
+import { getOrderHistory } from '../../services/orderService';
 
 const MyBookings = () => {
   const { isDarkMode, wallet } = useContext(ClientContext);
-  const [activeFilter, setActiveFilter] = useState('in_progress');
+  const [activeFilter, setActiveFilter] = useState('all');
   const [activeServiceFilter, setActiveServiceFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [showDetails, setShowDetails] = useState(null);
-  const [bookings, setBookings] = useState([
-    {
-      id: 1,
-      service: 'Nettoyage complet',
-      serviceType: 'nettoyage',
-      freelancer: 'Ahmed M.',
-      date: '20 Déc 2025',
-      time: '10:00 - 12:00',
-      location: '123 Rue de Paris, 75000 Paris',
-      price: '850DH',
-      status: 'in_progress',
-      rating: null,
-      image: '🧹',
-      freelancerAvatar: '👨',
-      photos_requested: false,
-      completed: false
-    },
-    {
-      id: 2,
-      service: 'Nettoyage de vitres',
-      serviceType: 'nettoyage',
-      freelancer: 'Fatima K.',
-      date: '22 Déc 2025',
-      time: '14:00 - 15:30',
-      location: '456 Avenue des Champs, 75008 Paris',
-      price: '450DH',
-      status: 'pending_approval',
-      rating: null,
-      image: '🪟',
-      freelancerAvatar: '👩',
-      photos_requested: true,
-      completed: true,
-      photos: [
-        { id: 1, type: 'before', url: '📸', label: 'Avant' },
-        { id: 2, type: 'after', url: '📸', label: 'Après' }
-      ]
-    },
-    {
-      id: 3,
-      service: 'Nettoyage bureau',
-      serviceType: 'nettoyage',
-      freelancer: 'Hassan D.',
-      date: '15 Déc 2025',
-      time: '09:00 - 11:00',
-      location: '789 Boulevard Saint-Germain, 75005 Paris',
-      price: '1200DH',
-      status: 'in_progress',
-      rating: null,
-      image: '🏢',
-      freelancerAvatar: '👨',
-      photos_requested: false,
-      completed: false
-    },
-    {
-      id: 4,
-      service: 'Remise de clé',
-      serviceType: 'cles',
-      freelancer: 'Ali B.',
-      date: '18 Déc 2025',
-      time: '16:00 - 16:30',
-      location: '321 Rue Saint-Antoine, 75011 Paris',
-      price: '50DH',
-      status: 'in_progress',
-      rating: null,
-      image: '🔑',
-      freelancerAvatar: '👨',
-      photos_requested: false,
-      completed: false
-    },
-    {
-      id: 5,
-      service: 'Récupération de clé',
-      serviceType: 'cles',
-      freelancer: 'Sarah L.',
-      date: '25 Déc 2025',
-      time: '11:00 - 11:30',
-      location: '654 Rue de Rivoli, 75004 Paris',
-      price: '50DH',
-      status: 'in_progress',
-      rating: null,
-      image: '🔑',
-      freelancerAvatar: '👩',
-      photos_requested: false,
-      completed: false
-    }
-  ]);
+  const [bookings, setBookings] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [messageText, setMessageText] = useState('');
   const [showMessageModal, setShowMessageModal] = useState(null);
   const [showValidationModal, setShowValidationModal] = useState(null);
   const [validationRating, setValidationRating] = useState(0);
   const [validationComment, setValidationComment] = useState('');
+
+  // Charger l'historique des commandes au montage du composant
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        console.log('🔄 Fetching order history...');
+        const response = await getOrderHistory();
+        
+        console.log('📡 API Response:', response);
+        console.log('Response type:', typeof response);
+        console.log('Response.data exists:', !!response?.data);
+        
+        // La réponse du service est: { data: [...], current_page, last_page, total, per_page }
+        const ordersData = (response && response.data) ? response.data : [];
+        
+        console.log('✅ Orders data:', ordersData);
+        console.log('📊 Orders count:', ordersData.length);
+        
+        // Transformer les données de l'API au format du composant
+        const formattedBookings = ordersData.map((order) => ({
+          id: order.id,
+          service: order.service?.nom || order.service_type,
+          serviceType: order.service_type,
+          freelancer: order.freelancer ? `${order.freelancer.firstname} ${order.freelancer.lastname}` : 'À assigner',
+          date: new Date(order.scheduled_date).toLocaleDateString('fr-FR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }),
+          time: order.heure_execution ? new Date(order.heure_execution).toLocaleTimeString('fr-FR', {
+            hour: '2-digit',
+            minute: '2-digit'
+          }) : 'Horaire à déterminer',
+          location: `${order.adresse}, ${order.code_postal} ${order.ville}`,
+          price: `${order.agreed_price || order.initial_price}DH`,
+          status: order.status,
+          rating: order.rating,
+          image: getServiceIcon(order.service_type),
+          freelancerAvatar: order.freelancer ? getAvatarEmoji(order.freelancer.gender) : '❓',
+          photos_requested: order.status === 'completed',
+          completed: order.status === 'completed',
+          photos: order.photos_after ? JSON.parse(order.photos_after).map((photo, idx) => ({
+            id: idx,
+            type: 'after',
+            url: photo,
+            label: 'Après'
+          })) : [],
+          review: order.review,
+          orderId: order.id
+        }));
+        
+        console.log('Formatted bookings:', formattedBookings);
+        
+        setBookings(formattedBookings);
+      } catch (err) {
+        console.error('Erreur lors du chargement des commandes:', err);
+        setError('Impossible de charger vos commandes');
+        Swal.fire({
+          icon: 'error',
+          title: 'Erreur',
+          text: 'Impossible de charger vos commandes. Veuillez réessayer.',
+          background: isDarkMode ? '#1f2937' : '#ffffff',
+          color: isDarkMode ? '#ffffff' : '#1f2937',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchBookings();
+  }, [isDarkMode]);
 
   const theme = {
     bg: isDarkMode ? 'bg-gray-900' : 'bg-transparent',
@@ -182,11 +175,15 @@ const MyBookings = () => {
   };
 
   const getServiceIcon = (serviceType) => {
-    return serviceType === 'cles' ? <Key size={18} /> : <Sparkles size={18} />;
+    return <Sparkles size={18} />;
+  };
+
+  const getAvatarEmoji = (gender) => {
+return gender === 'female' || gender === 'F' ? <User2 size={18}/> : <User size={18}/>;
   };
 
   const getServiceLabel = (serviceType) => {
-    return serviceType === 'cles' ? 'Gestion de Clés' : 'Nettoyage';
+    return 'Nettoyage';
   };
 
   // Helper pour les couleurs Swal selon le mode sombre/clair
@@ -319,8 +316,14 @@ const MyBookings = () => {
 
   const filteredBookings = bookings.filter(b => {
     const statusMatch = activeFilter === 'all' ? true : b.status === activeFilter;
-    const serviceMatch = activeServiceFilter === 'all' ? true : b.serviceType === activeServiceFilter;
-    return statusMatch && serviceMatch;
+    const serviceMatch = activeServiceFilter === 'all' ? true : b.serviceType?.toLowerCase() === activeServiceFilter.toLowerCase();
+    const searchMatch = searchTerm === '' ? true : 
+      b.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.freelancer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.id.toString().includes(searchTerm);
+    console.log(`Filtering booking ${b.id}: status=${b.status}, activeFilter=${activeFilter}, serviceType=${b.serviceType}, serviceMatch=${serviceMatch}`);
+    return statusMatch && serviceMatch && searchMatch;
   });
 
   // Fonction pour exporter les réservations
@@ -330,7 +333,7 @@ const MyBookings = () => {
       ...filteredBookings.map(b => [
         b.id,
         b.service,
-        b.serviceType === 'nettoyage' ? 'Nettoyage' : 'Gestion de Clés',
+        'Nettoyage',
         b.freelancer,
         b.date,
         b.time,
@@ -361,6 +364,18 @@ const MyBookings = () => {
 
   return (
     <div className={`space-y-6 ${theme.bg}`}>
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-cyan-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className={theme.textSecondary}>Chargement de vos réservations...</p>
+          </div>
+        </div>
+      )}
+
+      {!isLoading && (
+        <>
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -376,14 +391,41 @@ const MyBookings = () => {
         </button>
       </div>
 
+      {/* Search Bar */}
+      <div className={`${theme.cardBg} rounded-xl p-4 shadow-sm border ${theme.border}`}>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Rechercher par service, freelancer, lieu ou ID..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={`w-full px-4 py-2 rounded-lg border ${theme.border} transition ${
+              isDarkMode 
+                ? 'bg-gray-700 text-white placeholder-gray-400 focus:bg-gray-600' 
+                : 'bg-white text-slate-900 placeholder-slate-400 focus:bg-slate-50'
+            } focus:outline-none focus:ring-2 focus:ring-cyan-600`}
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <X size={18} />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Filters */}
       <div className={`${theme.cardBg} rounded-xl p-4 shadow-sm border ${theme.border} space-y-3`}>
         {/* Filter par statut */}
         <div className="flex flex-wrap gap-2 items-center">
           <Filter size={20} className={theme.textMuted} />
           {[
+            { id: 'all', label: 'Tous les statuts' },
+            { id: 'pending', label: 'En attente' },
             { id: 'in_progress', label: 'En cours' },
-            { id: 'pending_approval', label: 'En attente' }
+            { id: 'completed', label: 'Complétée' }
           ].map(filter => (
             <button
               key={filter.id}
@@ -404,8 +446,7 @@ const MyBookings = () => {
           <Package size={20} className={theme.textMuted} />
           {[
             { id: 'all', label: 'Tous les services', icon: '⭐' },
-            { id: 'nettoyage', label: 'Nettoyage', icon: '✨' },
-            { id: 'cles', label: 'Gestion de Clés', icon: '🔑' }
+            { id: 'nettoyage', label: 'Nettoyage', icon: '✨' }
           ].map(filter => (
             <button
               key={filter.id}
@@ -808,6 +849,8 @@ const MyBookings = () => {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

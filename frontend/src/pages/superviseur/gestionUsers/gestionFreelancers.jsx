@@ -1,5 +1,5 @@
 // src/pages/GestionFreelancers.jsx
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { SuperviseurContext } from '../superviseurContext';
 import { 
     Activity, FileText, Hash, Smartphone, Building,
@@ -8,6 +8,7 @@ import {
     CheckCircle, XCircle, Clock, Download, Send, Copy
 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import superviseurService from '../../../services/superviseurService';
 
 const MAROC_VILLES = [
   "Agadir", "Casablanca", "Rabat", "Marrakech", "Fès", "Tanger", 
@@ -49,60 +50,15 @@ export default function GestionFreelancers() {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [specialiteFilter, setSpecialiteFilter] = useState('all');
-    const [selectedService, setSelectedService] = useState(null); // AJOUTÉ
+    const [selectedService, setSelectedService] = useState(null);
 
-    // Données exemple des freelancers
-    const [freelancers, setFreelancers] = useState([
-        {
-            id: 1,
-            nom: 'Karim Benali',
-            prenom: 'Karim', // AJOUTÉ
-            email: 'karim.benali@email.com',
-            telephone: '+33 6 12 34 56 78',
-            adresse: '15 Rue de Marseille, Lyon',
-            dateInscription: '2024-01-10',
-            statut: 'actif',
-            specialite: 'Nettoyage Résidentiel',
-            note: 4.8,
-            missionsTotal: 45,
-            revenuTotal: 12500.00,
-            documents: ['Informations Bancaire', 'CIN Rcto Verso', 'Photo Personnel'],
-            dernierAcces: '2025-11-25 14:30',
-            verifie: true, // AJOUTÉ
-            estConnecte: true, // AJOUTÉ
-            ville: 'Lyon', // AJOUTÉ
-            detailsCompteBancaire: 'CIH *** 1234', // AJOUTÉ
-            services: [ // AJOUTÉ
-                { type: 'Nettoyage Résidentiel', tarifBase: 150 },
-                { type: 'Nettoyage de Surface', tarifBase: 80 }
-            ]
-        },
-        {
-            id: 2,
-            nom: 'Sophie Martin',
-            prenom: 'Sophie', // AJOUTÉ
-            email: 'sophie.martin@email.com',
-            telephone: '+33 6 23 45 67 89',
-            adresse: '8 Avenue Victor Hugo, Paris',
-            dateInscription: '2024-02-15',
-            statut: 'en_attente',
-            specialite: 'Nettoyage Bureau',
-            note: 0,
-            missionsTotal: 0,
-            revenuTotal: 0.00,
-            documents: ['Informations Bancaire', 'CIN Rcto Verso', 'Photo Personnel'],
-            dernierAcces: '2025-11-24 10:15',
-            verifie: false, // AJOUTÉ
-            estConnecte: false, // AJOUTÉ
-            ville: 'Paris', // AJOUTÉ
-            detailsCompteBancaire: 'BP *** 5678', // AJOUTÉ
-            services: [ // AJOUTÉ
-                { type: 'Nettoyage Bureau', tarifBase: 120 }
-            ]
-        },
-        // ... autres freelancers avec les mêmes propriétés ajoutées
-    ]);
+    // États pour les données dynamiques
+    const [freelancers, setFreelancers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
+    // États pour le modal
     const [showModal, setShowModal] = useState(false);
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [editingFreelancer, setEditingFreelancer] = useState(null);
@@ -115,10 +71,31 @@ export default function GestionFreelancers() {
         telephone: '',
         genre: '',
         ville: MAROC_VILLES[0],
-        specialite: 'Nettoyage Résidentiel',
-        statut: 'actif',
         password: ''
     });
+
+    // Charger les freelancers au montage et lors du changement de page/recherche
+    useEffect(() => {
+        loadFreelancers();
+    }, [currentPage, searchTerm, statusFilter]);
+
+    const loadFreelancers = async () => {
+        try {
+            setLoading(true);
+            const response = await superviseurService.getFreelancers(currentPage, searchTerm, statusFilter);
+            if (response.success) {
+                setFreelancers(response.data.data || []);
+                setTotalPages(response.data.last_page || 1);
+            } else {
+                Swal.fire('Erreur', response.message || 'Erreur lors du chargement des freelancers', 'error');
+            }
+        } catch (error) {
+            console.error('Erreur lors du chargement:', error);
+            Swal.fire('Erreur', error.message || 'Erreur lors du chargement des freelancers', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     //l'icone de vérifer compte 
     const VerifiedAccount = ({ size = 20 }) => (
@@ -143,7 +120,7 @@ export default function GestionFreelancers() {
     // Spécialités disponibles
     const SPECIALITES = [
         'Nettoyage Résidentiel',
-        'Nettoyage Supérfécie',
+        'Nettoyage Superficie',
         'Nettoyage Unitaire',
     ];
 
@@ -182,8 +159,6 @@ export default function GestionFreelancers() {
             telephone: '',
             genre: '',
             ville: MAROC_VILLES[0],
-            specialite: 'Nettoyage Résidentiel',
-            statut: 'actif',
             password: newPassword
         });
         setShowModal(true);
@@ -192,7 +167,14 @@ export default function GestionFreelancers() {
     // Ouvrir modal d'édition
     const handleEditFreelancer = (freelancer) => {
         setEditingFreelancer(freelancer);
-        setFormData({ ...freelancer });
+        setFormData({ 
+            prenom: freelancer.prenom || '',
+            nom: freelancer.nom || '',
+            email: freelancer.email || '',
+            telephone: freelancer.telephone || '',
+            genre: freelancer.genre || '',
+            ville: freelancer.freelancer?.ville || MAROC_VILLES[0],
+        });
         setShowModal(true);
     };
 
@@ -203,50 +185,89 @@ export default function GestionFreelancers() {
     };
 
     // Supprimer freelancer
-    const handleDeleteFreelancer = (id) => {
-        if (window.confirm('Êtes-vous sûr de vouloir supprimer ce freelancer ?')) {
-            setFreelancers(freelancers.filter(freelancer => freelancer.id !== id));
+    const handleDeleteFreelancer = async (id) => {
+        const result = await Swal.fire({
+            title: 'Êtes-vous sûr?',
+            text: "Vous ne pourrez pas annuler cette action!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Oui, supprimer!',
+            cancelButtonText: 'Annuler'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const response = await superviseurService.deleteFreelancer(id);
+                if (response.success) {
+                    Swal.fire('Supprimé!', 'Le freelancer a été supprimé.', 'success');
+                    loadFreelancers();
+                }
+            } catch (error) {
+                Swal.fire('Erreur', error.message || 'Erreur lors de la suppression', 'error');
+            }
         }
     };
 
     // Soumettre le formulaire
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (editingFreelancer) {
-            // Modification
-            setFreelancers(freelancers.map(freelancer => 
-                freelancer.id === editingFreelancer.id ? { ...freelancer, ...formData } : freelancer
-            ));
-        } else {
-            // Ajout
-            const newFreelancer = {
-                ...formData,
-                id: Date.now(),
-                dateInscription: new Date().toISOString().split('T')[0],
-                note: 0,
-                missionsTotal: 0,
-                revenuTotal: 0,
-                documents: ['Informations Bancaire', 'CIN Rcto Verso', 'Photo Personnel'],
-                dernierAcces: new Date().toLocaleString('fr-FR'),
-                verifie: false,
-                estConnecte: false,
-                detailsCompteBancaire: 'Nouveau compte',
-                services: []
-            };
-            setFreelancers([...freelancers, newFreelancer]);
+        try {
+            setLoading(true);
+            if (editingFreelancer) {
+                // Modification
+                const response = await superviseurService.updateFreelancer(editingFreelancer.id, {
+                    prenom: formData.prenom,
+                    nom: formData.nom,
+                    email: formData.email,
+                    telephone: formData.telephone,
+                    genre: formData.genre,
+                    ville: formData.ville,
+                });
+                if (response.success) {
+                    Swal.fire('Succès', 'Freelancer modifié avec succès', 'success');
+                }
+            } else {
+                // Création
+                const response = await superviseurService.createFreelancer({
+                    prenom: formData.prenom,
+                    nom: formData.nom,
+                    email: formData.email,
+                    telephone: formData.telephone,
+                    genre: formData.genre,
+                    ville: formData.ville,
+                    password: formData.password,
+                    user_type: 'Freelancer',
+                });
+                if (response.success) {
+                    Swal.fire('Succès', 'Freelancer créé avec succès', 'success');
+                }
+            }
+            setShowModal(false);
+            loadFreelancers();
+        } catch (error) {
+            Swal.fire('Erreur', error.message || 'Erreur lors de la sauvegarde', 'error');
+        } finally {
+            setLoading(false);
         }
-        setShowModal(false);
     };
 
     // Changer le statut d'un freelancer
-    const handleChangeStatus = (id, newStatus) => {
-        setFreelancers(freelancers.map(freelancer => 
-            freelancer.id === id ? { ...freelancer, statut: newStatus } : freelancer
-        ));
-        
-        // Mettre à jour le freelancer sélectionné si ouvert
-        if (selectedFreelancer && selectedFreelancer.id === id) {
-            setSelectedFreelancer({ ...selectedFreelancer, statut: newStatus });
+    const handleChangeStatus = async (id, newStatus) => {
+        try {
+            const response = await superviseurService.updateFreelancer(id, { statut: newStatus });
+            if (response.success) {
+                Swal.fire('Succès', 'Statut mis à jour avec succès', 'success');
+                loadFreelancers();
+                
+                // Mettre à jour le freelancer sélectionné si ouvert
+                if (selectedFreelancer && selectedFreelancer.id === id) {
+                    setSelectedFreelancer({ ...selectedFreelancer, statut: newStatus });
+                }
+            }
+        } catch (error) {
+            Swal.fire('Erreur', error.message || 'Erreur lors de la mise à jour du statut', 'error');
         }
     };
 // Fonction pour générer les PDFs
@@ -453,14 +474,14 @@ const generatePDF = (type, freelancer) => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            {freelancer.note > 0 ? renderStars(freelancer.note) : 'Aucune note'}
+                                            {freelancer.note && freelancer.note > 0 ? renderStars(freelancer.note) : 'Aucune note'}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="font-semibold">{freelancer.missionsTotal}</span>
+                                            <span className="font-semibold">{freelancer.missionsTotal || 0}</span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className="font-semibold text-green-600">
-                                                {freelancer.revenuTotal.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}DH
+                                                {(freelancer.revenuTotal || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DH
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">

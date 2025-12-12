@@ -16,7 +16,6 @@ const ICONS = {
   users: Users,
   briefcase: Briefcase,
   verification: Shield,
-  support: HelpCircle,
   profile: User,
   remboursement: DollarSign,
   reclamations: MessageCircle,
@@ -45,7 +44,6 @@ const ACCENT_COLORS = {
   verification: '#3b82f6', // Bleu clair
   remboursement: '#10b981', // Vert
   reclamations: '#f59e0b', // Amber
-  support: '#8b5cf6',   // Violet
   settings: '#64748b'   // Gris
 };
 
@@ -96,7 +94,9 @@ function InnerLayout() {
     else if (path.includes('dashboard-freelancers')) setActivePage('dashboard-freelancers');
     else if (path.includes('gestion-clients')) setActivePage('gestion-clients');
     else if (path.includes('gestion-freelancers')) setActivePage('gestion-freelancers');
+    else if (path.includes('gestion-superviseurs')) setActivePage('gestion-superviseurs');
     else if (path.includes('superviseur-verification')) setActivePage('superviseur-verification');
+    else if (path.includes('validation-services')) setActivePage('validation-services');
     else if (path.includes('gestion-rembourssements')) setActivePage('gestion-rembourssements');
     else if (path.includes('gestion-reclamations')) setActivePage('gestion-reclamations');
     else if (path.includes('settings-superviseur')) setActivePage('settings-superviseur');
@@ -184,6 +184,7 @@ function InnerLayout() {
       'dashboard-freelancers': ACCENT_COLORS.dashboard,
       'gestion-clients': ACCENT_COLORS.users,
       'gestion-freelancers': ACCENT_COLORS.users,
+      'gestion-superviseurs': ACCENT_COLORS.users,
       'superviseur-verification': ACCENT_COLORS.verification,
       'gestion-rembourssements': ACCENT_COLORS.remboursement,
       'gestion-reclamations': ACCENT_COLORS.reclamations,
@@ -334,6 +335,7 @@ function InnerLayout() {
                   {[
                     { id: 'gestion-clients', label: 'Clients', icon: ICONS.users, path: 'gestion-clients' },
                     { id: 'gestion-freelancers', label: 'Freelancers', icon: ICONS.briefcase, path: 'gestion-freelancers' },
+                    { id: 'gestion-superviseurs', label: 'Superviseurs', icon: ICONS.verification, path: 'gestion-superviseurs' },
                   ].map(sub => {
                     const style = getMenuItemStyle(sub.id);
                     return (
@@ -362,6 +364,18 @@ function InnerLayout() {
               >
                 <ICONS.verification size={20} style={{ color: getMenuItemStyle('superviseur-verification').iconColor }} />
                 <span>Vérification Freelancers</span>
+              </button>
+            </li>
+
+            {/* Validation Services */}
+            <li>
+              <button 
+                onClick={() => handleNavigation('validation-services', 'validation-services')}
+                className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all text-left ${getMenuItemStyle('validation-services').className}`}
+                style={getMenuItemStyle('validation-services').style}
+              >
+                <ICONS.briefcase size={20} style={{ color: getMenuItemStyle('validation-services').iconColor }} />
+                <span>Validation Services</span>
               </button>
             </li>
 
@@ -409,8 +423,8 @@ function InnerLayout() {
               >
                 <ICONS.notifications size={18} />
                 {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full text-[8px] text-white flex items-center justify-center border-2 border-slate-50 dark:border-gray-800">
-                    {unreadCount}
+                  <span className="absolute -top-1 -right-1 min-w-[20px] h-[20px] bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center border-2 border-slate-50 dark:border-gray-800 px-1">
+                    {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
               </button>

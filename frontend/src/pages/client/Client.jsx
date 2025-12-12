@@ -5,7 +5,7 @@ import {
   Sun, Moon, User, Briefcase, HelpCircle, DollarSign, 
   Home, Clock, Star, MessageCircle, Settings, Bell, Menu, Package, 
   History, TrendingUp, FileText, Users, MapPin, Filter, RefreshCw, X, LogOut,
-  Plus, CreditCard, Key
+  Plus, CreditCard
 } from 'lucide-react';
 import { ClientProvider, ClientContext } from './clientContext';
 import { logoutUser } from '../../services/authService';
@@ -16,11 +16,9 @@ import logoCleanix from '../../imgs/logoCleanix.png';
 const ICONS = {
   dashboard: Home,
   request: Plus,
-  keys: Key,
   bookings: Package,
   history: History,
   wallet: CreditCard,
-  support: HelpCircle,
   profile: User,
   earnings: DollarSign,
   notifications: Bell,
@@ -47,12 +45,10 @@ const STRING_ICONS = {
 const ACCENT_COLORS = { 
   primary: '#0891b2', // Cyan pour le client
   request: '#10B981',
-  keys: '#F59E0B',     // Orange pour le service de clés
   bookings: '#8B5CF6', 
   history: '#06B6D4',
   wallet: '#10B981',
   earnings: '#10B981',
-  support: '#F59E0B',
   settings: '#64748b' 
 };
 
@@ -112,7 +108,6 @@ function InnerLayout() {
     else if (path.includes('booking-history')) setActivePage('booking-history');
     else if (path.includes('wallet-client')) setActivePage('wallet-client');
     else if (path.includes('settings-client')) setActivePage('settings-client');
-    else if (path.includes('support-client')) setActivePage('support-client');
     else if (path.includes('request-service')) setActivePage('request-service');
   }, [location.pathname]);
 
@@ -200,7 +195,6 @@ function InnerLayout() {
       'dashboard-client': ACCENT_COLORS.primary,
       'booking-history': ACCENT_COLORS.history,
       'wallet-client': ACCENT_COLORS.wallet,
-      'support-client': ACCENT_COLORS.support,
       'settings-client': ACCENT_COLORS.settings,
       'profile-client': ACCENT_COLORS.settings
     };
@@ -341,7 +335,6 @@ function InnerLayout() {
             {/* Autres Items */}
             {[
               { id: 'wallet-client', label: 'Portefeuille', icon: ICONS.wallet, path: 'wallet-client' },
-              { id: 'support-client', label: 'Support', icon: ICONS.support, path: 'support-client' },
               { id: 'profile-client', label: 'Profil', icon: ICONS.profile, path: 'profile-client' },
               { id: 'settings-client', label: 'Paramètres', icon: ICONS.settings, path: 'settings-client' },
             ].map((item) => {
@@ -404,8 +397,8 @@ function InnerLayout() {
               >
                 <ICONS.notifications size={18} />
                 {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full text-[8px] text-white flex items-center justify-center border-2 border-slate-50 dark:border-gray-800">
-                    {unreadCount}
+                  <span className="absolute -top-1 -right-1 min-w-[20px] h-[20px] bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center border-2 border-slate-50 dark:border-gray-800 px-1">
+                    {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
               </button>
