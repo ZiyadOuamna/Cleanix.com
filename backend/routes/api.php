@@ -9,6 +9,7 @@ use App\Http\Controllers\ReclamationController;
 use App\Http\Controllers\PaiementController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\WalletController;
+use App\Http\Controllers\SuperviseurController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -28,6 +29,9 @@ Route::post('/login', [AuthController::class, 'login']);
 // Mot de passe oublié
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+
+// NOTE: Les superviseurs ne font pas de vérification d'email
+// Ils accèdent directement après connexion avec contrôle d'accès par rôle
 
 // ========== ROUTES PROTÉGÉES (authentification requise) ==========
 
@@ -231,4 +235,39 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Rembourser un paiement
     Route::post('/payments/{paiement}/refund', [PaiementController::class, 'refund']);
+
+    // ========== ROUTES SUPERVISEUR ==========
+    
+    // Clients management
+    Route::get('/superviseur/clients', [SuperviseurController::class, 'getClients']);
+    Route::get('/superviseur/clients/{clientId}', [SuperviseurController::class, 'getClientById']);
+    Route::put('/superviseur/clients/{clientId}', [SuperviseurController::class, 'updateClient']);
+    Route::delete('/superviseur/clients/{clientId}', [SuperviseurController::class, 'deleteClient']);
+    
+    // Freelancers management
+    Route::get('/superviseur/freelancers', [SuperviseurController::class, 'getFreelancers']);
+    Route::get('/superviseur/freelancers/{freelancerId}', [SuperviseurController::class, 'getFreelancerById']);
+    Route::put('/superviseur/freelancers/{freelancerId}', [SuperviseurController::class, 'updateFreelancer']);
+    Route::delete('/superviseur/freelancers/{freelancerId}', [SuperviseurController::class, 'deleteFreelancer']);
+    
+    // Dashboard stats
+    Route::get('/superviseur/dashboard/stats', [SuperviseurController::class, 'getDashboardStats']);
+    Route::get('/superviseur/stats/users', [SuperviseurController::class, 'getUsersStats']);
+    Route::get('/superviseur/stats/transactions', [SuperviseurController::class, 'getTransactionStats']);
+    
+    // Reclamations management
+    Route::get('/superviseur/reclamations', [SuperviseurController::class, 'getReclamations']);
+    Route::get('/superviseur/reclamations/{reclamationId}', [SuperviseurController::class, 'getReclamationById']);
+    Route::put('/superviseur/reclamations/{reclamationId}', [SuperviseurController::class, 'updateReclamation']);
+    Route::post('/superviseur/reclamations/{reclamationId}/resolve', [SuperviseurController::class, 'resolveReclamation']);
+    
+    // Payments management
+    Route::get('/superviseur/payments', [SuperviseurController::class, 'getPayments']);
+    Route::get('/superviseur/payments/{paymentId}', [SuperviseurController::class, 'getPaymentById']);
+    Route::post('/superviseur/payments/{paymentId}/refund', [SuperviseurController::class, 'processRefund']);
+    
+    // Orders management
+    Route::get('/superviseur/orders', [SuperviseurController::class, 'getOrders']);
+    Route::get('/superviseur/orders/{orderId}', [SuperviseurController::class, 'getOrderById']);
+    Route::put('/superviseur/orders/{orderId}', [SuperviseurController::class, 'updateOrderStatus']);
 });
